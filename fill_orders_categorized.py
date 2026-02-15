@@ -3,7 +3,7 @@ import os
 import re
 
 source_fp = 'h:/Analysis/New_/test.xlsx'
-output_fp = 'h:/Analysis/New_/filled_orders_test.csv'
+output_fp = 'h:/Analysis/New_/filled_orders_test_v2.csv'
 
 def get_category(name):
     # No conversion needed, check existence case-insensitively
@@ -80,11 +80,18 @@ try:
     df['State Name (Billing)'] = df['State Name (Billing)'].astype(str).str.strip()
     
     # Clean Address if exists
-    addr_col = 'Address 1&2 (Shipping)' 
-    if addr_col in df.columns:
+    addr_col = None
+    for col in df.columns:
+        if 'address' in col.lower() and 'shipping' in col.lower():
+            addr_col = col
+            break
+            
+    if addr_col:
         df[addr_col] = df[addr_col].astype(str).str.strip()
     else:
-        df[addr_col] = '' # Fallback
+        # Fallback to creating an empty column if not found, or use State later
+        addr_col = 'Address_Fallback'
+        df[addr_col] = ''
 
     # trxId column
     trx_col = 'trxId'
@@ -174,7 +181,12 @@ try:
             if trx_info:
                 suffix_parts.append(trx_info)
             
-            full_desc += f" ; ({' + '.join(suffix_parts)})"
+            full_desc += f" ; ({'  '.join(suffix_parts)})"
+
+        # Address Logic
+        address_val = str(first_row.get(addr_col, '')).strip()
+        if not address_val or address_val.lower() == 'nan':
+             address_val = str(first_row.get('State Name (Billing)', '')).strip()
 
         # Build Record
         record = {
@@ -183,7 +195,7 @@ try:
             'MerchantOrderId': first_row['Order Number'],
             'RecipientName(*)': first_row['First Name (Shipping)'],
             'RecipientPhone(*)': phone,
-            'RecipientAddress(*)': first_row.get(addr_col, first_row['State Name (Billing)']), # Use full address, fallback to state
+            'RecipientAddress(*)': address_val, # Use full address, fallback to state
             'RecipientCity(*)': first_row['State Name (Billing)'],
             'RecipientZone(*)': '',
             'RecipientArea': '',
