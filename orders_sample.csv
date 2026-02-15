@@ -1,0 +1,3 @@
+ItemType,StoreName,MerchantOrderId,RecipientName(*),RecipientPhone(*),RecipientAddress(*),RecipientCity(*),RecipientZone(*),RecipientArea,AmountToCollect(*),ItemQuantity,ItemWeight,ItemDesc,SpecialInstruction
+Parcel,Sylhet,Test,Shahid Mia,1300029265,Dhaka,Dhaka,Uttara,,1090,2,0.5,Mint Green Classic Plaid Flannel Shirt - XL | Olive Sand Cross Plaid Flannel Shirt - XL,
+Parcel,Cumills,Test,Shimul,1300049454,Khulna,Khulna,Nirala,,594,2,0.5,Cool Aqua Boxer Brief - M | Navy Boxer Brief - M,
