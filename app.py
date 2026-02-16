@@ -76,6 +76,8 @@ with st.sidebar:
     st.info("💡 **Tip:** Use the `.xlsx` file to verify Bangla characters.")
     st.markdown("---")
     st.caption("v2.0 | Modular Edition")
+    st.markdown("---")
+    st.markdown("© 2025 [Sajid Islam](https://github.com/saajiidi)")
 
 # --- Main Content ---
 st.title("🚀 Pathao Order Processor")
