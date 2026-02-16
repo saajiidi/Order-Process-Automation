@@ -63,7 +63,58 @@ st.markdown("""
 
 # --- Sidebar ---
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/2830/2830305.png", width=80) 
+    # st.image("https://cdn-icons-png.flaticon.com/512/2830/2830305.png", width=80) 
+    st.markdown("""
+    <style>
+    @keyframes moveRightToLeft {
+        0% { transform: translateX(120%); }
+        100% { transform: translateX(-120%); }
+    }
+    @keyframes smoke-puff {
+        0% { transform: scale(0.5); opacity: 0.8; }
+        100% { transform: scale(2) translate(10px, -10px); opacity: 0; }
+    }
+    .bike-container {
+        width: 100%;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    .bike-wrapper {
+        display: inline-flex;
+        align-items: center;
+        animation: moveRightToLeft 5s linear infinite;
+    }
+    .bike-img {
+        width: 80px;
+        z-index: 2;
+        transform: scaleX(-1); /* Flip to face left */
+    }
+    .smoke-trail {
+        display: flex;
+        margin-left: -10px;
+    }
+    .smoke {
+        width: 8px;
+        height: 8px;
+        background: #bbb;
+        border-radius: 50%;
+        animation: smoke-puff 0.8s ease-out infinite;
+        margin-left: -4px;
+    }
+    .smoke:nth-child(2) { animation-delay: 0.2s; }
+    .smoke:nth-child(3) { animation-delay: 0.4s; }
+    </style>
+    <div class="bike-container">
+        <div class="bike-wrapper">
+            <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" class="bike-img">
+            <div class="smoke-trail">
+                <div class="smoke"></div>
+                <div class="smoke"></div>
+                <div class="smoke"></div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True) 
     st.title("Automation Hub")
     st.markdown("---")
     st.subheader("Instructions")
