@@ -87,7 +87,6 @@ with st.sidebar:
     .bike-img {
         width: 80px;
         z-index: 2;
-        transform: scaleX(-1); /* Flip to face left */
     }
     .smoke-trail {
         display: flex;
