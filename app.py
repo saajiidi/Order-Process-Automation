@@ -80,7 +80,7 @@ with st.sidebar:
     st.markdown("© 2025 [Sajid Islam](https://www.linkedin.com/in/sajidislamchowdhury/)")
 
 # --- Main Content ---
-st.title("🚀 Pathao Order Processor")
+st.title("🚀 Bulk Order Processor")
 st.markdown("### Simplify your bulk order processing workflow")
 
 # File Uploader Section
