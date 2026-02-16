@@ -1,2 +1,0 @@
-ItemType,StoreName,MerchantOrderId,RecipientName(*),RecipientPhone(*),RecipientAddress(*),RecipientCity(*),RecipientZone(*),RecipientArea,AmountToCollect(*),ItemQuantity,ItemWeight,ItemDesc,SpecialInstruction
-Parcel,My Store,191124,Badhan Saha,1734777663,"Alo-28, Amberkhana monipuri para",Sylhet,,,948,2,0.5,"2 Denim = Dark Blue Denim Shirt - XL - 102-0402-032, Dark Blue Denim Shirt - L - 102-0402-032 ; (2 items  Paid by Bkash - DB940KW0T8)",
