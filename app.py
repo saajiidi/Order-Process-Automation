@@ -10,7 +10,7 @@ from app_modules.processor import process_orders_dataframe
 
 # --- Page Configuration ---
 st.set_page_config(
-    page_title="Pathao Automation Pro",
+    page_title="Order Input Automation Pro",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -77,7 +77,7 @@ with st.sidebar:
     st.markdown("---")
     st.caption("v2.0 | Modular Edition")
     st.markdown("---")
-    st.markdown("© 2025 [Sajid Islam](https://github.com/saajiidi)")
+    st.markdown("© 2025 [Sajid Islam](https://www.linkedin.com/in/sajidislamchowdhury/)")
 
 # --- Main Content ---
 st.title("🚀 Pathao Order Processor")
