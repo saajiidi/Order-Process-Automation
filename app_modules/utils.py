@@ -34,6 +34,14 @@ def get_category_from_name(name):
     if has_keyword('Bag', name_str): return 'Bag'
     if has_keyword('bottle', name_str): return 'Bottle'
 
+    # T-Shirts
+    is_tshirt = has_keyword('t-shirt', name_str) or has_keyword('t shirt', name_str)
+    if is_full_sleeve and is_tshirt:
+        return 'FS T-Shirt'
+    if is_tshirt and not is_full_sleeve:
+        return 'HS T-Shirt'
+    
+    
     # Shirts
     is_shirt = has_keyword('shirt', name_str)
     is_full_sleeve = has_keyword('full sleeve', name_str)
@@ -43,12 +51,8 @@ def get_category_from_name(name):
     if is_shirt and not is_full_sleeve:
         return 'HS Shirt'
     
-    # T-Shirts
-    is_tshirt = has_keyword('t-shirt', name_str) or has_keyword('t shirt', name_str)
-    if is_full_sleeve and is_tshirt:
-        return 'FS T-Shirt'
-    if is_tshirt and not is_full_sleeve:
-        return 'HS T-Shirt'
+    
+   
 
     # Fallback: Use first two words
     words = name_str.split()
