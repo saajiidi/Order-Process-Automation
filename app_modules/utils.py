@@ -34,6 +34,9 @@ def get_category_from_name(name):
     if has_keyword('Bag', name_str): return 'Bag'
     if has_keyword('bottle', name_str): return 'Bottle'
 
+    # Common Attributes
+    is_full_sleeve = has_keyword('full sleeve', name_str)
+
     # T-Shirts
     is_tshirt = has_keyword('t-shirt', name_str) or has_keyword('t shirt', name_str)
     if is_full_sleeve and is_tshirt:
@@ -44,7 +47,6 @@ def get_category_from_name(name):
     
     # Shirts
     is_shirt = has_keyword('shirt', name_str)
-    is_full_sleeve = has_keyword('full sleeve', name_str)
     
     if is_full_sleeve and is_shirt:
         return 'FS Shirt'
