@@ -231,6 +231,9 @@ with t_order:
 with t_inv:
     st.markdown("### 🏢 Active Stock Matrix & Thresholds")
     
+    # 🏪 Global Outlet Configuration
+    locs = ["Ecom", "Mirpur", "Wari", "Cumilla", "Sylhet"]
+
     c_m, c_p = st.columns([3, 1])
     with c_p:
         st.markdown("#### ⚙️ Thresholds")
@@ -239,14 +242,24 @@ with t_inv:
         if st.button("Save State 💾"): save_state()
 
     with c_m:
-        m_file = st.file_uploader("1. Master List", type=["xlsx", "csv"], key="inv_up")
-        # Reuse existing location logic...
-        locs = ["Ecom", "Mirpur", "Wari", "Cumilla", "Sylhet"]
+        st.markdown("#### 📤 Step 1: Upload Master List")
+        m_file = st.file_uploader("Master Stock List (Required)", type=["xlsx", "csv"], key="inv_up")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("#### 🏪 Step 2: Upload Outlet Stocks (Optional)")
         loc_files = {}
+        
+        # Grid layout for outlets with explicit labels
         lc = st.columns(len(locs))
         for i, l in enumerate(locs):
             with lc[i]:
-                u = st.file_uploader(f"Up {l}", key=f"inv_l_{l}", label_visibility="collapsed")
+                # Visual label for each outlet
+                st.markdown(f"""
+                    <div style='background: var(--primary); color: white; padding: 4px 10px; border-radius: 8px 8px 0 0; text-align: center; font-size: 0.85rem; font-weight: 600;'>
+                        {l}
+                    </div>
+                """, unsafe_allow_html=True)
+                u = st.file_uploader(f"Upload {l}", key=f"inv_l_{l}", label_visibility="collapsed")
                 if u: loc_files[l] = u
 
     if m_file and st.button("🚀 Analyze Distribution"):
@@ -254,10 +267,13 @@ with t_inv:
             m_df = pd.read_csv(m_file) if m_file.name.endswith(".csv") else pd.read_excel(m_file)
             i_map, _, _, s_map = inv_core.load_inventory_from_uploads(loc_files)
             _, _, t_col, s_col = inv_core.identify_columns(m_df)
-            active_l = list(loc_files.keys())
-            res, _ = inv_core.add_stock_columns_from_inventory(m_df, t_col, i_map, active_l, s_col, s_map)
+            
+            # Use ALL configured locations for the matrix, not just active ones
+            # This ensures all outlet names show up in the results UI and reports
+            res, _ = inv_core.add_stock_columns_from_inventory(m_df, t_col, i_map, locs, s_col, s_map)
+            
             st.session_state.inv_res_data = res
-            st.session_state.inv_active_l = active_l
+            st.session_state.inv_active_l = locs
             st.session_state.inv_t_col = t_col
             save_state()
             st.rerun()
