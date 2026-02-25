@@ -55,8 +55,10 @@ st.markdown("""
 
     /* Global Full-Screen Bike Animation (Right to Left) */
     @keyframes moveFullScreen {
-        0% { right: -200px; }
-        100% { right: 120vw; }
+        0% { right: -250px; opacity: 0; }
+        5% { opacity: 1; }
+        90% { opacity: 1; }
+        100% { right: 120vw; opacity: 0; }
     }
     @keyframes smoke-puff {
         0% { transform: scale(0.4); opacity: 0.8; }
@@ -64,13 +66,13 @@ st.markdown("""
     }
     .full-screen-bike {
         position: fixed;
-        top: 20px;
-        right: -200px;
-        z-index: 9999; /* Overlaps everything */
-        pointer-events: none; /* Allows clicking through it */
+        top: 35px; /* Moved down to avoid cutting off */
+        right: -250px;
+        z-index: 9999;
+        pointer-events: none;
         display: flex;
         align-items: center;
-        animation: moveFullScreen 10s linear infinite;
+        animation: moveFullScreen 15s linear infinite; /* Slower */
         filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
     }
     .bike-img {

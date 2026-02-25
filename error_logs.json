@@ -1,0 +1,16 @@
+[
+    {
+        "timestamp": "2026-02-25 12:46:34",
+        "context": "WhatsApp Verification",
+        "error": "Required columns not found: ['Full Name (Billing)', 'Product Name (main)']",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\New_\\app.py\", line 293, in <module>\n    w_links = w_proc.create_whatsapp_links(w_proc.process_orders(w_df))\n                                           ~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"H:\\Analysis\\New_\\app_modules\\wp_processor.py\", line 100, in process_orders\n    raise ValueError(f\"Required columns not found: {missing}\")\nValueError: Required columns not found: ['Full Name (Billing)', 'Product Name (main)']\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-02-25 12:46:54",
+        "context": "WhatsApp Verification",
+        "error": "Required columns not found: ['Full Name (Billing)', 'Product Name (main)']",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\New_\\app.py\", line 293, in <module>\n    w_links = w_proc.create_whatsapp_links(w_proc.process_orders(w_df))\n                                           ~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"H:\\Analysis\\New_\\app_modules\\wp_processor.py\", line 100, in process_orders\n    raise ValueError(f\"Required columns not found: {missing}\")\nValueError: Required columns not found: ['Full Name (Billing)', 'Product Name (main)']\n",
+        "details": {}
+    }
+]

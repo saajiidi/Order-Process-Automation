@@ -89,15 +89,50 @@ class WhatsAppOrderProcessor:
             return "Madam"
         return "Sir"
 
+    def _find_best_column(self, df_cols, target_keys, default):
+        """Find the best matching column from a list of keys."""
+        cols_lower = [str(c).lower().strip() for c in df_cols]
+        for key in target_keys:
+            key_l = key.lower()
+            if key_l in cols_lower:
+                return df_cols[cols_lower.index(key_l)]
+        # Try partial match fallback
+        for key in target_keys:
+            key_l = key.lower()
+            for i, c_l in enumerate(cols_lower):
+                if key_l in c_l:
+                    return df_cols[i]
+        return default
+
     def process_orders(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Process raw dataframe into grouped orders."""
+        """Process raw dataframe into grouped orders with fuzzy matching."""
         df.columns = [str(col).strip() for col in df.columns]
         
-        # Validate columns
+        # Fuzzy Match Configuration Columns
+        mapping = {
+            'phone_col': (['phone', 'mobile', 'contact', 'billing phone'], 'Phone (Billing)'),
+            'name_col': (['full name', 'billing name', 'name', 'first name', 'customer'], 'Full Name (Billing)'),
+            'order_id_col': (['order id', 'order #', 'id', 'order number'], 'Order ID'),
+            'product_col': (['product name', 'item name', 'product', 'item'], 'Product Name (main)'),
+            'sku_col': (['sku', 'item sku', 'code'], 'SKU'),
+            'quantity_col': (['quantity', 'qty', 'item qty'], 'Quantity'),
+            'price_col': (['item cost', 'price', 'cost'], 'Item cost'),
+            'payment_method_col': (['payment method', 'gateway'], 'Payment Method Title'),
+            'address_col': (['address', 'shipping address', 'billing address'], 'Address 1&2 (Billing)'),
+            'order_total_col': (['order total', 'total amount', 'total'], 'Order Total Amount'),
+            'city_col': (['city', 'state', 'zip', 'location'], 'City, State, Zip (Billing)')
+        }
+
+        # Update config with whatever we find in the dataframe
+        for config_key, (targets, default) in mapping.items():
+            best_col = self._find_best_column(df.columns, targets, default)
+            self.config[config_key] = best_col
+
+        # Validate core required columns are present
         required = ['phone_col', 'name_col', 'product_col']
         missing = [self.config[col] for col in required if self.config[col] not in df.columns]
         if missing:
-            raise ValueError(f"Required columns not found: {missing}")
+            raise ValueError(f"Required data columns not found. Partial match failed for: {missing}")
 
         phone_col = self.config['phone_col']
         
