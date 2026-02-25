@@ -81,6 +81,16 @@ st.markdown("""
         opacity: 0.8;
     }
 
+    /* Floating Box Animation */
+    @keyframes boxFloat {
+        0%, 100% { transform: translateY(0) rotate(0); }
+        50% { transform: translateY(-10px) rotate(5deg); }
+    }
+    .box-icon {
+        width: 40px;
+        animation: boxFloat 3s ease-in-out infinite;
+    }
+
     /* Tab Styling */
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
@@ -214,7 +224,17 @@ with tab_order:
 # TAB 2: INVENTORY STOCK MAPPER
 # ---------------------------------------------------------
 with tab_inv:
-    st.markdown("### 🏢 Multi-Location Distribution Intelligence")
+    st.markdown("""
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:10px;">
+            <svg class="box-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M21 8L12 3L3 8V16L12 21L21 16V8Z" stroke="#4e73df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 21V12" stroke="#4e73df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 12L21 8" stroke="#4e73df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 12L3 8" stroke="#4e73df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <h3 style="margin:0;">Multi-Location Distribution Intelligence</h3>
+        </div>
+    """, unsafe_allow_html=True)
     
     col_main, col_stats = st.columns([3, 1], gap="medium")
     
