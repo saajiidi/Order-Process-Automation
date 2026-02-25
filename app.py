@@ -216,6 +216,7 @@ with t_inv:
     with c_p:
         st.markdown("#### ⚙️ Thresholds")
         st.session_state.low_stock_threshold = st.number_input("Safety Stock Level", value=st.session_state.get('low_stock_threshold', 5))
+        search_q = st.text_input("🔍 Search SKU / Name", key="inv_matrix_search")
         if st.button("Save State 💾"): save_state()
 
     with c_m:
