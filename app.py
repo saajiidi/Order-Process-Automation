@@ -75,6 +75,20 @@ st.markdown("""
         filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
     }
     .bike-img { width: 55px; z-index: 10000; display: block; }
+    .smoke-trail {
+        display: flex;
+        margin-left: -5px; /* Positioned behind the bike */
+    }
+    .smoke {
+        width: 12px;
+        height: 12px;
+        background: #cbd5e1;
+        border-radius: 50%;
+        animation: smoke-puff 0.8s ease-out infinite;
+        margin-left: -6px;
+    }
+    .smoke:nth-child(2) { animation-delay: 0.2s; }
+    .smoke:nth-child(3) { animation-delay: 0.4s; }
 
     .glass-card {
         background: var(--card-bg);
@@ -107,6 +121,11 @@ st.markdown("""
 st.markdown("""
     <div class="full-screen-bike">
         <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" class="bike-img">
+        <div class="smoke-trail">
+            <div class="smoke"></div>
+            <div class="smoke"></div>
+            <div class="smoke"></div>
+        </div>
     </div>
     <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 0; border-bottom:2px solid rgba(78,115,223,0.1);">
         <h1 style="margin:0; font-weight:700; color:#1e3a8a;">Automation Hub <span style="color:#4e73df;">Pro v7.0</span></h1>
