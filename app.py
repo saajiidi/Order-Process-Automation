@@ -66,17 +66,17 @@ st.markdown("""
     }
     .full-screen-bike {
         position: fixed;
-        top: 35px; /* Moved down to avoid cutting off */
+        top: 80px; /* Moved down to avoid cutting off */
         right: -250px;
         z-index: 9999;
         pointer-events: none;
         display: flex;
         align-items: center;
-        animation: moveFullScreen 15s linear infinite; /* Slower */
+        animation: moveFullScreen 18s linear infinite; /* Slightly slower */
         filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
     }
     .bike-img {
-        width: 70px;
+        width: 55px; /* Smaller bike */
         z-index: 10000;
     }
     .smoke-trail {
@@ -269,10 +269,11 @@ with tab_inv:
             exp_df.to_excel(writer, index=False, sheet_name="Distribution")
             wb = writer.book
             ws = writer.sheets["Distribution"]
-            fmt_zebra = wb.add_format({'bg_color': '#F9F9F9'})
+            fmt_zebra = wb.add_format({'bg_color': '#F1F5F9'}) # More visible zebra stripe
             if group_col:
                 for i, r_idx in enumerate(df['_group_idx']):
-                    if r_idx % 2 != 0: ws.set_row(i + 1, None, fmt_zebra)
+                    if r_idx % 2 != 0: 
+                        ws.set_row(i + 1, None, fmt_zebra)
         st.download_button("📥 Export Matrix", buf.getvalue(), "Distribution_Matrix.xlsx")
 
 # ---------------------------------------------------------
