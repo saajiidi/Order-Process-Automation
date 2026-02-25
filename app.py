@@ -53,48 +53,53 @@ st.markdown("""
         margin-bottom: 20px;
     }
 
-    /* Animated Header Bike (Right to Left with Smoke) */
-    @keyframes moveRightToLeft {
-        0% { transform: translateX(120%) scaleX(1); }
-        100% { transform: translateX(-120%) scaleX(1); }
+    /* Global Full-Screen Bike Animation (Right to Left) */
+    @keyframes moveFullScreen {
+        0% { right: -200px; }
+        100% { right: 120vw; }
     }
     @keyframes smoke-puff {
         0% { transform: scale(0.4); opacity: 0.8; }
         100% { transform: scale(2) translate(15px, -10px); opacity: 0; }
     }
-    .header-container {
+    .full-screen-bike {
+        position: fixed;
+        top: 20px;
+        right: -200px;
+        z-index: 9999; /* Overlaps everything */
+        pointer-events: none; /* Allows clicking through it */
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 15px 0;
-        margin-bottom: 10px;
-        overflow: hidden;
-        border-bottom: 2px solid rgba(78, 115, 223, 0.1);
-    }
-    .bike-animation-container {
-        display: flex;
-        align-items: center;
-        animation: moveRightToLeft 7s linear infinite;
-        width: 150px;
+        animation: moveFullScreen 10s linear infinite;
+        filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
     }
     .bike-img {
-        width: 60px;
-        z-index: 2;
+        width: 70px;
+        z-index: 10000;
     }
     .smoke-trail {
         display: flex;
         margin-left: -5px;
     }
     .smoke {
-        width: 10px;
-        height: 10px;
+        width: 12px;
+        height: 12px;
         background: #cbd5e1;
         border-radius: 50%;
         animation: smoke-puff 0.8s ease-out infinite;
-        margin-left: -4px;
+        margin-left: -6px;
     }
     .smoke:nth-child(2) { animation-delay: 0.2s; }
     .smoke:nth-child(3) { animation-delay: 0.4s; }
+
+    .header-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px 0;
+        margin-bottom: 10px;
+        border-bottom: 2px solid rgba(78, 115, 223, 0.1);
+    }
 
     /* Tab Styling */
     .stTabs [data-baseweb="tab-list"] { gap: 12px; background-color: transparent; }
@@ -125,13 +130,13 @@ st.markdown("""
 st.markdown("""
     <div class="header-container">
         <h1 style="margin:0; font-weight:700; color:#1e3a8a;">Automation Hub <span style="color:#4e73df;">Pro</span></h1>
-        <div class="bike-animation-container">
-            <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" class="bike-img">
-            <div class="smoke-trail">
-                <div class="smoke"></div>
-                <div class="smoke"></div>
-                <div class="smoke"></div>
-            </div>
+    </div>
+    <div class="full-screen-bike">
+        <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" class="bike-img">
+        <div class="smoke-trail">
+            <div class="smoke"></div>
+            <div class="smoke"></div>
+            <div class="smoke"></div>
         </div>
     </div>
     """, unsafe_allow_html=True)
