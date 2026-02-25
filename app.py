@@ -6,6 +6,8 @@ import io
 import time
 import os
 import sys
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Add directories to sys.path
 INVENTORY_MOD_DIR = os.path.join(os.path.dirname(__file__), "inventory_modules")
@@ -13,9 +15,10 @@ if INVENTORY_MOD_DIR not in sys.path:
     sys.path.append(INVENTORY_MOD_DIR)
 
 # --- Import modular logic ---
-from app_modules.processor import process_orders_dataframe
+from app_modules.processor import process_orders_dataframe, validate_zones
 from app_modules.wp_processor import WhatsAppOrderProcessor
 from app_modules.error_handler import log_error, get_logs
+from app_modules.persistence import init_state, save_state
 import core as inv_core
 
 # --- Page Configuration ---
@@ -26,34 +29,24 @@ st.set_page_config(
     initial_sidebar_state="collapsed" 
 )
 
-# --- Premium Global CSS (Modern Glassmorphism) ---
+# --- Initialize State & Persistence ---
+init_state()
+
+# --- Premium Global CSS ---
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
-
     :root {
         --primary: #4e73df;
         --secondary: #1e3a8a;
         --accent: #10b981;
         --bg: #f8fafc;
-        --card-bg: rgba(255, 255, 255, 0.82);
+        --card-bg: rgba(255, 255, 255, 0.85);
     }
-
     * { font-family: 'Outfit', sans-serif; }
     .stApp { background: linear-gradient(135deg, #f0f4ff 0%, #f8fafc 100%); }
 
-    /* Glassmorphism Cards */
-    .glass-card {
-        background: var(--card-bg);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-        margin-bottom: 20px;
-    }
-
-    /* Global Full-Screen Bike Animation (Right to Left) */
+    /* Keyframes */
     @keyframes moveFullScreen {
         0%   { transform: translateX(250px) scale(1); opacity: 0; }
         10%  { opacity: 1; }
@@ -64,9 +57,15 @@ st.markdown("""
         0% { transform: scale(0.4); opacity: 0.8; }
         100% { transform: scale(2) translate(15px, -10px); opacity: 0; }
     }
+    @keyframes pulse-red {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+        70% { transform: scale(1.02); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
     .full-screen-bike {
         position: fixed;
-        top: 100px; /* Moved further down to prevent any head clipping on any screen */
+        top: 100px;
         right: 0;
         z-index: 9999;
         pointer-events: none;
@@ -75,261 +74,228 @@ st.markdown("""
         animation: moveFullScreen 18s linear infinite;
         filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
     }
-    .bike-img {
-        width: 55px;
-        z-index: 10000;
-        display: block;
-    }
-    .smoke-trail {
-        display: flex;
-        margin-left: -5px;
-    }
-    .smoke {
-        width: 12px;
-        height: 12px;
-        background: #cbd5e1;
-        border-radius: 50%;
-        animation: smoke-puff 0.8s ease-out infinite;
-        margin-left: -6px;
-    }
-    .smoke:nth-child(2) { animation-delay: 0.2s; }
-    .smoke:nth-child(3) { animation-delay: 0.4s; }
+    .bike-img { width: 55px; z-index: 10000; display: block; }
 
-    .header-container {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 15px 0;
-        margin-bottom: 10px;
-        border-bottom: 2px solid rgba(78, 115, 223, 0.1);
+    .glass-card {
+        background: var(--card-bg);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.4);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        margin-bottom: 20px;
     }
 
-    /* Tab Styling */
-    .stTabs [data-baseweb="tab-list"] { gap: 12px; background-color: transparent; }
+    .low-stock-pulse {
+        animation: pulse-red 2s infinite;
+        border: 2px solid #ef4444 !important;
+    }
+
+    .stTabs [data-baseweb="tab-list"] { gap: 12px; }
     .stTabs [data-baseweb="tab"] {
         height: 52px;
-        background-color: white;
         border-radius: 12px 12px 0 0;
         padding: 0 24px;
         font-weight: 600;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: white;
     }
-    .stTabs [aria-selected="true"] { background-color: var(--primary) !important; color: white !important; }
-
-    /* Floating Animations */
-    @keyframes boxFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-    .box-icon { width: 40px; animation: boxFloat 3s ease-in-out infinite; }
-    @keyframes wpFloat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-    .wp-icon { width: 35px; animation: wpFloat 2s ease-in-out infinite; }
-
-    /* Status Pill */
-    .status-pill { padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
-    .status-synced { background: #d1fae5; color: #065f46; border: 1px solid #34d399; }
-    .status-pending { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+    .stTabs [aria-selected="true"] { background: var(--primary) !important; color: white !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- Header ---
+# --- Global Header & Animation ---
 st.markdown("""
-    <div class="header-container">
-        <h1 style="margin:0; font-weight:700; color:#1e3a8a;">Automation Hub <span style="color:#4e73df;">Pro</span></h1>
-    </div>
     <div class="full-screen-bike">
         <img src="https://cdn-icons-png.flaticon.com/512/2830/2830305.png" class="bike-img">
-        <div class="smoke-trail">
-            <div class="smoke"></div>
-            <div class="smoke"></div>
-            <div class="smoke"></div>
-        </div>
+    </div>
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:15px 0; border-bottom:2px solid rgba(78,115,223,0.1);">
+        <h1 style="margin:0; font-weight:700; color:#1e3a8a;">Automation Hub <span style="color:#4e73df;">Pro v7.0</span></h1>
     </div>
     """, unsafe_allow_html=True)
 
-# --- Main Tabs ---
-tab_order, tab_inv, tab_wp, tab_logs = st.tabs(["📦 Pathao Processor", "🏢 Distribution Matrix", "💬 WP Verification", "🛠️ System Logs"])
+# --- Tabs ---
+t_dash, t_order, t_inv, t_wp, t_logs = st.tabs(["📊 Executive Dashboard", "📦 Pathao Processor", "🏢 Distribution Matrix", "💬 WP Verification", "🛠️ System Logs"])
 
 # ---------------------------------------------------------
-# TAB 1: PATHAO ORDER PROCESSOR
+# TAB 0: EXECUTIVE DASHBOARD
 # ---------------------------------------------------------
-with tab_order:
-    st.markdown("### ✨ Dynamic Pathao Automation")
-    uploaded_orders = st.file_uploader("📂 Drop Shopify/WooCommerce export", type=['xlsx', 'csv'], key="order_up")
+with t_dash:
+    st.markdown("### 📈 Business Performance Insights")
+    
+    if st.session_state.get('inv_res_data') is not None:
+        df_inv = st.session_state.inv_res_data
+        locs = st.session_state.inv_active_l
+        
+        c1, c2 = st.columns(2)
+        
+        with c1:
+            st.markdown("#### 🏥 Stock Health Heatmap")
+            # Melt for heatmap
+            melted = df_inv.melt(id_vars=[st.session_state.inv_t_col], value_vars=locs, var_name='Location', value_name='Stock')
+            fig = px.density_heatmap(melted, x='Location', y=st.session_state.inv_t_col, z='Stock', 
+                                     color_continuous_scale='RdYlGn', title="Stock Level by Item & Location")
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with c2:
+            st.markdown("#### 📉 Distribution Balance")
+            # Inventory composition
+            loc_totals = df_inv[locs].sum()
+            fig_pie = px.pie(values=loc_totals.values, names=loc_totals.index, title="Global Stock Distribution", hole=0.4)
+            st.plotly_chart(fig_pie, use_container_width=True)
+            
+        # Low Stock Alerts
+        st.markdown("#### ⚠️ Immediate Replenishment Required")
+        threshold = st.session_state.low_stock_threshold
+        # Calculate sum properly filtering only numeric columns
+        sum_stock = df_inv[locs].apply(pd.to_numeric, errors='coerce').fillna(0).sum(axis=1)
+        low_stock_items = df_inv[sum_stock < threshold]
+        
+        if not low_stock_items.empty:
+            st.warning(f"Found {len(low_stock_items)} items with total stock below {threshold}!")
+            st.dataframe(low_stock_items[[st.session_state.inv_t_col] + locs], use_container_width=True)
+        else:
+            st.success("All stock levels are above the safety threshold. Excellent! ✅")
+    else:
+        st.info("💡 Run a distribution analysis in the 'Distribution Matrix' tab to populate this dashboard.")
 
-    if uploaded_orders:
+# ---------------------------------------------------------
+# TAB 1: PATHAO ORDER PROCESSOR (With Auto-Repair)
+# ---------------------------------------------------------
+with t_order:
+    st.markdown("### ✨ Pathao Intelligence & Address Repair")
+    up_pathao = st.file_uploader("📂 Drop Orders File", type=['xlsx', 'csv'], key="pathao_up")
+    
+    if up_pathao:
         try:
-            with st.spinner("🚀 Processing..."):
-                df = pd.read_csv(uploaded_orders) if uploaded_orders.name.endswith('.csv') else pd.read_excel(uploaded_orders)
+            with st.spinner("🚀 Analyzing for Address Integrity..."):
+                df = pd.read_csv(up_pathao) if up_pathao.name.endswith('.csv') else pd.read_excel(up_pathao)
                 res_df = process_orders_dataframe(df)
-            st.metric("📦 Orders", len(res_df))
+                invalid_mask, suggestions = validate_zones(res_df)
+                st.session_state.pathao_res_df = res_df
+                save_state()
+
+            # Address Repair UI
+            if any(invalid_mask):
+                st.markdown(f"#### 🛠️ Found {sum(invalid_mask)} Potential Address Issues")
+                st.info("The following zones are set to 'Sadar' or were not found. Review suggestions below:")
+                
+                bad_indices = [i for i, val in enumerate(invalid_mask) if val]
+                for idx in bad_indices[:5]: # Show top 5 for brevity
+                    row = res_df.iloc[idx]
+                    col_a, col_s = st.columns([3, 1])
+                    with col_a:
+                        st.write(f"**Order #{row['MerchantOrderId']}**: {row['RecipientAddress(*)']}")
+                    with col_s:
+                        sugg = suggestions.get(idx)
+                        if sugg:
+                            if st.button(f"Apply '{sugg}'", key=f"fix_{idx}"):
+                                res_df.at[idx, 'RecipientZone(*)'] = sugg
+                                st.rerun()
+                        else: st.warning("No clear fix")
+                
+                if len(bad_indices) > 5: st.write(f"... and {len(bad_indices)-5} more.")
+
             st.dataframe(res_df, use_container_width=True)
             
             buf = io.BytesIO()
             with pd.ExcelWriter(buf, engine='openpyxl') as wr:
                 res_df.to_excel(wr, index=False)
-            st.download_button("📥 Download Excel", buf.getvalue(), "Pathao_Orders.xlsx")
+            st.download_button("📥 Download Repaired Pathao Data", buf.getvalue(), "Pathao_Final.xlsx")
+            
         except Exception as e:
-            st.error("Processing error. Details logged.")
-            log_error(e, context="Pathao Processor", details={"filename": uploaded_orders.name})
+            log_error(e, context="Pathao Processor")
+            st.error("Error in Pathao processing.")
 
 # ---------------------------------------------------------
-# TAB 2: INVENTORY DISTRIBUTION MATRIX
+# TAB 2: DISTRIBUTION MATRIX (With Low Stock Alerts)
 # ---------------------------------------------------------
-with tab_inv:
-    st.markdown("""
-        <div style="display:flex; align-items:center; gap:15px; margin-bottom:10px;">
-            <svg class="box-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M21 8L12 3L3 8V16L12 21L21 16V8Z" stroke="#4e73df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 21V12" stroke="#4e73df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 12L21 8" stroke="#4e73df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 12L3 8" stroke="#4e73df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            <h3 style="margin:0;">Global Distribution Matrix</h3>
-        </div>
-    """, unsafe_allow_html=True)
+with t_inv:
+    st.markdown("### 🏢 Active Stock Matrix & Thresholds")
     
-    # Initialize run_btn at the start of scope
-    run_btn = False
-    
-    col_main, col_stats = st.columns([3, 1], gap="medium")
-    with col_main:
-        master_file = st.file_uploader("1. Master Order List", type=["xlsx", "csv"], key="inv_master")
-        st.markdown("#### 2. Synchronize Inventory")
+    c_m, c_p = st.columns([3, 1])
+    with c_p:
+        st.markdown("#### ⚙️ Thresholds")
+        st.session_state.low_stock_threshold = st.number_input("Safety Stock Level", value=st.session_state.get('low_stock_threshold', 5))
+        if st.button("Save State 💾"): save_state()
+
+    with c_m:
+        m_file = st.file_uploader("1. Master List", type=["xlsx", "csv"], key="inv_up")
+        # Reuse existing location logic...
         locs = ["Ecom", "Mirpur", "Wari", "Cumilla", "Sylhet"]
         loc_files = {}
-        l_cols = st.columns(len(locs))
-        for idx, loc in enumerate(locs):
-            with l_cols[idx]:
-                active = st.session_state.get(f"synced_{loc}", False)
-                st.markdown(f'<div style="text-align:center;"><span class="status-pill {"status-synced" if active else "status-pending"}">{loc}</span></div>', unsafe_allow_html=True)
-                up = st.file_uploader(f"Up {loc}", type=["xlsx", "csv"], key=f"up_{loc}", label_visibility="collapsed")
-                if up:
-                    loc_files[loc] = up
-                    st.session_state[f"synced_{loc}"] = True
-                else: st.session_state[f"synced_{loc}"] = False
+        lc = st.columns(len(locs))
+        for i, l in enumerate(locs):
+            with lc[i]:
+                u = st.file_uploader(f"Up {l}", key=f"inv_l_{l}", label_visibility="collapsed")
+                if u: loc_files[l] = u
 
-    with col_stats:
-        search_q = st.text_input("🔍 Search Matrix", key="inv_search")
-        if master_file:
-            run_btn = st.button("🚀 Analyze Distribution", key="run_inv")
-        else: st.info("Finish setup to run")
-
-    if st.session_state.get('inv_res_data') is None and run_btn and master_file:
+    if m_file and st.button("🚀 Analyze Distribution"):
         try:
-            m_df = pd.read_csv(master_file) if master_file.name.endswith(".csv") else pd.read_excel(master_file)
-            inv_map, _, _, sku_map = inv_core.load_inventory_from_uploads(loc_files)
+            m_df = pd.read_csv(m_file) if m_file.name.endswith(".csv") else pd.read_excel(m_file)
+            i_map, _, _, s_map = inv_core.load_inventory_from_uploads(loc_files)
             _, _, t_col, s_col = inv_core.identify_columns(m_df)
-            if t_col:
-                active_l = list(loc_files.keys())
-                final_df, _ = inv_core.add_stock_columns_from_inventory(m_df, t_col, inv_map, active_l, s_col, sku_map)
-                st.session_state.inv_res_data = final_df
-                st.session_state.inv_active_l = active_l
-                st.session_state.inv_t_col = t_col
-            else: st.error("No title column found")
-        except Exception as e:
-            st.error("Matrix error. Details logged.")
-            log_error(e, context="Inventory Matrix", details={"locations": list(loc_files.keys())})
+            active_l = list(loc_files.keys())
+            res, _ = inv_core.add_stock_columns_from_inventory(m_df, t_col, i_map, active_l, s_col, s_map)
+            st.session_state.inv_res_data = res
+            st.session_state.inv_active_l = active_l
+            st.session_state.inv_t_col = t_col
+            save_state()
+            st.rerun()
+        except Exception as e: log_error(e, context="Inv Matrix")
 
     if st.session_state.get('inv_res_data') is not None:
         df = st.session_state.inv_res_data.copy()
         a_l = st.session_state.inv_active_l
         t_c = st.session_state.inv_t_col
-        if search_q: df = df[df[t_c].astype(str).str.lower().str.contains(search_q.lower())]
-
-        # Zebra Grouping
-        group_col = inv_core.get_group_by_column(df)
-        if group_col:
-            df = df.sort_values(group_col).reset_index(drop=True)
-            u_ids = df[group_col].unique()
-            id_map = {uid: i for i, uid in enumerate(u_ids)}
-            df['_group_idx'] = df[group_col].map(id_map)
-
-        def style_matrix(row):
+        thr = st.session_state.low_stock_threshold
+        
+        # Sort by total stock (Low stock first)
+        df['_total'] = df[a_l].apply(pd.to_numeric, errors='coerce').fillna(0).sum(axis=1)
+        df = df.sort_values('_total').reset_index(drop=True)
+        
+        def style_inv(row):
             styles = [""] * len(row)
-            if '_group_idx' in row:
-                st_bg = "#ffffff" if int(row['_group_idx']) % 2 == 0 else "#f8fafc"
-                styles = [f"background-color: {st_bg};"] * len(row)
-            for l in a_l:
-                if l in row:
-                    i = row.index.get_loc(l)
-                    try:
-                        v = float(row[l])
-                        if v == 0: styles[i] += "color: #ef4444; font-weight: bold;"
-                        elif v > 0: styles[i] += "color: #10b981;"
-                    except: pass
-            if "Fulfillment" in row:
-                fi = row.index.get_loc("Fulfillment")
-                fv = str(row["Fulfillment"])
-                if "Available" in fv: styles[fi] += "background-color: #d1fae5; color: #065f46; font-weight: bold;"
-                elif "OOS" in fv: styles[fi] += "background-color: #fee2e2; color: #991b1b;"
+            if row['_total'] < thr:
+                styles = ["background-color: #fef2f2;"] * len(row)
             return styles
 
-        st.dataframe(df.style.apply(style_matrix, axis=1), use_container_width=True)
-        
-        buf = io.BytesIO()
-        with pd.ExcelWriter(buf, engine="xlsxwriter") as writer:
-            exp_df = df.drop('_group_idx', axis=1, errors='ignore')
-            exp_df.to_excel(writer, index=False, sheet_name="Distribution")
-            wb = writer.book
-            ws = writer.sheets["Distribution"]
-            fmt_zebra = wb.add_format({'bg_color': '#F1F5F9'}) # More visible zebra stripe
-            if group_col:
-                for i, r_idx in enumerate(df['_group_idx']):
-                    if r_idx % 2 != 0: 
-                        ws.set_row(i + 1, None, fmt_zebra)
-        st.download_button("📥 Export Matrix", buf.getvalue(), "Distribution_Matrix.xlsx")
+        st.markdown(f"#### Viewing {len(df)} Products (Sorted by Stock Level)")
+        st.dataframe(df.style.apply(style_inv, axis=1), use_container_width=True)
 
 # ---------------------------------------------------------
-# TAB 3: WHATSAPP VERIFICATION
+# TAB 3: WP VERIFICATION (With Bulk Export)
 # ---------------------------------------------------------
-with tab_wp:
-    st.markdown("""
-        <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
-            <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" class="wp-icon">
-            <h3 style="margin:0;">WhatsApp Verification Engine</h3>
-        </div>
-    """, unsafe_allow_html=True)
-    wp_file = st.file_uploader("📂 Upload Verification Data", type=['xlsx', 'csv'], key="wp_up")
-
-    if wp_file:
-        try:
-            with st.spinner("📩 Generating links..."):
-                w_df = pd.read_csv(wp_file) if wp_file.name.endswith('.csv') else pd.read_excel(wp_file)
-                w_proc = WhatsAppOrderProcessor()
-                w_links = w_proc.create_whatsapp_links(w_proc.process_orders(w_df))
-            st.success(f"{len(w_links)} customers identified.")
-            
-            for _, row in w_links.head(5).iterrows():
-                name_val = row.get(w_proc.config['name_col'], "Customer")
-                phone_val = row.get(w_proc.config['phone_col'], "No Phone")
-                with st.expander(f"{name_val} ({phone_val})"):
-                    st.link_button("📲 Send Message", row['whatsapp_link'], type="primary")
-
-            st.download_button("📥 Download WP File", w_proc.generate_excel_bytes(w_links), "WP_Verification.xlsx")
-        except Exception as e:
-            st.error("WhatsApp Link error. Details logged.")
-            log_error(e, context="WhatsApp Verification")
-
-# ---------------------------------------------------------
-# TAB 4: SYSTEM ERROR LOGS
-# ---------------------------------------------------------
-with tab_logs:
-    st.markdown("### 🛠️ Developer Error Logs")
-    st.write("Recent errors logged for system analysis and refinement.")
+with t_wp:
+    st.markdown("### 💬 Verification Center")
+    wp_f = st.file_uploader("📂 Verification List", key="wp_up_2")
     
-    logs = get_logs()
-    if not logs:
-        st.success("No system errors recorded. Everything is running smoothly! ✨")
-    else:
-        for log in reversed(logs):
-            with st.expander(f"🔴 [{log['timestamp']}] {log['context']} - {log['error']}"):
-                st.code(log['traceback'], language="python")
-                if log['details']:
-                    st.json(log['details'])
-        
-        if st.button("🗑️ Clear Logs"):
-            if os.path.exists("error_logs.json"):
-                os.remove("error_logs.json")
-                st.rerun()
+    if wp_f:
+        try:
+            w_proc = WhatsAppOrderProcessor()
+            w_links = w_proc.create_whatsapp_links(w_proc.process_orders(pd.read_excel(wp_f) if wp_f.name.endswith('xlsx') else pd.read_csv(wp_f)))
+            
+            c1, c2 = st.columns(2)
+            with c1:
+                st.success(f"Generated {len(w_links)} links.")
+            with c2:
+                # --- NEW: BULK MESSAGE EXPORT ---
+                bulk_text = "\n\n" + "="*50 + "\n\n".join([f"TO: {row.get(w_proc.config['name_col'])} ({row.get(w_proc.config['phone_col'])})\n{row['whatsapp_link']}" for _, row in w_links.iterrows()])
+                st.download_button("📥 Export Bulk Message Text", bulk_text, "Bulk_WhatsApp_Messages.txt")
 
-# --- Footer ---
-st.markdown("---")
-st.markdown('<div style="text-align:center; color:#94a3b8; font-size:0.8rem;">Automation Hub Pro v6.0 | Modern Enterprise Logistics • 2026</div>', unsafe_allow_html=True)
+            for _, r in w_links.head(10).iterrows():
+                with st.expander(f"{r.get(w_proc.config['name_col'])} ({r.get(w_proc.config['phone_col'])})"):
+                    st.link_button("Send Link", r['whatsapp_link'])
+        except Exception as e: log_error(e, context="WP Bulk")
+
+# ---------------------------------------------------------
+# TAB 4: SYSTEM LOGS
+# ---------------------------------------------------------
+with t_logs:
+    st.markdown("### 🛠️ Developer Control")
+    logs = get_logs()
+    if logs:
+        for l in reversed(logs):
+            st.error(f"[{l['timestamp']}] {l['context']}: {l['error']}")
+    else: st.success("No errors recorded.")
+
+save_state()

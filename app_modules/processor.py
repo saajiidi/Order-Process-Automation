@@ -3,6 +3,7 @@ import pandas as pd
 import re
 from app_modules.zones import KNOWN_ZONES
 from app_modules.utils import get_category_from_name, normalize_city_name, extract_best_zone, format_address_logic
+from fuzzywuzzy import process
 
 def clean_dataframe(df):
     """
@@ -220,3 +221,27 @@ def process_orders_dataframe(df):
             result_df[col] = ''
             
     return result_df[target_columns]
+
+def validate_zones(df):
+    """
+    Checks for potential zone errors and returns suggested fixes.
+    Returns (invalid_mask, suggestions)
+    """
+    suggestions = {}
+    invalid_mask = []
+    
+    for idx, row in df.iterrows():
+        zone = str(row['RecipientZone(*)'])
+        if zone == "Sadar" or not zone:
+            invalid_mask.append(True)
+            # Try to find a fuzzy match from address
+            addr = str(row['RecipientAddress(*)'])
+            best_match = process.extractOne(addr, KNOWN_ZONES)
+            if best_match and best_match[1] > 70:
+                suggestions[idx] = best_match[0]
+            else:
+                suggestions[idx] = None
+        else:
+            invalid_mask.append(False)
+            
+    return invalid_mask, suggestions

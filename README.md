@@ -1,36 +1,29 @@
-# 🚀 Automation Hub Pro
+# 🚀 Automation Hub Pro v7.0
 
-**Automation Hub Pro** is a premium, multi-tool logistics and order management dashboard built with Streamlit. It modernizes e-commerce operations by providing side-by-side access to order processing, inventory mapping, and customer verification tools.
+**Automation Hub Pro** is an enterprise-grade, multi-tool logistics and order management dashboard built with Streamlit. It modernizes e-commerce operations by providing side-by-side access to order processing, inventory mapping, and customer verification tools with intelligent automation and analytics.
 
-## ✨ Key Features
+## ✨ New in v7.0
 
-### 📦 1. Pathao Order Processor
-*   **Smart Parsing**: Automatically handles Shopify and WooCommerce CSV/Excel exports.
-*   **Geographic Intelligence**: Identifies districts and zones for Pathao bulk uploads.
-*   **Auto-Categorization**: Splits items into correct logistics categories for seamless delivery.
+### 📊 1. Executive Analytics Dashboard
+*   **Stock Health Heatmap**: Visualizes stock levels across all locations (Ecom, Mirpur, Wari, Cumilla, Sylhet) using Plotly density heatmaps.
+*   **Distribution Balance**: Real-time pie charts showing global stock composition.
+*   **Safety Thresholds**: Instant alerts for items falling below your custom safety stock level.
 
-### 🏢 2. Inventory Distribution Matrix
-*   **Multi-Location Sync**: Consolidates stock data from Ecom, Mirpur, Wari, Cumilla, and Sylhet.
-*   **Fulfillment Intelligence**: Automatically calculates availability and identifies Out-of-Stock (OOS) items.
-*   **Zebra Grouping**: Visually distinguishes unique orders using color-coded rows in both the web UI and Excel exports.
+### 📦 2. Pathao Processor & Address Auto-Repair
+*   **Fuzzy Zone Matching**: Automatically identifies and suggests fixes for unrecognized or vague addresses (e.g., automatically suggesting "Mirpur-10" for "Mirpur block c").
+*   **One-Click Repair**: Preview suggested fixes and apply them instantly before generating the Pathao bulk file.
 
-### 💬 3. WhatsApp Order Verification
-*   **Automated Link Generation**: Created per-customer verification links with pre-filled messages.
-*   **Fuzzy Column Matching**: Handles variations in spreadsheet headers (e.g., "Customer Name" vs "Full Name").
-*   **Gender-Aware Salutations**: Automatically detects names to address customers as "Sir" or "Madam."
+### 🏢 3. Distribution Matrix & Low Stock Alerts
+*   **Intelligent Sorting**: Automatically sorts your master list to show critical low-stock items at the top.
+*   **Visual Pulse Alerts**: Rows with critically low stock are highlighted in red to prevent fulfillment delays.
 
-### 🛠️ 4. System Developer Logs
-*   **Error Tracking**: Dedicated tab for logging and analyzing system errors with full tracebacks.
-*   **Traceback Insights**: Helps developers refine the app based on real-world usage data.
+### 💬 4. WhatsApp Verification & Bulk Export
+*   **Bulk Message Export**: Generate a single `.txt` file containing all verification links and messages for easy handover or bulk sending.
+*   **Fuzzy Column Mapping**: Handles any spreadsheet header variation automatically.
 
----
-
-## 🎨 Design Aesthetics
-*   **Modern UI**: Glassmorphism design system using the 'Outfit' Google Font.
-*   **Interactive Fluidity**: 
-    *   **Animated Logo**: A delivery bike moves across the screen with a realistic smoke trail.
-    *   **Status Pills**: Live visual feedback for inventory synchronization.
-*   **Premium Feel**: High-contrast, clean layout optimized for large screens and professional use.
+### 💾 5. Smart Session Persistence
+*   **Resume Work**: Automatically saves your analysis results and uploaded data configurations.
+*   **Safe Refresh**: Your dashboard stats, inventory mappings, and processed orders stay intact even if the browser is refreshed.
 
 ---
 
@@ -39,7 +32,6 @@
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/saajiidi/Order-Process-Automation.git
-   cd Order-Process-Automation
    ```
 
 2. **Install dependencies**:
@@ -55,10 +47,11 @@
 ---
 
 ## 📂 Project Structure
-*   `app.py`: The main entry point and multi-tab dashboard.
-*   `app_modules/`: Core logic for order processing, WhatsApp links, and error handling.
-*   `inventory_modules/`: Backend logic for stock mapping and distribution analysis.
-*   `requirements.txt`: Python package dependencies.
+*   `app.py`: Main entry point and multi-tab dashboard.
+*   `app_modules/persistence.py`: State saving logic.
+*   `app_modules/error_handler.py`: Error logging system.
+*   `app_modules/wp_processor.py`: WhatsApp link logic.
+*   `inventory_modules/`: Core backend for stock mapping.
 
 ---
 
