@@ -7,19 +7,20 @@ import time
 import os
 import sys
 
-# Add the sub-app directory to sys.path
+# Add directories to sys.path
 INVENTORY_MOD_DIR = os.path.join(os.path.dirname(__file__), "inventory_modules")
 if INVENTORY_MOD_DIR not in sys.path:
     sys.path.append(INVENTORY_MOD_DIR)
 
 # --- Import modular logic ---
 from app_modules.processor import process_orders_dataframe
+from app_modules.wp_processor import WhatsAppOrderProcessor
 import core as inv_core
 
 # --- Page Configuration ---
 st.set_page_config(
     page_title="Automation Hub Pro",
-    page_icon="�",
+    page_icon="🚀",
     layout="wide",
     initial_sidebar_state="collapsed" 
 )
@@ -81,7 +82,7 @@ st.markdown("""
         opacity: 0.8;
     }
 
-    /* Floating Box Animation */
+    /* Floating Animations */
     @keyframes boxFloat {
         0%, 100% { transform: translateY(0) rotate(0); }
         50% { transform: translateY(-10px) rotate(5deg); }
@@ -89,6 +90,15 @@ st.markdown("""
     .box-icon {
         width: 40px;
         animation: boxFloat 3s ease-in-out infinite;
+    }
+    
+    @keyframes wpFloat {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    .wp-icon {
+        width: 35px;
+        animation: wpFloat 2s ease-in-out infinite;
     }
 
     /* Tab Styling */
@@ -160,68 +170,36 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- Top Tabs (Side by Side Together) ---
-tab_order, tab_inv = st.tabs(["📦 Pathao Order Processor", "🏢 Inventory Stock Mapper"])
+# --- Top Tabs ---
+tab_order, tab_inv, tab_wp = st.tabs(["📦 Pathao Processor", "🏢 Distribution Matrix", "💬 WP Verification"])
 
 # ---------------------------------------------------------
 # TAB 1: PATHAO ORDER PROCESSOR
 # ---------------------------------------------------------
 with tab_order:
-    st.markdown("### ✨ Dynamic Order Automation")
-    
-    # Hero Section
+    st.markdown("### ✨ Dynamic Pathao Automation")
     col_u, col_i = st.columns([2, 1])
     with col_u:
-        uploaded_orders = st.file_uploader("📂 Drop your Shopify/WooCommerce export file", type=['xlsx', 'csv'], key="order_up")
+        uploaded_orders = st.file_uploader("📂 Drop Shopify/WooCommerce export", type=['xlsx', 'csv'], key="order_up")
     with col_i:
-        st.markdown("""
-            <div class="glass-card">
-                <h4 style="margin-top:0;">Smart Extraction</h4>
-                <p style="font-size:0.9rem; color:#64748b;">Automatically splits addresses, identifies districts, and categorizes products for Pathao compatibility.</p>
-            </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="glass-card"><h4 style="margin:0;">Fast Logistics</h4><p style="font-size:0.9rem; margin:0;">Clean addresses and categories ready for bulk upload.</p></div>', unsafe_allow_html=True)
 
     if uploaded_orders:
         try:
-            with st.spinner("🚀 Processing Intelligence..."):
-                start_time = time.time()
+            with st.spinner("🚀 Processing..."):
                 df = pd.read_csv(uploaded_orders) if uploaded_orders.name.endswith('.csv') else pd.read_excel(uploaded_orders)
                 res_df = process_orders_dataframe(df)
-                proc_time = round(time.time() - start_time, 2)
-
-            st.markdown("---")
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("📦 Total Orders", len(res_df))
-            m2.metric("👕 Total Qty", int(pd.to_numeric(res_df['ItemQuantity'], errors='coerce').sum()))
-            m3.metric("৳ Collection", f"{int(pd.to_numeric(res_df['AmountToCollect(*)'], errors='coerce').sum()):,}")
-            m4.metric("⏱️ Action Time", f"{proc_time}s")
-
-            st.markdown("### 📄 Processed Data Preview")
+            st.metric("📦 Total Orders", len(res_df))
             st.dataframe(res_df, use_container_width=True)
-
-            # Download Options
-            st.markdown("### 📥 Cloud-Ready Downloads")
-            d1, d2 = st.columns(2)
             
-            # CSV with standard encoding
-            csv_buf = io.StringIO()
-            res_df.to_csv(csv_buf, index=False, encoding='utf-8')
-            
-            # XLSX for verification
-            xls_buf = io.BytesIO()
-            with pd.ExcelWriter(xls_buf, engine='openpyxl') as wr:
+            buf = io.BytesIO()
+            with pd.ExcelWriter(buf, engine='openpyxl') as wr:
                 res_df.to_excel(wr, index=False)
-
-            with d1:
-                st.download_button("Download CSV for Pathao", csv_buf.getvalue(), f"Pathao_Bulk_{len(res_df)}.csv", "text/csv")
-            with d2:
-                st.download_button("Download Excel for Check", xls_buf.getvalue(), f"Verification_Data_{len(res_df)}.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-        except Exception as e:
-            st.error(f"Processing Error: {str(e)}")
+            st.download_button("📥 Download Pathao Excel", buf.getvalue(), "Pathao_Orders.xlsx")
+        except Exception as e: st.error(f"Error: {e}")
 
 # ---------------------------------------------------------
-# TAB 2: INVENTORY STOCK MAPPER
+# TAB 2: INVENTORY DISTRIBUTION MATRIX
 # ---------------------------------------------------------
 with tab_inv:
     st.markdown("""
@@ -232,114 +210,142 @@ with tab_inv:
                 <path d="M12 12L21 8" stroke="#4e73df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M12 12L3 8" stroke="#4e73df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <h3 style="margin:0;">Multi-Location Distribution Intelligence</h3>
+            <h3 style="margin:0;">Global Distribution Matrix</h3>
         </div>
     """, unsafe_allow_html=True)
     
     col_main, col_stats = st.columns([3, 1], gap="medium")
-    
     with col_main:
-        st.markdown("#### 1. Master Product List")
-        master_file = st.file_uploader("Upload the pending order list / master SKU list", type=["xlsx", "csv"], key="inv_master")
-
-        st.markdown("#### 2. Synchronize Inventory Channels")
+        master_file = st.file_uploader("1. Master Product/Order List", type=["xlsx", "csv"], key="inv_master")
+        st.markdown("#### 2. Synchronize Inventory")
         locs = ["Ecom", "Mirpur", "Wari", "Cumilla", "Sylhet"]
         loc_files = {}
-        
-        # Grid layout for locations
         l_cols = st.columns(len(locs))
         for idx, loc in enumerate(locs):
             with l_cols[idx]:
                 active = st.session_state.get(f"synced_{loc}", False)
-                status_class = "status-synced" if active else "status-pending"
-                status_text = "✓ Synced" if active else "Pending"
-                st.markdown(f'<div style="text-align:center; margin-bottom:10px;"><span class="status-pill {status_class}">{loc}: {status_text}</span></div>', unsafe_allow_html=True)
-                
+                st.markdown(f'<div style="text-align:center;"><span class="status-pill {"status-synced" if active else "status-pending"}">{loc}</span></div>', unsafe_allow_html=True)
                 up = st.file_uploader(f"Up {loc}", type=["xlsx", "csv"], key=f"up_{loc}", label_visibility="collapsed")
                 if up:
                     loc_files[loc] = up
                     st.session_state[f"synced_{loc}"] = True
-                else:
-                    st.session_state[f"synced_{loc}"] = False
+                else: st.session_state[f"synced_{loc}"] = False
 
     with col_stats:
-        st.markdown("#### ⚙️ Analysis Parameters")
-        search_q = st.text_input("🔍 Search SKU / Name", key="inv_search_box")
-        st.markdown("---")
+        search_q = st.text_input("🔍 Search Matrix", key="inv_search")
         if master_file:
-            run_btn = st.button("🚀 Run Distribution Analysis", key="run_inv")
-        else:
-            st.info("Upload master file to begin")
-            run_btn = False
+            run_btn = st.button("🚀 Analyze Distribution", key="run_inv")
+        else: st.info("Finish setup to run")
 
-    if run_btn and master_file:
-        with st.spinner("Analyzing Global Stock..."):
-            try:
-                m_df = pd.read_csv(master_file) if master_file.name.endswith(".csv") else pd.read_excel(master_file)
-                inv_map, warns, _, sku_map = inv_core.load_inventory_from_uploads(loc_files)
-                _, _, t_col, s_col = inv_core.identify_columns(m_df)
-                
-                if t_col:
-                    active_l = list(loc_files.keys())
-                    final_df, _ = inv_core.add_stock_columns_from_inventory(m_df, t_col, inv_map, active_l, s_col, sku_map)
-                    st.session_state.inv_data = final_df
-                    st.session_state.inv_active_l = active_l
-                    st.session_state.inv_t_col = t_col
-                else: 
-                    st.error("Could not find identifying columns in master file.")
-            except Exception as e:
-                st.error(f"Analysis Error: {e}")
+    if st.session_state.get('inv_res_data') is None and run_btn and master_file:
+        try:
+            m_df = pd.read_csv(master_file) if master_file.name.endswith(".csv") else pd.read_excel(master_file)
+            inv_map, _, _, sku_map = inv_core.load_inventory_from_uploads(loc_files)
+            _, _, t_col, s_col = inv_core.identify_columns(m_df)
+            if t_col:
+                active_l = list(loc_files.keys())
+                final_df, _ = inv_core.add_stock_columns_from_inventory(m_df, t_col, inv_map, active_l, s_col, sku_map)
+                st.session_state.inv_res_data = final_df
+                st.session_state.inv_active_l = active_l
+                st.session_state.inv_t_col = t_col
+            else: st.error("No title column found")
+        except Exception as e: st.error(f"Error: {e}")
 
-    if st.session_state.get('inv_data') is not None:
-        df = st.session_state.inv_data.copy()
+    if st.session_state.get('inv_res_data') is not None:
+        df = st.session_state.inv_res_data.copy()
         a_l = st.session_state.inv_active_l
         t_c = st.session_state.inv_t_col
-        
-        if search_q:
-            df = df[df[t_c].astype(str).str.lower().str.contains(search_q.lower())]
-        
-        st.markdown("### 📊 Distribution Matrix")
-        
-        # Color logic for the dataframe
-        def style_inv(row):
+        if search_q: df = df[df[t_c].astype(str).str.lower().str.contains(search_q.lower())]
+
+        # Order Grouping for Colors
+        group_col = inv_core.get_group_by_column(df)
+        if group_col:
+            df = df.sort_values(group_col).reset_index(drop=True)
+            unique_ids = df[group_col].unique()
+            id_to_idx = {id: i for i, id in enumerate(unique_ids)}
+            colors = ["#f8fafc", "#f1f5f9", "#e2e8f0", "#f8fafc", "#f1f5f9"] # Subtle toggles
+            df['_row_color_idx'] = df[group_col].map(id_to_idx)
+
+        def style_matrix(row):
             styles = [""] * len(row)
+            # Group coloring
+            if '_row_color_idx' in row:
+                c_idx = int(row['_row_color_idx'])
+                bg = "#ffffff" if c_idx % 2 == 0 else "#f8fafc" # Zebra grouping
+                styles = [f"background-color: {bg};"] * len(row)
+            
+            # Stock alerts
             for l in a_l:
                 if l in row:
                     i = row.index.get_loc(l)
                     try:
                         v = float(row[l])
-                        if v == 0: styles[i] = "color: #ef4444; font-weight: bold;"
-                        elif v > 0: styles[i] = "color: #10b981;"
+                        if v == 0: styles[i] += "color: #ef4444; font-weight: bold;"
+                        elif v > 0: styles[i] += "color: #10b981;"
                     except: pass
+            
+            # Fulfillment status
             if "Fulfillment" in row:
-                f_i = row.index.get_loc("Fulfillment")
-                f_v = str(row["Fulfillment"])
-                if "Available" in f_v: styles[f_i] = "background-color: #ecfdf5; color: #065f46; font-weight: bold;"
-                elif "OOS" in f_v: styles[f_i] = "background-color: #fef2f2; color: #991b1b;"
+                fi = row.index.get_loc("Fulfillment")
+                fv = str(row["Fulfillment"])
+                if "Available" in fv: styles[fi] += "background-color: #d1fae5; color: #065f46; font-weight: bold;"
+                elif "OOS" in fv: styles[fi] += "background-color: #fee2e2; color: #991b1b;"
             return styles
 
-        st.dataframe(df.style.apply(style_inv, axis=1), use_container_width=True)
+        st.dataframe(df.style.apply(style_matrix, axis=1), use_container_width=True)
         
-        # Export logic
+        # Excel Export with group coloring
         buf = io.BytesIO()
         with pd.ExcelWriter(buf, engine="xlsxwriter") as writer:
-            df.to_excel(writer, index=False, sheet_name="Stock Report")
+            df.drop('_row_color_idx', axis=1, errors='ignore').to_excel(writer, index=False, sheet_name="Distribution")
             wb = writer.book
-            ws = writer.sheets["Stock Report"]
-            f_red = wb.add_format({'bg_color': '#FFC7CE', 'font_color': '#9C0006'})
-            f_green = wb.add_format({'bg_color': '#C6EFCE', 'font_color': '#006100'})
-            for col_idx, col_name in enumerate(df.columns):
-                if col_name in a_l:
-                    ws.conditional_format(1, col_idx, len(df), col_idx, {'type': 'cell', 'criteria': 'equal to', 'value': 0, 'format': f_red})
-                    ws.conditional_format(1, col_idx, len(df), col_idx, {'type': 'cell', 'criteria': 'greater than', 'value': 0, 'format': f_green})
+            ws = writer.sheets["Distribution"]
+            fmt_zebra = wb.add_format({'bg_color': '#F9F9F9'})
+            if group_col:
+                for idx, r_idx in enumerate(df['_row_color_idx']):
+                    if r_idx % 2 != 0:
+                        ws.set_row(idx + 1, None, fmt_zebra)
+        st.download_button("📥 Export Matrix", buf.getvalue(), "Distribution_Matrix.xlsx")
 
-        st.download_button("📥 Download Distribution Report", buf.getvalue(), "Stock_Distribution.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+# ---------------------------------------------------------
+# TAB 3: WHATSAPP VERIFICATION
+# ---------------------------------------------------------
+with tab_wp:
+    st.markdown("""
+        <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+            <img src="https://cdn-icons-png.flaticon.com/512/733/733585.png" class="wp-icon">
+            <h3 style="margin:0;">Order Verification On WhatsApp</h3>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    col_w1, col_w2 = st.columns([2, 1])
+    with col_w1:
+        wp_file = st.file_uploader("📂 Upload WP Verification list", type=['xlsx', 'csv'], key="wp_up")
+    with col_w2:
+        st.info("💡 Groups by Phone Number automatically.")
+
+    if wp_file:
+        try:
+            with st.spinner("📩 Generating WhatsApp Intelligence..."):
+                w_df = pd.read_csv(wp_file) if wp_file.name.endswith('.csv') else pd.read_excel(wp_file)
+                w_proc = WhatsAppOrderProcessor()
+                w_res = w_proc.process_orders(w_df)
+                w_links = w_proc.create_whatsapp_links(w_res)
+            
+            st.success(f"Generated {len(w_links)} unique verification links!")
+            
+            # Preview with interactive buttons
+            for _, row in w_links.head(5).iterrows():
+                with st.expander(f"Order for {row['Full Name (Billing)']} ({row['Phone (Billing)']})"):
+                    st.write(f"**Items:** {row['Product Name (main)']}")
+                    st.link_button("📲 Send WhatsApp Message", row['whatsapp_link'], type="primary")
+
+            # Final download
+            excel_bytes = w_proc.generate_excel_bytes(w_links)
+            st.download_button("📥 Download WP Verification File", excel_bytes, "WP_Verification_Final.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            
+        except Exception as e: st.error(f"Error: {e}")
 
 # --- Footer ---
 st.markdown("---")
-st.markdown("""
-    <div style="text-align:center; color:#94a3b8; font-size:0.8rem;">
-        Automation Hub Pro v4.0 | Powering Digital Commerce Logistics<br>
-        Developed by Sajid Islam • 2026
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown('<div style="text-align:center; color:#94a3b8; font-size:0.8rem;">Automation Hub Pro v5.0 | Developed by Sajid Islam • 2026</div>', unsafe_allow_html=True)
