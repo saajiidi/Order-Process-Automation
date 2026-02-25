@@ -247,20 +247,75 @@ with t_inv:
         df = st.session_state.inv_res_data.copy()
         a_l = st.session_state.inv_active_l
         t_c = st.session_state.inv_t_col
-        thr = st.session_state.low_stock_threshold
         
-        # Sort by total stock (Low stock first)
-        df['_total'] = df[a_l].apply(pd.to_numeric, errors='coerce').fillna(0).sum(axis=1)
-        df = df.sort_values('_total').reset_index(drop=True)
-        
-        def style_inv(row):
+        if search_q: df = df[df[t_c].astype(str).str.lower().str.contains(search_q.lower())]
+
+        # Order Grouping for Colors
+        g_col = inv_core.get_group_by_column(df)
+        if g_col:
+            # Sort by group to keep items together
+            df = df.sort_values(g_col).reset_index(drop=True)
+            u_ids = df[g_col].unique()
+            id_map = {uid: i for i, uid in enumerate(u_ids)}
+            df['_group_idx'] = df[g_col].map(id_map)
+        else:
+            # Fallback to Low Stock sorting if no order group found
+            df['_total'] = df[a_l].apply(pd.to_numeric, errors='coerce').fillna(0).sum(axis=1)
+            df = df.sort_values('_total').reset_index(drop=True)
+            df['_group_idx'] = range(len(df))
+
+        def style_matrix(row):
             styles = [""] * len(row)
-            if row['_total'] < thr:
-                styles = ["background-color: #fef2f2;"] * len(row)
+            # Zebra Group Coloring
+            bg = "#ffffff" if int(row.get('_group_idx', 0)) % 2 == 0 else "#f8fafc"
+            styles = [f"background-color: {bg};"] * len(row)
+            
+            # Stock Logic & Fulfillment Colors
+            for l in a_l:
+                if l in row:
+                    i = row.index.get_loc(l)
+                    try:
+                        v = float(row[l])
+                        if v == 0: styles[i] += "color: #ef4444; font-weight: bold;"
+                        elif v > 0: styles[i] += "color: #10b981;"
+                    except: pass
+            
+            if "Fulfillment" in row:
+                fi = row.index.get_loc("Fulfillment")
+                fv = str(row["Fulfillment"])
+                if "Available" in fv: styles[fi] += "background-color: #d1fae5 !important; color: #065f46; font-weight: bold;"
+                elif "OOS" in fv: styles[fi] += "background-color: #fee2e2 !important; color: #991b1b;"
             return styles
 
-        st.markdown(f"#### Viewing {len(df)} Products (Sorted by Stock Level)")
-        st.dataframe(df.style.apply(style_inv, axis=1), use_container_width=True)
+        st.markdown(f"#### Viewing {len(df)} Records")
+        st.dataframe(df.style.apply(style_matrix, axis=1), use_container_width=True)
+        
+        # --- EXCEL EXPORT ---
+        buf_inv = io.BytesIO()
+        with pd.ExcelWriter(buf_inv, engine="xlsxwriter") as writer:
+            # Clean internal columns for export
+            export_df = df.drop(['_group_idx', '_total'], axis=1, errors='ignore')
+            export_df.to_excel(writer, index=False, sheet_name="Distribution")
+            
+            wb = writer.book
+            ws = writer.sheets["Distribution"]
+            fmt_zebra = wb.add_format({'bg_color': '#F1F5F9'}) # Slate-White
+            
+            # Apply Zebra Styles to Excel
+            for i, (idx, row) in enumerate(df.iterrows()):
+                if int(row.get('_group_idx', 0)) % 2 != 0:
+                    ws.set_row(i + 1, None, fmt_zebra)
+            
+            # Conditional Stock Formatting (Red for 0, Green for >0)
+            fmt_red = wb.add_format({'font_color': '#ef4444', 'bold': True})
+            fmt_green = wb.add_format({'font_color': '#10b981'})
+            
+            for col_idx, col_name in enumerate(export_df.columns):
+                if col_name in a_l:
+                    ws.conditional_format(1, col_idx, len(export_df), col_idx, {'type': 'cell', 'criteria': 'equal to', 'value': 0, 'format': fmt_red})
+                    ws.conditional_format(1, col_idx, len(export_df), col_idx, {'type': 'cell', 'criteria': 'greater than', 'value': 0, 'format': fmt_green})
+
+        st.download_button("📥 Download Distribution Report", buf_inv.getvalue(), "Stock_Distribution.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 # ---------------------------------------------------------
 # TAB 3: WP VERIFICATION (With Bulk Export)
