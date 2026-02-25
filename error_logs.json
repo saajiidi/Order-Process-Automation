@@ -12,5 +12,12 @@
         "error": "Required columns not found: ['Full Name (Billing)', 'Product Name (main)']",
         "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\New_\\app.py\", line 293, in <module>\n    w_links = w_proc.create_whatsapp_links(w_proc.process_orders(w_df))\n                                           ~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"H:\\Analysis\\New_\\app_modules\\wp_processor.py\", line 100, in process_orders\n    raise ValueError(f\"Required columns not found: {missing}\")\nValueError: Required columns not found: ['Full Name (Billing)', 'Product Name (main)']\n",
         "details": {}
+    },
+    {
+        "timestamp": "2026-02-25 12:51:46",
+        "context": "WhatsApp Verification",
+        "error": "'Full Name (Billing)'",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\deenc\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\indexes\\base.py\", line 3812, in get_loc\n    return self._engine.get_loc(casted_key)\n           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^\n  File \"pandas/_libs/index.pyx\", line 167, in pandas._libs.index.IndexEngine.get_loc\n  File \"pandas/_libs/index.pyx\", line 196, in pandas._libs.index.IndexEngine.get_loc\n  File \"pandas/_libs/hashtable_class_helper.pxi\", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item\n  File \"pandas/_libs/hashtable_class_helper.pxi\", line 7096, in pandas._libs.hashtable.PyObjectHashTable.get_item\nKeyError: 'Full Name (Billing)'\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"H:\\Analysis\\New_\\app.py\", line 299, in <module>\n    with st.expander(f\"{row['Full Name (Billing)']} ({row['Phone (Billing)']})\"):\n                        ~~~^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenc\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\series.py\", line 1133, in __getitem__\n    return self._get_value(key)\n           ~~~~~~~~~~~~~~~^^^^^\n  File \"C:\\Users\\deenc\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\series.py\", line 1249, in _get_value\n    loc = self.index.get_loc(label)\n  File \"C:\\Users\\deenc\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\indexes\\base.py\", line 3819, in get_loc\n    raise KeyError(key) from err\nKeyError: 'Full Name (Billing)'\n",
+        "details": {}
     }
 ]

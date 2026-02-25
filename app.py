@@ -296,7 +296,9 @@ with tab_wp:
             st.success(f"{len(w_links)} customers identified.")
             
             for _, row in w_links.head(5).iterrows():
-                with st.expander(f"{row['Full Name (Billing)']} ({row['Phone (Billing)']})"):
+                name_val = row.get(w_proc.config['name_col'], "Customer")
+                phone_val = row.get(w_proc.config['phone_col'], "No Phone")
+                with st.expander(f"{name_val} ({phone_val})"):
                     st.link_button("📲 Send Message", row['whatsapp_link'], type="primary")
 
             st.download_button("📥 Download WP File", w_proc.generate_excel_bytes(w_links), "WP_Verification.xlsx")
