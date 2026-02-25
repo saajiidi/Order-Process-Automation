@@ -55,10 +55,10 @@ st.markdown("""
 
     /* Global Full-Screen Bike Animation (Right to Left) */
     @keyframes moveFullScreen {
-        0% { right: -250px; opacity: 0; }
-        5% { opacity: 1; }
-        90% { opacity: 1; }
-        100% { right: 120vw; opacity: 0; }
+        0%   { transform: translateX(250px) scale(1); opacity: 0; }
+        10%  { opacity: 1; }
+        90%  { opacity: 1; }
+        100% { transform: translateX(-115vw) scale(1); opacity: 0; }
     }
     @keyframes smoke-puff {
         0% { transform: scale(0.4); opacity: 0.8; }
@@ -66,18 +66,19 @@ st.markdown("""
     }
     .full-screen-bike {
         position: fixed;
-        top: 80px; /* Moved down to avoid cutting off */
-        right: -250px;
+        top: 100px; /* Moved further down to prevent any head clipping on any screen */
+        right: 0;
         z-index: 9999;
         pointer-events: none;
         display: flex;
         align-items: center;
-        animation: moveFullScreen 18s linear infinite; /* Slightly slower */
+        animation: moveFullScreen 18s linear infinite;
         filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1));
     }
     .bike-img {
-        width: 55px; /* Smaller bike */
+        width: 55px;
         z-index: 10000;
+        display: block;
     }
     .smoke-trail {
         display: flex;
