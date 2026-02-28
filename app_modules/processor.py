@@ -22,7 +22,7 @@ def clean_dataframe(df):
         df['Item Cost'] = pd.to_numeric(df.get('Item Cost', 0), errors='coerce').fillna(0)
     
     # Clean string columns
-    string_cols = ['Phone (Billing)', 'Item Name', 'SKU', 'First Name (Shipping)', 'State Name (Billing)']
+    string_cols = ['Phone (Billing)', 'Item Name', 'SKU', 'First Name (Shipping)', 'State Name (Billing)', 'Order Number']
     for col in string_cols:
         if col in df.columns:
             df[col] = df[col].astype(str).str.strip()
@@ -57,12 +57,13 @@ def identify_columns(df):
 def process_single_order_group(phone, group, data_cols):
     """
     Processes a group of rows belonging to a single order (phone number).
+    If multiple unique Order Numbers are found, their collection amounts are summed.
     """
+    unique_orders = group.drop_duplicates(subset=['Order Number'])
     first_row = group.iloc[0]
     total_qty = group['Quantity'].sum()
-    total_cost = first_row.get('Order Total Amount', 0)
     
-    # --- Categorize Items ---
+    # --- Categorize Items (across all rows in group) ---
     cat_map = {}
     for _, row in group.iterrows():
         item_name = row.get('Item Name', '')
@@ -79,25 +80,38 @@ def process_single_order_group(phone, group, data_cols):
             cat_map[category][item_str] = 0
         cat_map[category][item_str] += qty
 
-    # --- Payment & Transaction Logic ---
-    trx_info = ""
-    payment_method = str(first_row.get('Payment Method Title', '')).lower()
+    # --- Amount to Collect & Payment Info (across unique orders) ---
+    total_to_collect = 0
+    trx_types = set()
     
-    if 'pay online' in payment_method or 'ssl' in payment_method:
-        trx_info = "Paid by SSL"
-        total_cost = 0 
-    elif 'bkash' in payment_method:
-        trx_info = "Paid by Bkash"
-        total_cost = 0 
+    for _, order_row in unique_orders.iterrows():
+        order_total = order_row.get('Order Total Amount', 0)
+        pay_method = str(order_row.get('Payment Method Title', '')).lower()
+        
+        # Determine if this specific order is already paid
+        is_paid = any(kw in pay_method for kw in ['pay online', 'ssl', 'bkash'])
+        
+        if is_paid:
+            if 'bkash' in pay_method:
+                trx_types.add("Paid by Bkash")
+            else:
+                trx_types.add("Paid by SSL")
+        else:
+            total_to_collect += order_total
+
+    trx_info = " / ".join(sorted(list(trx_types)))
     
     # Append Transaction IDs
     trx_col = data_cols['trx_col']
-    if trx_info and trx_col in group.columns:
+    if trx_col in group.columns:
         trx_vals = set(group[trx_col].dropna().astype(str))
         cleaned_trx = [t for t in trx_vals if t.lower() != 'nan' and t.strip() != '']
         if cleaned_trx:
             trx_str = ", ".join(cleaned_trx)
-            trx_info += f" - {trx_str}"
+            if trx_info:
+                trx_info += f" - {trx_str}"
+            else:
+                trx_info = trx_str
 
     # --- Construct Description String ---
     full_desc = ""
@@ -165,18 +179,22 @@ def process_single_order_group(phone, group, data_cols):
     # Area (Null as requested)
     recipient_area = "" 
 
+    # Combine merchant IDs
+    order_ids = [str(x) for x in unique_orders['Order Number'].unique() if str(x).lower() != 'nan']
+    combined_merchant_id = ", ".join(order_ids)
+
     # --- Build Record ---
     record = {
         'ItemType': 'Parcel',
         'StoreName': 'Deen Commerce',
-        'MerchantOrderId': first_row.get('Order Number', ''),
+        'MerchantOrderId': combined_merchant_id,
         'RecipientName(*)': first_row.get('First Name (Shipping)', ''),
         'RecipientPhone(*)': phone,
         'RecipientAddress(*)': address_val,
         'RecipientCity(*)': recipient_city,
         'RecipientZone(*)': extracted_zone,
         'RecipientArea': recipient_area,
-        'AmountToCollect(*)': total_cost,
+        'AmountToCollect(*)': total_to_collect,
         'ItemQuantity': int(total_qty),
         'ItemWeight': '0.5',
         'ItemDesc': full_desc,
@@ -222,26 +240,3 @@ def process_orders_dataframe(df):
             
     return result_df[target_columns]
 
-def validate_zones(df):
-    """
-    Checks for potential zone errors and returns suggested fixes.
-    Returns (invalid_mask, suggestions)
-    """
-    suggestions = {}
-    invalid_mask = []
-    
-    for idx, row in df.iterrows():
-        zone = str(row['RecipientZone(*)'])
-        if zone == "Sadar" or not zone:
-            invalid_mask.append(True)
-            # Try to find a fuzzy match from address
-            addr = str(row['RecipientAddress(*)'])
-            best_match = process.extractOne(addr, KNOWN_ZONES)
-            if best_match and best_match[1] > 70:
-                suggestions[idx] = best_match[0]
-            else:
-                suggestions[idx] = None
-        else:
-            invalid_mask.append(False)
-            
-    return invalid_mask, suggestions

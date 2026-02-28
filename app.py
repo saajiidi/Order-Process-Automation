@@ -15,7 +15,7 @@ if INVENTORY_MOD_DIR not in sys.path:
     sys.path.append(INVENTORY_MOD_DIR)
 
 # --- Import modular logic ---
-from app_modules.processor import process_orders_dataframe, validate_zones
+from app_modules.processor import process_orders_dataframe
 from app_modules.wp_processor import WhatsAppOrderProcessor
 from app_modules.error_handler import log_error, get_logs
 from app_modules.persistence import init_state, save_state
@@ -181,38 +181,16 @@ with t_dash:
 # TAB 1: PATHAO ORDER PROCESSOR (With Auto-Repair)
 # ---------------------------------------------------------
 with t_order:
-    st.markdown("### ✨ Pathao Intelligence & Address Repair")
+    st.markdown("### ✨ Pathao Order Processor")
     up_pathao = st.file_uploader("📂 Drop Orders File", type=['xlsx', 'csv'], key="pathao_up")
     
     if up_pathao:
         try:
-            with st.spinner("🚀 Analyzing for Address Integrity..."):
+            with st.spinner("🚀 Processing Orders..."):
                 df = pd.read_csv(up_pathao) if up_pathao.name.endswith('.csv') else pd.read_excel(up_pathao)
                 res_df = process_orders_dataframe(df)
-                invalid_mask, suggestions = validate_zones(res_df)
                 st.session_state.pathao_res_df = res_df
                 save_state()
-
-            # Address Repair UI
-            if any(invalid_mask):
-                st.markdown(f"#### 🛠️ Found {sum(invalid_mask)} Potential Address Issues")
-                st.info("The following zones are set to 'Sadar' or were not found. Review suggestions below:")
-                
-                bad_indices = [i for i, val in enumerate(invalid_mask) if val]
-                for idx in bad_indices[:5]: # Show top 5 for brevity
-                    row = res_df.iloc[idx]
-                    col_a, col_s = st.columns([3, 1])
-                    with col_a:
-                        st.write(f"**Order #{row['MerchantOrderId']}**: {row['RecipientAddress(*)']}")
-                    with col_s:
-                        sugg = suggestions.get(idx)
-                        if sugg:
-                            if st.button(f"Apply '{sugg}'", key=f"fix_{idx}"):
-                                res_df.at[idx, 'RecipientZone(*)'] = sugg
-                                st.rerun()
-                        else: st.warning("No clear fix")
-                
-                if len(bad_indices) > 5: st.write(f"... and {len(bad_indices)-5} more.")
 
             st.dataframe(res_df, use_container_width=True)
             
