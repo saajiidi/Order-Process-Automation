@@ -247,39 +247,23 @@ def add_stock_columns_from_inventory(
         inv_key = None
         status = "No Match"
         
-        is_panjabi = "panjabi" in title.casefold()
-
-        if is_panjabi:
-            # STRICT LOGIC FOR PANJABI: SKU First, then Name check
-            if pl_sku and pl_sku in sku_to_inv_key:
-                mapped_name_key = sku_to_inv_key[pl_sku]
-                if pl_key == mapped_name_key:
-                    inv_key = pl_sku
-                    status = "Perfect Match (SKU + Name) [Panjabi]"
+        # ORIGINAL LOGIC FOR EVERYTHING: Name first, then SKU fallback
+        if pl_key and pl_key in inventory:
+            inv_key = pl_key
+            if pl_sku:
+                if pl_sku in sku_to_inv_key:
+                    mapped_key = sku_to_inv_key[pl_sku]
+                    status = "Perfect Match (Key + SKU)" if mapped_key == pl_key else f"Key Match (SKU mismatch -> {mapped_key})"
                 else:
-                    status = f"Panjabi SKU Match, Name Mismatch (PL: {pl_key} vs INV: {mapped_name_key})"
-            elif pl_sku:
-                status = "Panjabi SKU not in Inventory"
+                    status = "Key Match (SKU not in Inv)"
             else:
-                status = "Panjabi No SKU in Product"
+                status = "Key Match (No SKU in Product)"
+        elif pl_sku and pl_sku in sku_to_inv_key:
+            mapped_key = sku_to_inv_key[pl_sku]
+            inv_key = mapped_key
+            status = f"SKU Match Only (Name mismatch -> {mapped_key})"
         else:
-            # ORIGINAL LOGIC FOR EVERYTHING ELSE: Name first, then SKU fallback
-            if pl_key and pl_key in inventory:
-                inv_key = pl_key
-                if pl_sku:
-                    if pl_sku in sku_to_inv_key:
-                        mapped_key = sku_to_inv_key[pl_sku]
-                        status = "Perfect Match (Key + SKU)" if mapped_key == pl_key else f"Key Match (SKU mismatch -> {mapped_key})"
-                    else:
-                        status = "Key Match (SKU not in Inv)"
-                else:
-                    status = "Key Match (No SKU in Product)"
-            elif pl_sku and pl_sku in sku_to_inv_key:
-                mapped_key = sku_to_inv_key[pl_sku]
-                inv_key = mapped_key
-                status = f"SKU Match Only (Name mismatch -> {mapped_key})"
-            else:
-                status = "No Match"
+            status = "No Match"
         
         match_statuses.append(status)
         stock_sources.append(inv_key)
