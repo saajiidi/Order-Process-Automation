@@ -133,7 +133,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- Tabs ---
-t_dash, t_order, t_inv, t_wp, t_logs = st.tabs(["📊 Executive Dashboard", "📦 Pathao Processor", "🏢 Distribution Matrix", "💬 WP Verification", "🛠️ System Logs"])
+t_dash, t_order, t_inv, t_pick, t_wp, t_logs = st.tabs(["📊 Executive Dashboard", "📦 Pathao Processor", "🏢 Distribution Matrix", "📋 Picking Manifest", "💬 WP Verification", "🛠️ System Logs"])
 
 # ---------------------------------------------------------
 # TAB 0: EXECUTIVE DASHBOARD
@@ -330,6 +330,74 @@ with t_inv:
                     ws.conditional_format(1, col_idx, len(export_df), col_idx, {'type': 'cell', 'criteria': 'greater than', 'value': 0, 'format': fmt_green})
 
         st.download_button("📥 Download Distribution Report", buf_inv.getvalue(), "Stock_Distribution.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+# ---------------------------------------------------------
+# TAB 3: PICKING MANIFEST (Actionable Summary)
+# ---------------------------------------------------------
+with t_pick:
+    st.markdown("### 📋 Daily Picking Manifest")
+    if st.session_state.get('inv_res_data') is not None:
+        df_inv = st.session_state.inv_res_data
+        locs = st.session_state.inv_active_l
+        t_col = st.session_state.inv_t_col
+        
+        # We need "Dispatch Suggestion" to know where to pick from
+        if "Dispatch Suggestion" in df_inv.columns:
+            manifest_data = []
+            
+            for loc in locs:
+                # Filter items suggested for this location
+                loc_df = df_inv[df_inv["Dispatch Suggestion"] == loc]
+                if not loc_df.empty:
+                    # Get counts per item
+                    # Try to find quantity column, default to 1 per row if not found
+                    _, qty_col, _, _ = inv_core.identify_columns(loc_df)
+                    
+                    if qty_col and qty_col in loc_df.columns:
+                        summary = loc_df.groupby(t_col)[qty_col].sum().reset_index()
+                    else:
+                        summary = loc_df.groupby(t_col).size().reset_index(name='Quantity')
+                        qty_col = 'Quantity'
+                    
+                    summary.columns = ['Item Name', 'Pick Quantity']
+                    
+                    st.markdown(f"#### 📦 {loc} Pick List")
+                    st.dataframe(summary, use_container_width=True)
+                    
+                    # Add to master manifest for export
+                    for _, row in summary.iterrows():
+                        manifest_data.append({
+                            'Location': loc,
+                            'Item Name': row['Item Name'],
+                            'Quantity': row['Pick Quantity']
+                        })
+            
+            if manifest_data:
+                manifest_df = pd.DataFrame(manifest_data)
+                
+                # Export options
+                m_buf = io.BytesIO()
+                with pd.ExcelWriter(m_buf, engine='xlsxwriter') as writer:
+                    manifest_df.to_excel(writer, index=False, sheet_name="Picking_Manifest")
+                    
+                st.download_button("📥 Download Picking Manifest", m_buf.getvalue(), "Picking_Manifest.xlsx")
+                
+                # Simple text version for copy-paste
+                text_manifest = "📋 PICKING MANIFEST\n" + "="*20 + "\n"
+                for loc in locs:
+                    loc_summ = [d for d in manifest_data if d['Location'] == loc]
+                    if loc_summ:
+                        text_manifest += f"\n📍 {loc.upper()}:\n"
+                        for item in loc_summ:
+                            text_manifest += f"- {item['Item Name']}: {item['Quantity']} pcs\n"
+                
+                st.text_area("Copyable Manifest Text", text_manifest, height=300)
+            else:
+                st.info("No items have been assigned to locations yet. Ensure 'Dispatch Suggestion' is generated.")
+        else:
+            st.warning("Dispatch suggestions not found in data. Please run 'Analyze Distribution' in the Matrix tab.")
+    else:
+        st.info("💡 Run a distribution analysis to generate the picking manifest.")
 
 # ---------------------------------------------------------
 # TAB 3: WP VERIFICATION (With Bulk Export)

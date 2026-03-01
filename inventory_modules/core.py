@@ -1,9 +1,11 @@
 import math
 import io
+import re
 from dataclasses import dataclass
 from typing import Dict, Tuple, Optional
 
 import pandas as pd
+from fuzzywuzzy import process
 
 
 def normalize_key(val) -> str:
@@ -19,6 +21,14 @@ def normalize_key(val) -> str:
     s = str(val).strip()
     if s.endswith(".0") and s[:-2].replace(".", "", 1).isdigit():
         s = s[:-2]
+    return s
+
+
+def normalize_sku(val) -> str:
+    """Corrects typos and extra spaces in SKUs for strict but flexible matching."""
+    s = normalize_key(val)
+    # Remove all spaces and special characters for 'hard' matching, but keep it roughly same
+    s = re.sub(r'[^a-zA-Z0-9]', '', s).upper()
     return s
 
 
@@ -195,8 +205,8 @@ def load_inventory_from_uploads(uploaded_files: Dict[str, object]):
                 inventory[key][loc_name] += qty
                 # Also index by SKU; record which Title-Size this SKU has (require item name == Title-Size when matching by SKU)
                 if sku_col and sku_col in df.columns:
-                    sku_val = normalize_key(row.get(sku_col, ""))
-                    sku_key = sku_val.casefold() if sku_val else ""
+                    sku_val = row.get(sku_col, "")
+                    sku_key = normalize_sku(sku_val)
                     if sku_key:
                         if sku_key not in inventory:
                             inventory[sku_key] = {loc: 0 for loc in all_locations}
@@ -233,9 +243,9 @@ def add_stock_columns_from_inventory(
     # Helper to safe-get SKU from row
     def get_sku(r):
         if sku_col and sku_col in df.columns:
-            val = normalize_key(r.get(sku_col, ""))
+            val = r.get(sku_col, "")
             if val:
-                return val.casefold()
+                return normalize_sku(val)
         return ""
 
     for i, row in df.iterrows():
@@ -247,21 +257,34 @@ def add_stock_columns_from_inventory(
         inv_key = None
         status = "No Match"
         
-        # ORIGINAL LOGIC FOR EVERYTHING: Name first, then SKU fallback
+        # 2. MATCHING LOGIC
+        # Priority 1: Exact Name Match
         if pl_key and pl_key in inventory:
             inv_key = pl_key
+            status = "Exact Name Match"
             if pl_sku:
                 if pl_sku in sku_to_inv_key:
-                    mapped_key = sku_to_inv_key[pl_sku]
-                    status = "Perfect Match (Key + SKU)" if mapped_key == pl_key else f"Key Match (SKU mismatch -> {mapped_key})"
-                else:
-                    status = "Key Match (SKU not in Inv)"
-            else:
-                status = "Key Match (No SKU in Product)"
+                   status = "Perfect Match (Name + SKU)" if sku_to_inv_key[pl_sku] == pl_key else f"Name Match (SKU mismatch)"
+                else: status = "Name Match (SKU not in Inv)"
+        
+        # Priority 2: Strict Normalized SKU Match
         elif pl_sku and pl_sku in sku_to_inv_key:
-            mapped_key = sku_to_inv_key[pl_sku]
-            inv_key = mapped_key
-            status = f"SKU Match Only (Name mismatch -> {mapped_key})"
+            inv_key = sku_to_inv_key[pl_sku]
+            status = f"SKU Match (Name mismatch -> {inv_key})"
+            
+        # Priority 3: Fuzzy Name Match (Correction for typos)
+        elif pl_key:
+            # We only fuzzy match against non-SKU keys (Title-Size keys)
+            name_keys = [k for k in inventory.keys() if k not in sku_to_inv_key]
+            if name_keys:
+                best_match, score = process.extractOne(pl_key, name_keys)
+                if score >= 85: # Require high confidence for auto-match
+                    inv_key = best_match
+                    status = f"Fuzzy Match ({score}%) -> {best_match}"
+                else:
+                    status = f"No Match (Closest: {best_match} @ {score}%)"
+            else:
+                status = "No Match"
         else:
             status = "No Match"
         
