@@ -592,13 +592,4 @@ def render_live_tab():
         st.error(f"Live source error: {e}")
 
 
-def render_sales_dashboard():
-    st.markdown("### 📊 Sales Performance Dashboard")
 
-    live_tab, manual_tab = st.tabs(["Live Dashboard (Main)", "Manual Upload Dashboard"])
-
-    with live_tab:
-        render_live_tab()
-
-    with manual_tab:
-        render_manual_tab()

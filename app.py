@@ -19,7 +19,7 @@ from app_modules.processor import process_orders_dataframe
 from app_modules.wp_processor import WhatsAppOrderProcessor
 from app_modules.error_handler import log_error, get_logs
 from app_modules.persistence import init_state, save_state
-from app_modules.sales_dashboard import render_sales_dashboard
+from app_modules.sales_dashboard import render_live_tab, render_manual_tab
 import core as inv_core
 
 # --- Page Configuration ---
@@ -134,55 +134,29 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # --- Tabs ---
-t_sales, t_dash, t_order, t_inv, t_pick, t_wp, t_logs = st.tabs(["💰 Live Dashboard", "📊 Executive Dashboard", "📦 Pathao Processor", "🏢 Distribution Matrix", "📋 Picking Manifest", "💬 WP Verification", "🛠️ System Logs"])
+t_sales_live, t_sales_manual, t_order, t_inv, t_wp, t_logs = st.tabs([
+    "💰 Live Dashboard", 
+    "📁 Manual Dashboard", 
+    "📦 Pathao Processor", 
+    "🏢 Distribution Hub", 
+    "💬 WP Verification", 
+    "🛠️ System Logs"
+])
+
 
 # ---------------------------------------------------------
-# TAB 0: EXECUTIVE DASHBOARD
+# TAB 1: LIVE DASHBOARD
 # ---------------------------------------------------------
-with t_dash:
-    st.markdown("### 📈 Business Performance Insights")
-    
-    if st.session_state.get('inv_res_data') is not None:
-        df_inv = st.session_state.inv_res_data
-        locs = st.session_state.inv_active_l
-        
-        c1, c2 = st.columns(2)
-        
-        with c1:
-            st.markdown("#### 🏥 Stock Health Heatmap")
-            # Melt for heatmap
-            melted = df_inv.melt(id_vars=[st.session_state.inv_t_col], value_vars=locs, var_name='Location', value_name='Stock')
-            fig = px.density_heatmap(melted, x='Location', y=st.session_state.inv_t_col, z='Stock', 
-                                     color_continuous_scale='RdYlGn', title="Stock Level by Item & Location")
-            st.plotly_chart(fig, use_container_width=True)
-            
-        with c2:
-            st.markdown("#### 📉 Distribution Balance")
-            # Inventory composition
-            loc_totals = df_inv[locs].sum()
-            fig_pie = px.pie(values=loc_totals.values, names=loc_totals.index, title="Global Stock Distribution", hole=0.4)
-            st.plotly_chart(fig_pie, use_container_width=True)
-            
-        # Low Stock Alerts
-        st.markdown("#### ⚠️ Immediate Replenishment Required")
-        threshold = st.session_state.low_stock_threshold
-        # Calculate sum properly filtering only numeric columns
-        sum_stock = df_inv[locs].apply(pd.to_numeric, errors='coerce').fillna(0).sum(axis=1)
-        low_stock_items = df_inv[sum_stock < threshold]
-        
-        if not low_stock_items.empty:
-            st.warning(f"Found {len(low_stock_items)} items with total stock below {threshold}!")
-            st.dataframe(low_stock_items[[st.session_state.inv_t_col] + locs], use_container_width=True)
-        else:
-            st.success("All stock levels are above the safety threshold. Excellent! ✅")
-    else:
-        st.info("💡 Run a distribution analysis in the 'Distribution Matrix' tab to populate this dashboard.")
+with t_sales_live:
+    st.markdown("### 📊 Live Sales Dashboard")
+    render_live_tab()
 
 # ---------------------------------------------------------
-# TAB 1: SALES REPORTER
+# TAB 1.5: MANUAL DASHBOARD
 # ---------------------------------------------------------
-with t_sales:
-    render_sales_dashboard()
+with t_sales_manual:
+    st.markdown("### 📁 Manual Upload Dashboard")
+    render_manual_tab()
 
 # ---------------------------------------------------------
 # TAB 2: PATHAO ORDER PROCESSOR (With Auto-Repair)
@@ -214,197 +188,250 @@ with t_order:
 # TAB 2: DISTRIBUTION MATRIX (With Low Stock Alerts)
 # ---------------------------------------------------------
 with t_inv:
-    st.markdown("### 🏢 Active Stock Matrix & Thresholds")
+    st.markdown("### 🏢 Distribution Hub")
+    st.info("💡 Manage stock distribution, review actionable insights, and generate daily picking manifests.")
+
+    inv_matrix_tab, inv_dash_tab, inv_pick_tab = st.tabs(["📊 Matrix Analyzer", "📈 Distribution Insights", "📋 Actionable Pick List"])
+
+    with inv_matrix_tab:
+        st.markdown("### 🏢 Active Stock Matrix & Thresholds")
     
-    # 🏪 Global Outlet Configuration
-    locs = ["Ecom", "Mirpur", "Wari", "Cumilla", "Sylhet"]
+        # 🏪 Global Outlet Configuration
+        locs = ["Ecom", "Mirpur", "Wari", "Cumilla", "Sylhet"]
 
-    c_m, c_p = st.columns([3, 1])
-    with c_p:
-        st.markdown("#### ⚙️ Thresholds")
-        st.session_state.low_stock_threshold = st.number_input("Safety Stock Level", value=st.session_state.get('low_stock_threshold', 5))
-        search_q = st.text_input("🔍 Search SKU / Name", key="inv_matrix_search")
-        if st.button("Save State 💾"): save_state()
+        c_m, c_p = st.columns([3, 1])
+        with c_p:
+            st.markdown("#### ⚙️ Thresholds")
+            st.session_state.low_stock_threshold = st.number_input("Safety Stock Level", value=st.session_state.get('low_stock_threshold', 5))
+            search_q = st.text_input("🔍 Search SKU / Name", key="inv_matrix_search")
+            if st.button("Save State 💾"): save_state()
 
-    with c_m:
-        st.markdown("#### 📤 Step 1: Upload Master List")
-        m_file = st.file_uploader("Master Stock List (Required)", type=["xlsx", "csv"], key="inv_up")
+        with c_m:
+            st.markdown("#### 📤 Step 1: Upload Master List")
+            m_file = st.file_uploader("Master Stock List (Required)", type=["xlsx", "csv"], key="inv_up")
         
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("#### 🏪 Step 2: Upload Outlet Stocks (Optional)")
-        loc_files = {}
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("#### 🏪 Step 2: Upload Outlet Stocks (Optional)")
+            loc_files = {}
         
-        # Grid layout for outlets with explicit labels
-        lc = st.columns(len(locs))
-        for i, l in enumerate(locs):
-            with lc[i]:
-                # Visual label for each outlet
-                st.markdown(f"""
-                    <div style='background: var(--primary); color: white; padding: 4px 10px; border-radius: 8px 8px 0 0; text-align: center; font-size: 0.85rem; font-weight: 600;'>
-                        {l}
-                    </div>
-                """, unsafe_allow_html=True)
-                u = st.file_uploader(f"Upload {l}", key=f"inv_l_{l}", label_visibility="collapsed")
-                if u: loc_files[l] = u
+            # Grid layout for outlets with explicit labels
+            lc = st.columns(len(locs))
+            for i, l in enumerate(locs):
+                with lc[i]:
+                    # Visual label for each outlet
+                    st.markdown(f"""
+                        <div style='background: var(--primary); color: white; padding: 4px 10px; border-radius: 8px 8px 0 0; text-align: center; font-size: 0.85rem; font-weight: 600;'>
+                            {l}
+                        </div>
+                    """, unsafe_allow_html=True)
+                    u = st.file_uploader(f"Upload {l}", key=f"inv_l_{l}", label_visibility="collapsed")
+                    if u: loc_files[l] = u
 
-    if m_file and st.button("🚀 Analyze Distribution"):
-        try:
-            m_df = pd.read_csv(m_file) if m_file.name.endswith(".csv") else pd.read_excel(m_file)
-            i_map, _, _, s_map = inv_core.load_inventory_from_uploads(loc_files)
-            _, _, t_col, s_col = inv_core.identify_columns(m_df)
+        if m_file and st.button("🚀 Analyze Distribution"):
+            try:
+                m_df = pd.read_csv(m_file) if m_file.name.endswith(".csv") else pd.read_excel(m_file)
+                i_map, _, _, s_map = inv_core.load_inventory_from_uploads(loc_files)
+                _, _, t_col, s_col = inv_core.identify_columns(m_df)
             
-            # Use ALL configured locations for the matrix, not just active ones
-            # This ensures all outlet names show up in the results UI and reports
-            res, _ = inv_core.add_stock_columns_from_inventory(m_df, t_col, i_map, locs, s_col, s_map)
+                # Use ALL configured locations for the matrix, not just active ones
+                # This ensures all outlet names show up in the results UI and reports
+                res, _ = inv_core.add_stock_columns_from_inventory(m_df, t_col, i_map, locs, s_col, s_map)
             
-            st.session_state.inv_res_data = res
-            st.session_state.inv_active_l = locs
-            st.session_state.inv_t_col = t_col
-            save_state()
-            st.rerun()
-        except Exception as e: log_error(e, context="Inv Matrix")
+                st.session_state.inv_res_data = res
+                st.session_state.inv_active_l = locs
+                st.session_state.inv_t_col = t_col
+                save_state()
+                st.rerun()
+            except Exception as e: log_error(e, context="Inv Matrix")
 
-    if st.session_state.get('inv_res_data') is not None:
-        df = st.session_state.inv_res_data.copy()
-        a_l = st.session_state.inv_active_l
-        t_c = st.session_state.inv_t_col
+        if st.session_state.get('inv_res_data') is not None:
+            df = st.session_state.inv_res_data.copy()
+            a_l = st.session_state.inv_active_l
+            t_c = st.session_state.inv_t_col
         
-        if search_q: df = df[df[t_c].astype(str).str.lower().str.contains(search_q.lower())]
+            if search_q: df = df[df[t_c].astype(str).str.lower().str.contains(search_q.lower())]
 
-        # Order Grouping for Colors
-        g_col = inv_core.get_group_by_column(df)
-        if g_col:
-            # Sort by group to keep items together
-            df = df.sort_values(g_col).reset_index(drop=True)
-            u_ids = df[g_col].unique()
-            id_map = {uid: i for i, uid in enumerate(u_ids)}
-            df['_group_idx'] = df[g_col].map(id_map)
-        else:
-            # Fallback to Low Stock sorting if no order group found
-            df['_total'] = df[a_l].apply(pd.to_numeric, errors='coerce').fillna(0).sum(axis=1)
-            df = df.sort_values('_total').reset_index(drop=True)
-            df['_group_idx'] = range(len(df))
-
-        def style_matrix(row):
-            styles = [""] * len(row)
-            # Zebra Group Coloring
-            bg = "#ffffff" if int(row.get('_group_idx', 0)) % 2 == 0 else "#f8fafc"
-            styles = [f"background-color: {bg};"] * len(row)
-            
-            # Stock Logic & Fulfillment Colors
-            for l in a_l:
-                if l in row:
-                    i = row.index.get_loc(l)
-                    try:
-                        v = float(row[l])
-                        if v == 0: styles[i] += "color: #ef4444; font-weight: bold;"
-                        elif v > 0: styles[i] += "color: #10b981;"
-                    except: pass
-            
-            if "Fulfillment" in row:
-                fi = row.index.get_loc("Fulfillment")
-                fv = str(row["Fulfillment"])
-                if "Available" in fv: styles[fi] += "background-color: #d1fae5 !important; color: #065f46; font-weight: bold;"
-                elif "OOS" in fv: styles[fi] += "background-color: #fee2e2 !important; color: #991b1b;"
-            return styles
-
-        st.markdown(f"#### Viewing {len(df)} Records")
-        st.dataframe(df.style.apply(style_matrix, axis=1), use_container_width=True)
-        
-        # --- EXCEL EXPORT ---
-        buf_inv = io.BytesIO()
-        with pd.ExcelWriter(buf_inv, engine="xlsxwriter") as writer:
-            # Clean internal columns for export
-            export_df = df.drop(['_group_idx', '_total'], axis=1, errors='ignore')
-            export_df.to_excel(writer, index=False, sheet_name="Distribution")
-            
-            wb = writer.book
-            ws = writer.sheets["Distribution"]
-            fmt_zebra = wb.add_format({'bg_color': '#F1F5F9'}) # Slate-White
-            
-            # Apply Zebra Styles to Excel
-            for i, (idx, row) in enumerate(df.iterrows()):
-                if int(row.get('_group_idx', 0)) % 2 != 0:
-                    ws.set_row(i + 1, None, fmt_zebra)
-            
-            # Conditional Stock Formatting (Red for 0, Green for >0)
-            fmt_red = wb.add_format({'font_color': '#ef4444', 'bold': True})
-            fmt_green = wb.add_format({'font_color': '#10b981'})
-            
-            for col_idx, col_name in enumerate(export_df.columns):
-                if col_name in a_l:
-                    ws.conditional_format(1, col_idx, len(export_df), col_idx, {'type': 'cell', 'criteria': 'equal to', 'value': 0, 'format': fmt_red})
-                    ws.conditional_format(1, col_idx, len(export_df), col_idx, {'type': 'cell', 'criteria': 'greater than', 'value': 0, 'format': fmt_green})
-
-        st.download_button("📥 Download Distribution Report", buf_inv.getvalue(), "Stock_Distribution.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-
-# ---------------------------------------------------------
-# TAB 3: PICKING MANIFEST (Actionable Summary)
-# ---------------------------------------------------------
-with t_pick:
-    st.markdown("### 📋 Daily Picking Manifest")
-    if st.session_state.get('inv_res_data') is not None:
-        df_inv = st.session_state.inv_res_data
-        locs = st.session_state.inv_active_l
-        t_col = st.session_state.inv_t_col
-        
-        # We need "Dispatch Suggestion" to know where to pick from
-        if "Dispatch Suggestion" in df_inv.columns:
-            manifest_data = []
-            
-            for loc in locs:
-                # Filter items suggested for this location
-                loc_df = df_inv[df_inv["Dispatch Suggestion"] == loc]
-                if not loc_df.empty:
-                    # Get counts per item
-                    # Try to find quantity column, default to 1 per row if not found
-                    _, qty_col, _, _ = inv_core.identify_columns(loc_df)
-                    
-                    if qty_col and qty_col in loc_df.columns:
-                        summary = loc_df.groupby(t_col)[qty_col].sum().reset_index()
-                    else:
-                        summary = loc_df.groupby(t_col).size().reset_index(name='Quantity')
-                        qty_col = 'Quantity'
-                    
-                    summary.columns = ['Item Name', 'Pick Quantity']
-                    
-                    st.markdown(f"#### 📦 {loc} Pick List")
-                    st.dataframe(summary, use_container_width=True)
-                    
-                    # Add to master manifest for export
-                    for _, row in summary.iterrows():
-                        manifest_data.append({
-                            'Location': loc,
-                            'Item Name': row['Item Name'],
-                            'Quantity': row['Pick Quantity']
-                        })
-            
-            if manifest_data:
-                manifest_df = pd.DataFrame(manifest_data)
-                
-                # Export options
-                m_buf = io.BytesIO()
-                with pd.ExcelWriter(m_buf, engine='xlsxwriter') as writer:
-                    manifest_df.to_excel(writer, index=False, sheet_name="Picking_Manifest")
-                    
-                st.download_button("📥 Download Picking Manifest", m_buf.getvalue(), "Picking_Manifest.xlsx")
-                
-                # Simple text version for copy-paste
-                text_manifest = "📋 PICKING MANIFEST\n" + "="*20 + "\n"
-                for loc in locs:
-                    loc_summ = [d for d in manifest_data if d['Location'] == loc]
-                    if loc_summ:
-                        text_manifest += f"\n📍 {loc.upper()}:\n"
-                        for item in loc_summ:
-                            text_manifest += f"- {item['Item Name']}: {item['Quantity']} pcs\n"
-                
-                st.text_area("Copyable Manifest Text", text_manifest, height=300)
+            # Order Grouping for Colors
+            g_col = inv_core.get_group_by_column(df)
+            if g_col:
+                # Sort by group to keep items together
+                df = df.sort_values(g_col).reset_index(drop=True)
+                u_ids = df[g_col].unique()
+                id_map = {uid: i for i, uid in enumerate(u_ids)}
+                df['_group_idx'] = df[g_col].map(id_map)
             else:
-                st.info("No items have been assigned to locations yet. Ensure 'Dispatch Suggestion' is generated.")
+                # Fallback to Low Stock sorting if no order group found
+                df['_total'] = df[a_l].apply(pd.to_numeric, errors='coerce').fillna(0).sum(axis=1)
+                df = df.sort_values('_total').reset_index(drop=True)
+                df['_group_idx'] = range(len(df))
+
+            def style_matrix(row):
+                styles = [""] * len(row)
+                # Zebra Group Coloring
+                bg = "#ffffff" if int(row.get('_group_idx', 0)) % 2 == 0 else "#f8fafc"
+                styles = [f"background-color: {bg};"] * len(row)
+            
+                # Stock Logic & Fulfillment Colors
+                for l in a_l:
+                    if l in row:
+                        i = row.index.get_loc(l)
+                        try:
+                            v = float(row[l])
+                            if v == 0: styles[i] += "color: #ef4444; font-weight: bold;"
+                            elif v > 0: styles[i] += "color: #10b981;"
+                        except: pass
+            
+                if "Fulfillment" in row:
+                    fi = row.index.get_loc("Fulfillment")
+                    fv = str(row["Fulfillment"])
+                    if "Available" in fv: styles[fi] += "background-color: #d1fae5 !important; color: #065f46; font-weight: bold;"
+                    elif "OOS" in fv: styles[fi] += "background-color: #fee2e2 !important; color: #991b1b;"
+                return styles
+
+            st.markdown(f"#### Viewing {len(df)} Records")
+            st.dataframe(df.style.apply(style_matrix, axis=1), use_container_width=True)
+        
+            # --- EXCEL EXPORT ---
+            buf_inv = io.BytesIO()
+            with pd.ExcelWriter(buf_inv, engine="xlsxwriter") as writer:
+                # Clean internal columns for export
+                export_df = df.drop(['_group_idx', '_total'], axis=1, errors='ignore')
+                export_df.to_excel(writer, index=False, sheet_name="Distribution")
+            
+                wb = writer.book
+                ws = writer.sheets["Distribution"]
+                fmt_zebra = wb.add_format({'bg_color': '#F1F5F9'}) # Slate-White
+            
+                # Apply Zebra Styles to Excel
+                for i, (idx, row) in enumerate(df.iterrows()):
+                    if int(row.get('_group_idx', 0)) % 2 != 0:
+                        ws.set_row(i + 1, None, fmt_zebra)
+            
+                # Conditional Stock Formatting (Red for 0, Green for >0)
+                fmt_red = wb.add_format({'font_color': '#ef4444', 'bold': True})
+                fmt_green = wb.add_format({'font_color': '#10b981'})
+            
+                for col_idx, col_name in enumerate(export_df.columns):
+                    if col_name in a_l:
+                        ws.conditional_format(1, col_idx, len(export_df), col_idx, {'type': 'cell', 'criteria': 'equal to', 'value': 0, 'format': fmt_red})
+                        ws.conditional_format(1, col_idx, len(export_df), col_idx, {'type': 'cell', 'criteria': 'greater than', 'value': 0, 'format': fmt_green})
+
+            st.download_button("📥 Download Distribution Report", buf_inv.getvalue(), "Stock_Distribution.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+
+    # ---------------------------------------------------------
+    # TAB 0: EXECUTIVE DASHBOARD
+    # ---------------------------------------------------------
+    with inv_dash_tab:
+        st.markdown("### 📈 Business Performance Insights")
+    
+        if st.session_state.get('inv_res_data') is not None:
+            df_inv = st.session_state.inv_res_data
+            locs = st.session_state.inv_active_l
+        
+            c1, c2 = st.columns(2)
+        
+            with c1:
+                st.markdown("#### 🏥 Stock Health Heatmap")
+                # Melt for heatmap
+                melted = df_inv.melt(id_vars=[st.session_state.inv_t_col], value_vars=locs, var_name='Location', value_name='Stock')
+                fig = px.density_heatmap(melted, x='Location', y=st.session_state.inv_t_col, z='Stock', 
+                                         color_continuous_scale='RdYlGn', title="Stock Level by Item & Location")
+                st.plotly_chart(fig, use_container_width=True)
+            
+            with c2:
+                st.markdown("#### 📉 Distribution Balance")
+                # Inventory composition
+                loc_totals = df_inv[locs].sum()
+                fig_pie = px.pie(values=loc_totals.values, names=loc_totals.index, title="Global Stock Distribution", hole=0.4)
+                st.plotly_chart(fig_pie, use_container_width=True)
+            
+            # Low Stock Alerts
+            st.markdown("#### ⚠️ Immediate Replenishment Required")
+            threshold = st.session_state.low_stock_threshold
+            # Calculate sum properly filtering only numeric columns
+            sum_stock = df_inv[locs].apply(pd.to_numeric, errors='coerce').fillna(0).sum(axis=1)
+            low_stock_items = df_inv[sum_stock < threshold]
+        
+            if not low_stock_items.empty:
+                st.warning(f"Found {len(low_stock_items)} items with total stock below {threshold}!")
+                st.dataframe(low_stock_items[[st.session_state.inv_t_col] + locs], use_container_width=True)
+            else:
+                st.success("All stock levels are above the safety threshold. Excellent! ✅")
         else:
-            st.warning("Dispatch suggestions not found in data. Please run 'Analyze Distribution' in the Matrix tab.")
-    else:
-        st.info("💡 Run a distribution analysis to generate the picking manifest.")
+            st.info("💡 Run a distribution analysis in the 'Matrix Analyzer' tab to populate this dashboard.")
+
+
+
+    # ---------------------------------------------------------
+    # TAB 3: PICKING MANIFEST (Actionable Summary)
+    # ---------------------------------------------------------
+    with inv_pick_tab:
+        st.markdown("### 📋 Daily Picking Manifest")
+        if st.session_state.get('inv_res_data') is not None:
+            df_inv = st.session_state.inv_res_data
+            locs = st.session_state.inv_active_l
+            t_col = st.session_state.inv_t_col
+        
+            # We need "Dispatch Suggestion" to know where to pick from
+            if "Dispatch Suggestion" in df_inv.columns:
+                manifest_data = []
+            
+                for loc in locs:
+                    # Filter items suggested for this location
+                    loc_df = df_inv[df_inv["Dispatch Suggestion"] == loc]
+                    if not loc_df.empty:
+                        # Get counts per item
+                        # Try to find quantity column, default to 1 per row if not found
+                        _, qty_col, _, _ = inv_core.identify_columns(loc_df)
+                    
+                        if qty_col and qty_col in loc_df.columns:
+                            summary = loc_df.groupby(t_col)[qty_col].sum().reset_index()
+                        else:
+                            summary = loc_df.groupby(t_col).size().reset_index(name='Quantity')
+                            qty_col = 'Quantity'
+                    
+                        summary.columns = ['Item Name', 'Pick Quantity']
+                    
+                        st.markdown(f"#### 📦 {loc} Pick List")
+                        st.dataframe(summary, use_container_width=True)
+                    
+                        # Add to master manifest for export
+                        for _, row in summary.iterrows():
+                            manifest_data.append({
+                                'Location': loc,
+                                'Item Name': row['Item Name'],
+                                'Quantity': row['Pick Quantity']
+                            })
+            
+                if manifest_data:
+                    manifest_df = pd.DataFrame(manifest_data)
+                
+                    # Export options
+                    m_buf = io.BytesIO()
+                    with pd.ExcelWriter(m_buf, engine='xlsxwriter') as writer:
+                        manifest_df.to_excel(writer, index=False, sheet_name="Picking_Manifest")
+                    
+                    st.download_button("📥 Download Picking Manifest", m_buf.getvalue(), "Picking_Manifest.xlsx")
+                
+                    # Simple text version for copy-paste
+                    text_manifest = "📋 PICKING MANIFEST\n" + "="*20 + "\n"
+                    for loc in locs:
+                        loc_summ = [d for d in manifest_data if d['Location'] == loc]
+                        if loc_summ:
+                            text_manifest += f"\n📍 {loc.upper()}:\n"
+                            for item in loc_summ:
+                                text_manifest += f"- {item['Item Name']}: {item['Quantity']} pcs\n"
+                
+                    st.text_area("Copyable Manifest Text", text_manifest, height=300)
+                else:
+                    st.info("No items have been assigned to locations yet. Ensure 'Dispatch Suggestion' is generated.")
+            else:
+                st.warning("Dispatch suggestions not found in data. Please run 'Analyze Distribution' in the Matrix Analyzer tab.")
+        else:
+            st.info("💡 Run a distribution analysis to generate the picking manifest.")
+
 
 # ---------------------------------------------------------
 # TAB 3: WP VERIFICATION (With Bulk Export)
