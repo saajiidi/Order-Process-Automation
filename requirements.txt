@@ -1,6 +1,7 @@
-# Python >= 3.9
-streamlit==1.32.0
-pandas==2.2.0
+# Python
+streamlit
+pandas
+pillow
 openpyxl==3.1.2
 xlsxwriter==3.1.9
 plotly==5.19.0
