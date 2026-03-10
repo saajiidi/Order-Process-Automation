@@ -507,13 +507,13 @@ def get_items_sold_label(last_updated):
         if isinstance(last_updated, str) and last_updated != "N/A" and "snapshot" not in last_updated.lower():
             dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
             # Assume last updated time string is already in local tz
-            if dt.hour < 11:
-                return "Item to be sold"
+            if dt.hour < 16:
+                return "Items to be sold"
     except Exception:
         pass
     
-    if datetime.now(tz_bd).hour < 11:
-        return "Item to be sold"
+    if datetime.now(tz_bd).hour < 16:
+        return "Items to be sold"
     return "Item sold"
 
 
