@@ -519,7 +519,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
     t_rev = summ["Total Amount"].sum()
     with st.container():
         st.markdown('<div id="snapshot-target-popup"></div>', unsafe_allow_html=True)
-        st.caption(f"Last update: {last_updated}")
+        st.caption(f"Current time: {datetime.now().strftime('%B %d, %Y %I:%M %p')}")
         if focus != "all":
             st.info(f"Focused view: {focus.replace('_', ' ').title()}")
 
