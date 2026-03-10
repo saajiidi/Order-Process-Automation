@@ -1,4 +1,4 @@
-﻿import io
+import io
 
 import pandas as pd
 import plotly.express as px
@@ -128,14 +128,6 @@ def render_distribution_tab(search_q, guided: bool = True):
 
             if search_q:
                 df = df[df[title_key].astype(str).str.lower().str.contains(search_q.lower(), na=False)]
-
-            important_columns = [
-                col
-                for col in [title_key, "Dispatch Suggestion", "Fulfillment", *active_locations, "Match Status"]
-                if col in df.columns
-            ]
-            other_columns = [c for c in df.columns if c not in important_columns]
-            df = df[important_columns + other_columns]
 
             st.dataframe(df, use_container_width=True, hide_index=True)
 

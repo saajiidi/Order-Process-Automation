@@ -499,6 +499,21 @@ def load_live_source(source_mode):
     raise ValueError(f"Unsupported source mode: {source_mode}")
 
 
+def get_items_sold_label(last_updated):
+    from datetime import datetime
+    try:
+        if isinstance(last_updated, str) and last_updated != "N/A" and "snapshot" not in last_updated.lower():
+            dt = datetime.strptime(last_updated, "%Y-%m-%d %H:%M:%S")
+            if dt.hour < 11:
+                return "Item to be sold"
+    except Exception:
+        pass
+    
+    if datetime.now().hour < 11:
+        return "Item to be sold"
+    return "Item sold"
+
+
 def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all"):
     t_qty = summ["Total Qty"].sum()
     t_rev = summ["Total Amount"].sum()
@@ -511,7 +526,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
         if focus in ("all", "core_metrics"):
             st.subheader("Core Metrics")
             m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Items Sold", f"{t_qty:,.0f}")
+            m1.metric(get_items_sold_label(last_updated), f"{t_qty:,.0f}")
             total_orders = basket.get("total_orders", 0)
             m2.metric("Total Orders", f"{total_orders:,.0f}" if total_orders else "-")
             m3.metric("Revenue", f"TK {t_rev:,.2f}")
@@ -591,12 +606,16 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
         st.rerun()
 
 
-popup_datetime = datetime.now().strftime("%B %d, %Y %I:%M %p")
 if hasattr(st, "dialog"):
-    @st.dialog(f"Welcome! Today's Actionable Insights ({popup_datetime})", width="large")
     def show_welcome_popup(summ, basket, last_updated="N/A", focus="all"):
-        st.session_state.has_seen_dashboard_popup = True
-        _render_welcome_popup_content(summ, basket, last_updated, focus)
+        popup_datetime = datetime.now().strftime("%B %d, %Y %I:%M %p")
+        
+        @st.dialog(f"Welcome! Today's Actionable Insights ({popup_datetime})", width="large")
+        def _popup():
+            st.session_state.has_seen_dashboard_popup = True
+            _render_welcome_popup_content(summ, basket, last_updated, focus)
+            
+        _popup()
 else:
     def show_welcome_popup(summ, basket, last_updated="N/A", focus="all"):
         st.session_state.has_seen_dashboard_popup = True
@@ -634,7 +653,7 @@ def render_dashboard_output(drill, summ, top, timeframe, basket, source_name, la
         st.markdown('<div id="snapshot-target-main"></div>', unsafe_allow_html=True)
         st.subheader("Core Metrics")
         m1, m2, m3, m4 = st.columns(4)
-        m1.metric("Items Sold", f"{t_qty:,.0f}")
+        m1.metric(get_items_sold_label(last_updated), f"{t_qty:,.0f}")
         total_orders = basket.get("total_orders", 0)
         m2.metric("Total Orders", f"{total_orders:,.0f}" if total_orders else "-")
         m3.metric("Revenue", f"TK {t_rev:,.2f}")
