@@ -571,7 +571,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                     )
                 )
                 fig_pie.update_traces(
-                    textposition="outside",
+                    textposition="auto",
                     textinfo="label+percent",
                     textfont_size=11,
                     pull=0.01,
@@ -611,13 +611,10 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
 
 
 if hasattr(st, "dialog"):
+    @st.dialog("Welcome! Today's Actionable Insights", width="large")
     def show_welcome_popup(summ, basket, last_updated="N/A", focus="all"):
-        @st.dialog("Welcome! Today's Actionable Insights", width="large")
-        def _popup():
-            st.session_state.has_seen_dashboard_popup = True
-            _render_welcome_popup_content(summ, basket, last_updated, focus)
-            
-        _popup()
+        st.session_state.has_seen_dashboard_popup = True
+        _render_welcome_popup_content(summ, basket, last_updated, focus)
 else:
     def show_welcome_popup(summ, basket, last_updated="N/A", focus="all"):
         st.session_state.has_seen_dashboard_popup = True
@@ -697,7 +694,7 @@ def render_dashboard_output(drill, summ, top, timeframe, basket, source_name, la
                 )
             )
             fig_pie.update_traces(
-                textposition="outside",
+                textposition="auto",
                 textinfo="label+percent",
                 textfont_size=11,
                 pull=0.01,
