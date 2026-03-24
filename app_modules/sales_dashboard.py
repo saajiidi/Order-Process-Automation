@@ -1,3 +1,4 @@
+import re
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -166,9 +167,10 @@ def get_category(name):
     name_str = str(name).lower()
 
     def has_any(keywords, text):
-        return any(kw.lower() in text for kw in keywords)
+        return any(re.search(rf'\b{re.escape(kw.lower())}\b', text, re.IGNORECASE) for kw in keywords)
 
     specific_cats = {
+        'TankTop': ['tank top'],
         'Boxer': ['boxer'],
         'Jeans': ['jeans'],
         'Denim': ['denim'],
@@ -193,7 +195,6 @@ def get_category(name):
         'Sweater': ['sweater', 'cardigan', 'knitwear'],
         'Passport Holder': ['passport holder'],
         'Cap': ['cap'],
-        'TankTop': ['tank top'],
     }
 
     for cat, keywords in specific_cats.items():

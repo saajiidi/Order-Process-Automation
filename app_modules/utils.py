@@ -9,7 +9,7 @@ def get_category_from_name(name):
     name_str = str(name)
     
     def has_keyword(sub, text):
-        return bool(re.search(re.escape(sub), text, re.IGNORECASE))
+        return bool(re.search(rf'\b{re.escape(sub.lower())}\b', text, re.IGNORECASE))
     
     # --- Category Rules ---
     # Specific items
