@@ -40,10 +40,12 @@ def inject_base_styles():
         --neon-green: #10b981;
     }
 
+    /* THEME SYNC ENGINE */
     .stApp {
-        background: var(--bg-grad) !important;
-        color: var(--text-primary) !important;
-        font-family: 'Outfit', sans-serif !important;
+        background: var(--bg-grad);
+        color: var(--text-primary);
+        font-family: 'Outfit', sans-serif;
+        background-color: var(--background-color); /* Native Sync */
     }
 
     /* GLASS CARD EFFECT */
@@ -65,24 +67,26 @@ def inject_base_styles():
     }
 
     .hub-title {
-        font-size: 3.5rem !important;
+        font-size: 3.8rem !important;
         font-weight: 800 !important;
         letter-spacing: -0.05em !important;
-        background: linear-gradient(to bottom right, #ffffff 30%, #3b82f6);
+        background: linear-gradient(to bottom right, var(--text-primary) 30%, var(--neon-blue));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         margin-bottom: 0.5rem !important;
         filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3));
+        line-height: 1.1 !important;
     }
 
     /* STEPS HUD */
     .hub-step {
-        background: rgba(30, 41, 59, 0.5);
+        background: var(--glass-bg);
         border: 1px solid var(--glass-border);
         border-radius: 16px;
         padding: 1.25rem;
         text-align: center;
         transition: all 0.3s ease;
+        font-size: 0.9rem;
     }
     .hub-step.active {
         background: rgba(59, 130, 246, 0.1);
@@ -98,9 +102,9 @@ def inject_base_styles():
         transform: translateX(-50%);
         width: 90%;
         max-width: 800px;
-        background: rgba(15, 23, 42, 0.8);
+        background: var(--glass-bg);
         backdrop-filter: blur(20px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--glass-border);
         border-radius: 30px;
         padding: 1rem 2rem;
         box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
@@ -109,15 +113,15 @@ def inject_base_styles():
 
     /* METRICS UPGRADE */
     [data-testid="stMetric"] {
-        background: rgba(255, 255, 255, 0.03);
-        padding: 1rem;
-        border-radius: 16px;
+        background: var(--glass-bg);
+        padding: 1.2rem;
+        border-radius: 20px;
         border: 1px solid var(--glass-border);
     }
     [data-testid="stMetricValue"] {
         font-family: 'JetBrains Mono', monospace !important;
         color: var(--neon-blue) !important;
-        font-size: 2.2rem !important;
+        font-size: 2.4rem !important;
     }
 
     /* TABS STYLING */
@@ -127,7 +131,7 @@ def inject_base_styles():
     }
     .stTabs [data-baseweb="tab"] {
         height: 50px;
-        background-color: rgba(255, 255, 255, 0.05);
+        background-color: var(--glass-bg);
         border-radius: 12px 12px 0 0;
         color: var(--text-secondary);
         border: 1px solid var(--glass-border);
@@ -145,14 +149,14 @@ def inject_base_styles():
     .stButton>button {
         border-radius: 14px !important;
         border: 1px solid var(--glass-border) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: var(--glass-bg) !important;
         color: var(--text-primary) !important;
         text-transform: uppercase;
         letter-spacing: 0.1em;
         font-weight: 700 !important;
     }
     .stButton>button[kind="primary"] {
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+        background: linear-gradient(135deg, var(--neon-blue) 0%, #1d4ed8 100%) !important;
         border: none !important;
         box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important;
     }
@@ -161,11 +165,11 @@ def inject_base_styles():
     [data-testid="stFileUploader"] {
         border: 2px dashed rgba(59, 130, 246, 0.2) !important;
         border-radius: 20px !important;
-        background: rgba(255, 255, 255, 0.02) !important;
+        background: var(--glass-bg) !important;
         transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     [data-testid="stFileUploader"]:hover {
-        border-color: #3b82f6 !important;
+        border-color: var(--neon-blue) !important;
         background: rgba(59, 130, 246, 0.08) !important;
     }
     [data-testid="stFileUploader"] label, 
@@ -236,6 +240,16 @@ def inject_base_styles():
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
     ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* MOBILE PROTOCOL OVERRIDES */
+    @media (max-width: 768px) {
+        .hub-title { font-size: 2.3rem !important; margin-bottom: 0.2rem !important; }
+        .hub-card { padding: 1.25rem; border-radius: 18px; margin-bottom: 1rem; }
+        .hub-action-wrap { width: 95%; bottom: 1rem; padding: 0.75rem 1rem; border-radius: 20px; }
+        .stMetricValue { font-size: 2rem !important; }
+        [data-testid="stSidebar"] { width: 100vw !important; }
+        .stTabs [data-baseweb="tab"] { padding: 0 12px; font-size: 0.8rem; }
+    }
 
 </style>""".replace("__ROOT_VARS__", root_vars)
     st.markdown(styles, unsafe_allow_html=True)
