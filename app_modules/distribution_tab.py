@@ -1,232 +1,128 @@
 import io
-
 import pandas as pd
 import plotly.express as px
 import streamlit as st
 
 from app_modules.error_handler import log_error
+from app_modules.io_utils import read_uploaded_file
 from app_modules.persistence import clear_state_keys, save_state
 from app_modules.ui_components import (
     render_action_bar,
     render_reset_confirm,
     render_steps,
     section_card,
+    render_mini_uploader,
 )
+from app_modules.data_sync import load_shared_gsheet, clear_sync_cache
 from app_modules.ui_config import INVENTORY_LOCATIONS
+from app_modules.utils import find_columns
 from inventory_modules import core as inv_core
 
-
-def _read_uploaded(uploaded_file):
-    if not uploaded_file:
-        return None
-    uploaded_file.seek(0)
-    if uploaded_file.name.lower().endswith(".csv"):
-        return pd.read_csv(uploaded_file)
-    return pd.read_excel(uploaded_file)
-
-
 def _reset_inventory_state():
-    clear_state_keys(["inv_res_data", "inv_active_l", "inv_t_col"])
-
-
-def _render_upload_summary(master_df, title_col):
-    c1, c2 = st.columns(2)
-    c1.metric("Master rows", 0 if master_df is None else len(master_df))
-    c2.metric("Title column", title_col if title_col else "Not detected")
-
+    clear_state_keys(["inv_res_data", "inv_active_l", "inv_t_col", "inv_master_df", "inv_master_name"])
 
 def render_distribution_tab(search_q, guided: bool = True):
-    section_card(
-        "Distribution Hub",
-        "Analyze stock mapping, monitor low-stock risk, and export pick manifests.",
-    )
+    section_card("Distribution Hub", "Analyze stock mapping, monitor low-stock risk, and export pick manifests.")
 
     if guided:
         step = 0
-        if st.session_state.get("inv_res_data") is not None:
-            step = 2
+        if st.session_state.get("inv_res_data") is not None: step = 2
         render_steps(["Upload", "Validate", "Analyze", "Export"], step)
 
-    matrix_tab, insights_tab, pick_tab = st.tabs([
-        "Matrix Analyzer",
-        "Distribution Insights",
-        "Actionable Pick List",
-    ])
+    m_tab, i_tab, p_tab = st.tabs(["Matrix Analyzer", "Insights", "Pick List"])
 
-    with matrix_tab:
-        st.subheader("Upload and Analyze")
-        master_file = st.file_uploader("Master Stock List (required)", type=["xlsx", "csv"], key="inv_up")
+    with m_tab:
+        c_sync1, c_sync2 = st.columns([1, 1])
+        with c_sync1:
+            if st.button("📡 Sync Master Stock", use_container_width=True):
+                try:
+                    clear_sync_cache()
+                    df_sync, source_name, _ = load_shared_gsheet("LastDaySales")
+                    st.session_state.inv_master_df = df_sync
+                    st.session_state.inv_master_name = source_name
+                    st.rerun()
+                except Exception as e: st.error(f"Sync failed: {e}")
+        with c_sync2:
+            master_file = st.file_uploader("Master Stock List", type=["xlsx", "csv"], key="inv_up", label_visibility="collapsed")
 
-        st.caption("Outlet stock files (optional)")
+        # Outlet Overrides (Mini Icons)
+        st.markdown("<div style='margin-top:20px; text-align:center;'><b>Outlet Stock Overrides</b></div>", unsafe_allow_html=True)
         loc_files = {}
-        loc_cols = st.columns(len(INVENTORY_LOCATIONS))
+        cols = st.columns(len(INVENTORY_LOCATIONS))
         for i, loc in enumerate(INVENTORY_LOCATIONS):
-            with loc_cols[i]:
-                uploaded = st.file_uploader(f"{loc}", key=f"inv_l_{loc}", type=["xlsx", "csv"])
-                if uploaded:
-                    loc_files[loc] = uploaded
+            with cols[i]:
+                up = render_mini_uploader(loc, key=f"inv_l_{loc}")
+                if up: loc_files[loc] = up
 
-        master_df = None
-        title_col = None
-        sku_col = None
+        master_df = st.session_state.get("inv_master_df")
+        title_col, sku_col = None, None
+
         if master_file:
             try:
-                master_df = _read_uploaded(master_file)
-                _, _, title_col, sku_col = inv_core.identify_columns(master_df)
-                _render_upload_summary(master_df, title_col)
-                if not title_col:
-                    st.error("Could not detect an item title/name column in the master list.")
-                else:
-                    st.success("Validation passed. Ready to run analysis.")
-            except Exception as exc:
-                log_error(exc, context="Inventory Upload")
-                st.error("Failed to read master stock list.")
+                master_df = read_uploaded_file(master_file)
+                st.session_state.inv_master_df = master_df
+                st.session_state.inv_master_name = master_file.name
+            except Exception: st.error("Failed to read master file.")
 
-        analyze_clicked, clear_clicked = render_action_bar(
-            primary_label="Analyze distribution",
-            primary_key="inv_analyze_btn",
-            secondary_label="Clear inventory data",
-            secondary_key="inv_clear_btn",
-        )
+        if master_df is not None:
+             # Auto-detect columns using shared utils
+             mc = find_columns(master_df)
+             title_col = mc.get('name')
+             sku_col = mc.get('order_id') # Fallback or specific SKU detection? inv_core has its own.
+             # We use inv_core for specialized inventory logic.
+             _, _, tc, sc = inv_core.identify_columns(master_df)
+             title_col, sku_col = tc or title_col, sc or sku_col
+             
+             c1, c2 = st.columns(2)
+             c1.metric("Master Rows", len(master_df))
+             c2.metric("Detected Title", title_col or "N/A")
 
-        if clear_clicked:
-            _reset_inventory_state()
-            st.rerun()
+        run_btn, clr_btn = render_action_bar("Analyze distribution", "inv_run", "Clear", "inv_clr")
 
-        if analyze_clicked:
+        if clr_btn: _reset_inventory_state(); st.rerun()
+
+        if run_btn:
             if master_df is None or not title_col:
-                st.warning("Upload a valid master stock list before analysis.")
+                st.warning("Upload or Sync a master stock list first.")
             else:
                 try:
-                    inventory_map, warnings, _, sku_map = inv_core.load_inventory_from_uploads(loc_files)
-                    if warnings:
-                        for warning in warnings:
-                            st.warning(warning)
+                    inv_map, warns, _, smap = inv_core.load_inventory_from_uploads(loc_files)
+                    for w in warns: st.warning(w)
+                    res, _ = inv_core.add_stock_columns_from_inventory(master_df, title_col, inv_map, INVENTORY_LOCATIONS, sku_col, smap)
+                    st.session_state.inv_res_data, st.session_state.inv_active_l, st.session_state.inv_t_col = res, INVENTORY_LOCATIONS, title_col
+                    save_state(); st.success("Analysis complete.")
+                except Exception as e: st.error(f"Analysis failed: {e}")
 
-                    result_df, _ = inv_core.add_stock_columns_from_inventory(
-                        master_df,
-                        title_col,
-                        inventory_map,
-                        INVENTORY_LOCATIONS,
-                        sku_col,
-                        sku_map,
-                    )
-
-                    st.session_state.inv_res_data = result_df
-                    st.session_state.inv_active_l = INVENTORY_LOCATIONS
-                    st.session_state.inv_t_col = title_col
-                    save_state()
-                    st.success("Distribution analysis complete.")
-                except Exception as exc:
-                    log_error(exc, context="Inventory Analyze")
-                    st.error("Distribution analysis failed.")
-
-        if st.session_state.get("inv_res_data") is not None:
-            df = st.session_state.inv_res_data.copy()
-            title_key = st.session_state.inv_t_col
-            active_locations = st.session_state.inv_active_l
-
+        res_df = st.session_state.get("inv_res_data")
+        if res_df is not None:
             if search_q:
-                df = df[df[title_key].astype(str).str.lower().str.contains(search_q.lower(), na=False)]
+                tc = st.session_state.inv_t_col
+                res_df = res_df[res_df[tc].astype(str).str.lower().str.contains(search_q.lower(), na=False)]
+            st.dataframe(res_df, use_container_width=True, hide_index=True)
+            from app_modules.ui_components import to_excel_bytes
+            st.download_button("Download distribution report", to_excel_bytes(res_df), "Stock_Distribution.xlsx", type="primary")
 
-            st.dataframe(df, use_container_width=True, hide_index=True)
-
-            output = io.BytesIO()
-            with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-                df.to_excel(writer, index=False, sheet_name="Distribution")
-            st.download_button(
-                "Download distribution report",
-                output.getvalue(),
-                "Stock_Distribution.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
-                type="primary",
-            )
-
-    with insights_tab:
-        st.subheader("Inventory Health")
-        if st.session_state.get("inv_res_data") is None:
-            st.info("Run matrix analysis first.")
-        else:
-            inv_df = st.session_state.inv_res_data
-            locs = st.session_state.inv_active_l
-            title_key = st.session_state.inv_t_col
-
+    with i_tab:
+        if st.session_state.get("inv_res_data") is not None:
+            df, locs, tc = st.session_state.inv_res_data, st.session_state.inv_active_l, st.session_state.inv_t_col
             c1, c2 = st.columns(2)
             with c1:
-                melted = inv_df.melt(
-                    id_vars=[title_key],
-                    value_vars=locs,
-                    var_name="Location",
-                    value_name="Stock",
-                )
-                heatmap = px.density_heatmap(
-                    melted,
-                    x="Location",
-                    y=title_key,
-                    z="Stock",
-                    color_continuous_scale="RdYlGn",
-                    title="Stock by item and location",
-                )
-                st.plotly_chart(heatmap, use_container_width=True)
-
+                melt = df.melt(id_vars=[tc], value_vars=locs, var_name="Loc", value_name="Stock")
+                st.plotly_chart(px.density_heatmap(melt, x="Loc", y=tc, z="Stock", color_continuous_scale="RdYlGn", title="Stock Heatmap"), use_container_width=True)
             with c2:
-                totals = inv_df[locs].apply(pd.to_numeric, errors="coerce").fillna(0).sum()
-                pie = px.pie(values=totals.values, names=totals.index, title="Location stock distribution", hole=0.4)
-                st.plotly_chart(pie, use_container_width=True)
+                tots = df[locs].apply(pd.to_numeric, errors="coerce").fillna(0).sum()
+                st.plotly_chart(px.pie(values=tots.values, names=tots.index, title="Location Distribution", hole=0.4), use_container_width=True)
+        else: st.info("Run analysis to see insights.")
 
-            threshold = st.session_state.low_stock_threshold
-            total_stock = inv_df[locs].apply(pd.to_numeric, errors="coerce").fillna(0).sum(axis=1)
-            low_stock = inv_df[total_stock < threshold]
-
-            if low_stock.empty:
-                st.success("No low-stock items below current safety threshold.")
-            else:
-                st.warning(f"{len(low_stock)} items are below threshold ({threshold}).")
-                st.dataframe(low_stock[[title_key, *locs]], use_container_width=True, hide_index=True)
-
-    with pick_tab:
-        st.subheader("Daily Pick Manifest")
-        if st.session_state.get("inv_res_data") is None:
-            st.info("Run matrix analysis first.")
-        else:
-            inv_df = st.session_state.inv_res_data
-            locs = st.session_state.inv_active_l
-            title_key = st.session_state.inv_t_col
-
-            if "Dispatch Suggestion" not in inv_df.columns:
-                st.warning("Dispatch Suggestion column not available.")
-            else:
-                manifest_rows = []
+    with p_tab:
+        if st.session_state.get("inv_res_data") is not None:
+            df, locs, tc = st.session_state.inv_res_data, st.session_state.inv_active_l, st.session_state.inv_t_col
+            if "Dispatch Suggestion" in df.columns:
                 for loc in locs:
-                    loc_df = inv_df[inv_df["Dispatch Suggestion"] == loc]
-                    if loc_df.empty:
-                        continue
-                    _, qty_col, _, _ = inv_core.identify_columns(loc_df)
-                    if qty_col and qty_col in loc_df.columns:
-                        summary = loc_df.groupby(title_key)[qty_col].sum().reset_index()
-                    else:
-                        summary = loc_df.groupby(title_key).size().reset_index(name="Quantity")
-                        qty_col = "Quantity"
-
-                    summary.columns = ["Item Name", "Pick Quantity"]
-                    st.markdown(f"**{loc}**")
-                    st.dataframe(summary, use_container_width=True, hide_index=True)
-
-                    for _, row in summary.iterrows():
-                        manifest_rows.append({"Location": loc, "Item Name": row["Item Name"], "Quantity": row["Pick Quantity"]})
-
-                if manifest_rows:
-                    manifest_df = pd.DataFrame(manifest_rows)
-                    out = io.BytesIO()
-                    with pd.ExcelWriter(out, engine="xlsxwriter") as writer:
-                        manifest_df.to_excel(writer, index=False, sheet_name="Picking_Manifest")
-                    st.download_button(
-                        "Download picking manifest",
-                        out.getvalue(),
-                        "Picking_Manifest.xlsx",
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        use_container_width=True,
-                    )
+                    loc_df = df[df["Dispatch Suggestion"] == loc]
+                    if not loc_df.empty:
+                        st.markdown(f"**{loc}**")
+                        st.dataframe(loc_df.groupby(tc).size().reset_index(name="Units"), use_container_width=True, hide_index=True)
+        else: st.info("Run analysis to see pick list.")
 
     render_reset_confirm("inventory", _reset_inventory_state)

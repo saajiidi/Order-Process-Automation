@@ -331,13 +331,13 @@ POD"""
                 st.success(f"Parsed {len(parsed_df)} records.")
 
         if st.session_state.get("standard_parsed_df") is not None:
-            st.dataframe(st.session_state.standard_parsed_df, use_container_width=True, hide_index=True)
+            st.dataframe(st.session_state.standard_parsed_df, width="stretch", hide_index=True)
             st.download_button(
                 "Download standard parser output",
                 df_to_excel_bytes(st.session_state.standard_parsed_df),
                 filename,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
+                width="stretch",
                 type="primary",
             )
 
@@ -381,13 +381,13 @@ POD"""
                     st.success(f"Parsed {len(parsed_df)} records using fuzzy fallback.")
 
         if st.session_state.get("fuzzy_parsed_df") is not None:
-            st.dataframe(st.session_state.fuzzy_parsed_df, use_container_width=True, hide_index=True)
+            st.dataframe(st.session_state.fuzzy_parsed_df, width="stretch", hide_index=True)
             st.download_button(
                 "Download fuzzy parser output",
                 df_to_excel_bytes(st.session_state.fuzzy_parsed_df),
                 fuzzy_filename,
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                use_container_width=True,
+                width="stretch",
                 type="primary",
             )
 

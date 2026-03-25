@@ -1,13 +1,13 @@
-import json
 import os
 import streamlit as st
 import pandas as pd
 import tempfile
 import logging
+import json
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-os.makedirs(DATA_DIR, exist_ok=True)
-STATE_FILE = os.path.join(DATA_DIR, "session_state.json")
+from app_modules.paths import DATA_DIR, STATE_FILE, prepare_data_dirs
+
+prepare_data_dirs()
 
 def save_state():
     """Saves relevant session state keys to a local file."""
@@ -29,7 +29,7 @@ def save_state():
                 state_to_save[key] = val
             
     try:
-        fd, temp_path = tempfile.mkstemp(dir=DATA_DIR)
+        fd, temp_path = tempfile.mkstemp(dir=str(DATA_DIR))
         with os.fdopen(fd, 'w', encoding="utf-8") as f:
             json.dump(state_to_save, f, indent=4)
         os.replace(temp_path, STATE_FILE)

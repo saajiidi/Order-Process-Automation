@@ -1,4 +1,3 @@
-import pandas as pd
 import json
 import datetime
 import os
@@ -6,9 +5,9 @@ import traceback
 import tempfile
 import logging
 
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-os.makedirs(DATA_DIR, exist_ok=True)
-ERROR_LOG_FILE = os.path.join(DATA_DIR, "error_logs.json")
+from app_modules.paths import DATA_DIR, ERROR_LOG_FILE, prepare_data_dirs
+
+prepare_data_dirs()
 
 def log_error(error_msg, context="General", details=None):
     """
@@ -45,7 +44,7 @@ def log_error(error_msg, context="General", details=None):
         
         # Atomic write
         try:
-            fd, temp_path = tempfile.mkstemp(dir=DATA_DIR)
+            fd, temp_path = tempfile.mkstemp(dir=str(DATA_DIR))
             with os.fdopen(fd, 'w', encoding="utf-8") as f:
                 json.dump(logs, f, indent=4)
             os.replace(temp_path, ERROR_LOG_FILE)

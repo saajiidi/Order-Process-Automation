@@ -1,4 +1,5 @@
 import os
+import textwrap
 from datetime import datetime
 from io import BytesIO
 
@@ -9,128 +10,235 @@ from app_modules.ui_config import APP_TITLE, APP_VERSION
 
 
 def inject_base_styles():
-    st.markdown(
-        """
-        <style>
-        :root {
-            --primary: var(--primary-color, #1d4ed8);
-            --surface: var(--background-color, #f8fafc);
-            --border: var(--secondary-background-color, #dbeafe);
-            --text-muted: var(--text-color, #64748b);
-            --step-surface: var(--background-color, #ffffff);
-            --step-text: var(--text-color, #0f172a);
-            --step-active-bg: var(--secondary-background-color, #eff6ff);
-            --action-surface: var(--background-color, rgba(255, 255, 255, 0.96));
-            --card-shadow: rgba(0, 0, 0, 0.15);
-        }
-        .hub-title-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid var(--border);
-            padding: 8px 0 12px 0;
-            margin-bottom: 8px;
-        }
-        .hub-title {
-            margin: 0;
-            font-weight: 700;
-        }
-        .hub-subtitle {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
-        .hub-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 8px 24px var(--card-shadow);
-        }
-        .hub-step {
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 8px 10px;
-            font-size: 0.9rem;
-            background: var(--step-surface);
-            color: var(--step-text);
-        }
-        .hub-step.active {
-            border-color: var(--primary);
-            background: var(--step-active-bg);
-            font-weight: 600;
-        }
-        .hub-action-wrap {
-            position: sticky;
-            bottom: 0;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: var(--action-surface);
-            backdrop-filter: blur(3px);
-            z-index: 10;
-        }
-        @media (max-width: 900px) {
-            .block-container {
-                padding-left: 0.75rem !important;
-                padding-right: 0.75rem !important;
-            }
-            .hub-title {
-                font-size: 1.35rem !important;
-                line-height: 1.3;
-            }
-            .hub-subtitle {
-                font-size: 0.85rem !important;
-            }
-            .hub-card {
-                padding: 10px 12px;
-                border-radius: 10px;
-            }
-            .hub-step {
-                font-size: 0.78rem;
-                padding: 6px 8px;
-                min-height: 46px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-            }
-            .hub-action-wrap {
-                position: static;
-                margin-top: 6px;
-            }
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+    styles = """
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --glass-bg: rgba(15, 23, 42, 0.7);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --accent-glow: rgba(59, 130, 246, 0.5);
+        --neon-blue: #3b82f6;
+        --neon-green: #10b981;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+    }
+
+    .stApp {
+        background: radial-gradient(circle at top right, #1e293b, #0f172a);
+        color: var(--text-primary);
+        font-family: 'Outfit', sans-serif;
+    }
+
+    /* GLASS CARD EFFECT */
+    .hub-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hub-card:hover {
+        border-color: var(--neon-blue);
+        box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .hub-title {
+        font-size: 3.5rem !important;
+        font-weight: 800 !important;
+        letter-spacing: -0.05em !important;
+        background: linear-gradient(to bottom right, #ffffff 30%, #3b82f6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 0.5rem !important;
+        filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3));
+    }
+
+    /* STEPS HUD */
+    .hub-step {
+        background: rgba(30, 41, 59, 0.5);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 1.25rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    .hub-step.active {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: var(--neon-blue);
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    }
+
+    /* ACTION BAR STICKY GLASS */
+    .hub-action-wrap {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 800px;
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 30px;
+        padding: 1rem 2rem;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.4);
+        z-index: 9999;
+    }
+
+    /* METRICS UPGRADE */
+    [data-testid="stMetric"] {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 1rem;
+        border-radius: 16px;
+        border: 1px solid var(--glass-border);
+    }
+    [data-testid="stMetricValue"] {
+        font-family: 'JetBrains Mono', monospace !important;
+        color: var(--neon-blue) !important;
+        font-size: 2.2rem !important;
+    }
+
+    /* TABS STYLING */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 12px;
+        background-color: transparent;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 12px 12px 0 0;
+        color: var(--text-secondary);
+        border: 1px solid var(--glass-border);
+        border-bottom: none;
+        padding: 0 24px;
+        transition: all 0.2s ease;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: rgba(59, 130, 246, 0.15) !important;
+        color: var(--neon-blue) !important;
+        border-color: var(--neon-blue) !important;
+    }
+
+    /* BUTTONS */
+    .stButton>button {
+        border-radius: 14px !important;
+        border: 1px solid var(--glass-border) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: var(--text-primary) !important;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 700 !important;
+    }
+    .stButton>button[kind="primary"] {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4) !important;
+    }
+
+    /* GLOBAL FILE UPLOADER THEME */
+    [data-testid="stFileUploader"] {
+        border: 2px dashed rgba(59, 130, 246, 0.2) !important;
+        border-radius: 20px !important;
+        background: rgba(255, 255, 255, 0.02) !important;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    }
+    [data-testid="stFileUploader"]:hover {
+        border-color: #3b82f6 !important;
+        background: rgba(59, 130, 246, 0.08) !important;
+    }
+    [data-testid="stFileUploader"] label, 
+    [data-testid="stFileUploader"] div[data-testid="stMarkdownContainer"],
+    [data-testid="stFileUploader"] small {
+        display: none !important;
+    }
+
+    /* MINI UPLOADER SCOPING */
+    .mini-uploader [data-testid="stFileUploader"] {
+        max-width: 80px;
+        margin: 0 auto;
+    }
+    .mini-uploader [data-testid="stFileUploader"] section {
+        padding: 0px !important;
+        border: 1px solid var(--glass-border) !important;
+    }
+    .mini-uploader [data-testid="stFileUploader"] section::after {
+        display: none !important;
+    }
+    .mini-uploader [data-testid="stFileUploader"] [data-testid="stBaseButton-secondary"] {
+        height: 50px !important;
+        width: 100% !important;
+        background: transparent !important;
+        border: none !important;
+    }
+    .mini-uploader [data-testid="stFileUploader"] div,
+    .mini-uploader [data-testid="stFileUploader"] span,
+    .mini-uploader [data-testid="stFileUploader"] button::after {
+        font-size: 0px !important;
+        color: transparent !important;
+        display: none !important;
+    }
+    .mini-uploader [data-testid="stFileUploader"] [data-testid="stBaseButton-secondary"]::before {
+        content: "+";
+        font-size: 24px;
+        color: var(--neon-blue);
+        display: block;
+        width: 100%;
+        text-align: center;
+        line-height: 50px;
+    }
+    [data-testid="stFileUploader"] section {
+        padding: 2rem !important;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    [data-testid="stFileUploader"] section::after {
+        content: "+";
+        font-size: 3.5rem;
+        font-weight: 300;
+        color: #3b82f6;
+        opacity: 0.8;
+        transition: all 0.3s ease;
+    }
+
+    [data-testid="stFileUploader"]:hover section::after {
+        transform: scale(1.15);
+        opacity: 1;
+        color: #ffffff;
+    }
+
+    /* SCROLLBAR & TABLES */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* HIDE STREAMLIT BRANDING */
+    #MainMenu, footer, header {visibility: hidden;}
+</style>"""
+    st.markdown(styles, unsafe_allow_html=True)
 
 
 def render_header():
-    st.markdown(
-        f"""
-        <div class="hub-title-row">
-          <div>
-            <h1 class="hub-title">{APP_TITLE} <span style="color:#1d4ed8;">{APP_VERSION}</span></h1>
-            <p class="hub-subtitle">Unified logistics operations workspace</p>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    header_html = f'''
+    <div style="text-align: center; padding: 3rem 0 1rem; margin-bottom: 2rem;">
+        <h1 class="hub-title">{APP_TITLE}</h1>
+        <p style="color: var(--text-secondary); font-size: 1.1rem; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 0.5rem;">
+            <span style="color: var(--neon-blue); font-weight: 800;">●</span> NEXT-GEN OPS COMMAND • {APP_VERSION}
+        </p>
+    </div>'''
+    st.markdown(header_html, unsafe_allow_html=True)
 
 
 def section_card(title: str, help_text: str = ""):
-    st.markdown(
-        f"""
-        <div class="hub-card">
-          <div style="font-weight:600;">{title}</div>
-          <div style="color:var(--text-muted); margin-top:4px;">{help_text}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    card_html = f'''<div class="hub-card"><div style="font-size:1.4rem; font-weight:700; color:var(--text-primary); margin-bottom:0.5rem;">{title}</div><div style="color:var(--text-secondary); font-size:1rem; line-height:1.6;">{help_text}</div></div>'''
+    st.markdown(card_html, unsafe_allow_html=True)
 
 
 def render_steps(steps: list[str], current_step: int):
@@ -138,7 +246,8 @@ def render_steps(steps: list[str], current_step: int):
     for idx, step in enumerate(steps):
         is_active = idx == current_step
         cls = "hub-step active" if is_active else "hub-step"
-        cols[idx].markdown(f'<div class="{cls}">{idx + 1}. {step}</div>', unsafe_allow_html=True)
+        step_html = f'''<div class="{cls}"><span style="opacity:0.5; font-size:0.75rem; display:block; margin-bottom:2px;">Step {idx + 1}</span>{step}</div>'''
+        cols[idx].markdown(step_html, unsafe_allow_html=True)
 
 
 def render_file_summary(uploaded_file, df: pd.DataFrame | None, required_columns: list[str]):
@@ -146,22 +255,24 @@ def render_file_summary(uploaded_file, df: pd.DataFrame | None, required_columns
         st.info("No file uploaded yet.")
         return False
 
-    st.caption(f"File: {uploaded_file.name}")
     if df is None:
-        st.warning("Could not read this file.")
+        st.error(f"❌ Failed to read {uploaded_file.name}")
         return False
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Rows", len(df))
-    c2.metric("Columns", len(df.columns))
-    c3.metric("Required", len(required_columns))
-
-    missing = [col for col in required_columns if col not in df.columns]
-    if missing:
-        st.error(f"Missing required columns: {', '.join(missing)}")
-        return False
-    st.success("Required columns check passed.")
-    return True
+    with st.container(border=True):
+        st.caption(f"📄 FILENAME: {uploaded_file.name}")
+        c1, c2, c3, c4 = st.columns([1, 1, 1, 2])
+        c1.metric("Rows", f"{len(df):,}")
+        c2.metric("Cols", len(df.columns))
+        c3.metric("Steps", len(required_columns))
+        
+        missing = [col for col in required_columns if col not in df.columns]
+        if missing:
+            c4.error(f"Missing: {', '.join(missing)}")
+            return False
+        else:
+            c4.success("✅ All columns verified")
+            return True
 
 
 def render_action_bar(
@@ -173,13 +284,22 @@ def render_action_bar(
     st.markdown('<div class="hub-action-wrap">', unsafe_allow_html=True)
     if secondary_label and secondary_key:
         c1, c2 = st.columns([2, 1])
-        primary_clicked = c1.button(primary_label, type="primary", use_container_width=True, key=primary_key)
-        secondary_clicked = c2.button(secondary_label, use_container_width=True, key=secondary_key)
+        primary_clicked = c1.button(primary_label, type="primary", width="stretch", key=primary_key)
+        secondary_clicked = c2.button(secondary_label, width="stretch", key=secondary_key)
     else:
-        primary_clicked = st.button(primary_label, type="primary", use_container_width=True, key=primary_key)
+        primary_clicked = st.button(primary_label, type="primary", width="stretch", key=primary_key)
         secondary_clicked = False
     st.markdown("</div>", unsafe_allow_html=True)
     return primary_clicked, secondary_clicked
+
+
+def render_mini_uploader(label: str, key: str):
+    """Compact file uploader with a bold label and minimal icon interface."""
+    st.markdown(f"<div style='text-align:center;'><b>{label}</b></div>", unsafe_allow_html=True)
+    st.markdown("<div class='mini-uploader'>", unsafe_allow_html=True)
+    f = st.file_uploader(label, key=key, type=["xlsx", "csv"], label_visibility="collapsed")
+    st.markdown("</div>", unsafe_allow_html=True)
+    return f
 
 
 def render_reset_confirm(state_key: str, reset_fn):
@@ -206,7 +326,7 @@ def sample_file_download(label: str, data: list[dict], file_name: str):
         data=csv_bytes,
         file_name=file_name,
         mime="text/csv",
-        use_container_width=True,
+        width="stretch",
     )
 
 

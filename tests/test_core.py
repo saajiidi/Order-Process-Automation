@@ -46,8 +46,8 @@ def test_add_stock_columns():
     }
     
     sku_map = {
-        "SKUA": {"Store1": 5, "Store2": 2},
-        "SKUB": {"Store1": 0, "Store2": 10}
+        "SKUA": "product a",
+        "SKUB": "product b"
     }
     
     res, _ = inv_core.add_stock_columns_from_inventory(

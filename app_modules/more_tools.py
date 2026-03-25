@@ -5,17 +5,10 @@ from io import BytesIO
 import pandas as pd
 import streamlit as st
 
-from app_modules.sales_dashboard import find_columns, get_category
+from app_modules.categories import get_category_for_sales
+from app_modules.sales_dashboard import find_columns
+from app_modules.io_utils import read_uploaded_file
 from app_modules.ui_components import render_action_bar, section_card
-
-
-def _read_uploaded(uploaded_file):
-    if not uploaded_file:
-        return None
-    uploaded_file.seek(0)
-    if uploaded_file.name.lower().endswith(".csv"):
-        return pd.read_csv(uploaded_file)
-    return pd.read_excel(uploaded_file)
 
 
 def _digits_only(v):
@@ -87,7 +80,7 @@ def render_data_quality_monitor_tab():
         return
 
     try:
-        df = _read_uploaded(uploaded)
+        df = read_uploaded_file(uploaded)
     except Exception as exc:
         st.error(f"Failed to read file: {exc}")
         return
@@ -103,13 +96,13 @@ def render_data_quality_monitor_tab():
     else:
         st.success("Required columns are detected.")
 
-    st.dataframe(issues_df, use_container_width=True, hide_index=True)
+    st.dataframe(issues_df, width="stretch", hide_index=True)
 
     with st.expander("Detected Column Mapping", expanded=False):
         mapping_df = pd.DataFrame(
             [{"Logical Field": k, "Mapped Column": v} for k, v in auto_cols.items()]
         )
-        st.dataframe(mapping_df, use_container_width=True, hide_index=True)
+        st.dataframe(mapping_df, width="stretch", hide_index=True)
 
     out = BytesIO()
     with pd.ExcelWriter(out, engine="xlsxwriter") as writer:
@@ -119,7 +112,7 @@ def render_data_quality_monitor_tab():
         out.getvalue(),
         file_name=f"quality_report_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True,
+        width="stretch",
         type="primary",
     )
 
@@ -138,7 +131,7 @@ def render_daily_summary_export_tab():
         return
 
     try:
-        df = _read_uploaded(uploaded)
+        df = read_uploaded_file(uploaded)
     except Exception as exc:
         st.error(f"Failed to read file: {exc}")
         return
@@ -157,7 +150,7 @@ def render_daily_summary_export_tab():
     qty = pd.to_numeric(df[auto_cols["qty"]], errors="coerce").fillna(0)
     df_calc = df.copy()
     df_calc["Total Amount"] = cost * qty
-    df_calc["Category"] = df_calc[auto_cols["name"]].astype(str).apply(get_category)
+    df_calc["Category"] = df_calc[auto_cols["name"]].astype(str).apply(get_category_for_sales)
 
     total_revenue = float(df_calc["Total Amount"].sum())
     total_items = float(qty.sum())
@@ -208,7 +201,7 @@ def render_daily_summary_export_tab():
     )
 
     st.success("Executive summary generated.")
-    st.dataframe(kpi_df, use_container_width=True, hide_index=True)
+    st.dataframe(kpi_df, width="stretch", hide_index=True)
 
     out = BytesIO()
     with pd.ExcelWriter(out, engine="xlsxwriter") as writer:
@@ -223,6 +216,6 @@ def render_daily_summary_export_tab():
         out.getvalue(),
         file_name=f"executive_summary_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx",
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        use_container_width=True,
+        width="stretch",
         type="primary",
     )

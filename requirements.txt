@@ -5,11 +5,14 @@ plotly
 openpyxl
 xlsxwriter
 pillow
-fuzzywuzzy==0.18.0
-
-# Fuzzy Matching (better than fuzzywuzzy)
+# Fuzzy Matching
 rapidfuzz
 
-# Google API
+# Google & OpenAI API
 google-api-python-client
 google-auth
+google-generativeai
+openai
+
+# Utilities
+pyshorteners

@@ -1,9 +1,8 @@
 
 import pandas as pd
-import re
+from app_modules.categories import get_category_for_orders
 from app_modules.zones import KNOWN_ZONES
-from app_modules.utils import get_category_from_name, normalize_city_name, extract_best_zone, format_address_logic
-from fuzzywuzzy import process
+from app_modules.utils import normalize_city_name, extract_best_zone, format_address_logic
 
 def clean_dataframe(df):
     """
@@ -20,6 +19,12 @@ def clean_dataframe(df):
         if df['Item Cost'].dtype == 'object':
             df['Item Cost'] = df['Item Cost'].astype(str).str.replace(r'[^\d.]', '', regex=True)
         df['Item Cost'] = pd.to_numeric(df.get('Item Cost', 0), errors='coerce').fillna(0)
+
+    # Clean Order Total Amount
+    if 'Order Total Amount' in df.columns:
+        if df['Order Total Amount'].dtype == 'object':
+            df['Order Total Amount'] = df['Order Total Amount'].astype(str).str.replace(r'[^\d.]', '', regex=True)
+        df['Order Total Amount'] = pd.to_numeric(df.get('Order Total Amount', 0), errors='coerce').fillna(0)
     
     # Clean string columns
     string_cols = ['Phone (Billing)', 'Item Name', 'SKU', 'First Name (Shipping)', 'State Name (Billing)', 'Order Number']
@@ -68,7 +73,7 @@ def process_single_order_group(phone, group, data_cols):
     for _, row in group.iterrows():
         item_name = row.get('Item Name', '')
         sku = row.get('SKU', '')
-        category = get_category_from_name(item_name)
+        category = get_category_for_orders(item_name)
         
         # Format: "Item Name - SKU"
         item_str = f"{item_name} - {sku}"

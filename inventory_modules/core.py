@@ -1,11 +1,11 @@
 import math
-import io
 import re
-from dataclasses import dataclass
 from typing import Dict, Tuple, Optional
 
 import pandas as pd
-from fuzzywuzzy import process
+from rapidfuzz import process as rf_process
+
+from app_modules.io_utils import read_uploaded_file
 
 
 def normalize_key(val) -> str:
@@ -147,13 +147,6 @@ def add_title_size_column(df: pd.DataFrame, title_col: str, size_col: Optional[s
     return df
 
 
-def _read_uploaded(file_obj) -> pd.DataFrame:
-    file_obj.seek(0)
-    if getattr(file_obj, "name", "").endswith(".csv"):
-        return pd.read_csv(file_obj)
-    return pd.read_excel(file_obj)
-
-
 def load_inventory_from_uploads(uploaded_files: Dict[str, object]):
     """
     Build inventory mapping from uploaded inventory files.
@@ -169,7 +162,7 @@ def load_inventory_from_uploads(uploaded_files: Dict[str, object]):
         if file_obj is None:
             continue
         try:
-            df = _read_uploaded(file_obj)
+            df = read_uploaded_file(file_obj)
             size_col, qty_col, title_col, sku_col = identify_columns(df)
 
             if not title_col:
@@ -235,6 +228,7 @@ def add_stock_columns_from_inventory(
     df = product_df.copy()
     matched = set()
     sku_to_inv_key = sku_to_title_size or {}
+    name_keys = [k for k in inventory.keys() if k not in sku_to_inv_key]
     
     # Pre-calculate match status and stock keys for each row
     match_statuses = []
@@ -287,14 +281,13 @@ def add_stock_columns_from_inventory(
             # Priority 3: Fuzzy Name Match (Correction for typos)
             elif pl_key:
                 # We only fuzzy match against non-SKU keys (Title-Size keys)
-                name_keys = [k for k in inventory.keys() if k not in sku_to_inv_key]
                 if name_keys:
-                    best_match, score = process.extractOne(pl_key, name_keys)
-                    if score >= 85: # Require high confidence for auto-match
+                    best_match, score, _ = rf_process.extractOne(pl_key, name_keys)
+                    if score >= 85:
                         inv_key = best_match
-                        status = f"Fuzzy Match ({score}%) -> {best_match}"
+                        status = f"Fuzzy Match ({int(score)}%) -> {best_match}"
                     else:
-                        status = f"No Match (Closest: {best_match} @ {score}%)"
+                        status = f"No Match (Closest: {best_match} @ {int(score)}%)"
                 else:
                     status = "No Match"
             else:

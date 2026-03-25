@@ -69,3 +69,10 @@ data/
 *.csv
 !tests/*.csv
 !tests/*.xlsx
+error_logs.json
+session_state.json
+streamlit_err.log
+streamlit_out.log
+bike_log.txt
+feedback/
+incoming/

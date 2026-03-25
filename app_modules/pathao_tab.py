@@ -1,7 +1,6 @@
-﻿import pandas as pd
 import streamlit as st
-
 from app_modules.error_handler import log_error
+from app_modules.io_utils import read_uploaded_file
 from app_modules.persistence import clear_state_keys, save_state
 from app_modules.processor import process_orders_dataframe
 from app_modules.ui_components import (
@@ -12,91 +11,76 @@ from app_modules.ui_components import (
     section_card,
     to_excel_bytes,
 )
-
+from app_modules.data_sync import load_shared_gsheet, clear_sync_cache
+from app_modules.utils import find_columns
 
 REQUIRED_COLUMNS = ["Phone (Billing)"]
-
-
-def _read_uploaded(uploaded_file):
-    if not uploaded_file:
-        return None
-    uploaded_file.seek(0)
-    if uploaded_file.name.lower().endswith(".csv"):
-        return pd.read_csv(uploaded_file)
-    return pd.read_excel(uploaded_file)
-
 
 def _reset_pathao_state():
     clear_state_keys(["pathao_res_df", "pathao_preview_df", "pathao_uploaded_name"])
 
-
 def render_pathao_tab(guided: bool = True):
-    section_card(
-        "Pathao Order Processor",
-        "Upload order file, validate required columns, generate repaired export.",
-    )
+    section_card("Pathao Order Processor", "Upload order file, validate required columns, generate repaired export.")
 
     if guided:
         step = 0
-        if st.session_state.get("pathao_preview_df") is not None:
-            step = 1
-        if st.session_state.get("pathao_res_df") is not None:
-            step = 2
+        if st.session_state.get("pathao_preview_df") is not None: step = 1
+        if st.session_state.get("pathao_res_df") is not None: step = 2
         render_steps(["Upload", "Validate", "Preview", "Export"], min(step + 1, 3))
 
-    up_pathao = st.file_uploader("Upload Orders (CSV/XLSX)", type=["xlsx", "csv"], key="pathao_up")
+    c1, c2 = st.columns([1, 1])
+    with c1:
+        if st.button("📡 Sync from Live Stream", use_container_width=True):
+            try:
+                clear_sync_cache()
+                df_sync, source_name, _ = load_shared_gsheet("LastDaySales")
+                st.session_state.pathao_preview_df = df_sync
+                st.session_state.pathao_uploaded_name = source_name
+                st.rerun()
+            except Exception as e: st.error(f"Sync failed: {e}")
+    with c2:
+        up_pathao = st.file_uploader("Manual Upload", type=["xlsx", "csv"], key="pathao_up", label_visibility="collapsed")
 
-    preview_df = None
+    preview_df = st.session_state.get("pathao_preview_df")
     valid_file = False
+    
     if up_pathao:
         try:
-            preview_df = _read_uploaded(up_pathao)
+            preview_df = read_uploaded_file(up_pathao)
             st.session_state.pathao_preview_df = preview_df
             st.session_state.pathao_uploaded_name = up_pathao.name
-            valid_file = render_file_summary(up_pathao, preview_df, REQUIRED_COLUMNS)
-        except Exception as exc:
-            log_error(exc, context="Pathao Upload")
-            st.error("Failed to read uploaded file.")
+        except Exception as exc: st.error("Failed to read file.")
 
-    run_clicked, clear_clicked = render_action_bar(
-        primary_label="Process orders",
-        primary_key="pathao_process_btn",
-        secondary_label="Clear upload",
-        secondary_key="pathao_clear_btn",
-    )
+    if preview_df is not None:
+        # Check if we can auto-map required Phone column if it's not exact match
+        cols = find_columns(preview_df)
+        if "phone" in cols:
+             preview_df = preview_df.rename(columns={cols["phone"]: "Phone (Billing)"})
+        
+        from collections import namedtuple
+        FileMock = namedtuple("FileMock", ["name"])
+        mock = FileMock(name=st.session_state.get("pathao_uploaded_name", "Data_Source"))
+        valid_file = render_file_summary(mock, preview_df, REQUIRED_COLUMNS)
+
+    run_clicked, clear_clicked = render_action_bar("Process orders", "pathao_run", "Clear", "pathao_clr")
 
     if clear_clicked:
         _reset_pathao_state()
         st.rerun()
 
-    if run_clicked:
-        if not up_pathao or not valid_file:
-            st.warning("Upload a valid file before processing.")
-        else:
-            try:
-                with st.status("Processing orders...", expanded=True) as status:
-                    st.write("Applying standard cleanup and address formatting...")
-                    result_df = process_orders_dataframe(preview_df)
-                    st.session_state.pathao_res_df = result_df
-                    save_state()
-                    status.update(label="Processing complete", state="complete", expanded=False)
-                st.success(f"Processed {len(result_df)} grouped orders.")
-            except Exception as exc:
-                log_error(exc, context="Pathao Processor")
-                st.error("Pathao processing failed. Check System Logs for details.")
+    if run_clicked and valid_file:
+        try:
+            with st.status("Processing orders...", expanded=True) as status:
+                result_df = process_orders_dataframe(preview_df)
+                st.session_state.pathao_res_df = result_df
+                save_state()
+                status.update(label="Complete", state="complete")
+            st.success(f"Processed {len(result_df)} orders.")
+        except Exception as exc: st.error(f"Processing failed: {exc}")
 
-    result_df = st.session_state.get("pathao_res_df")
-    if result_df is not None:
-        with st.expander("Preview output", expanded=True):
-            st.dataframe(result_df, use_container_width=True, hide_index=True)
-
-        st.download_button(
-            "Download repaired Pathao file",
-            to_excel_bytes(result_df, sheet_name="Pathao"),
-            "Pathao_Final.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            type="primary",
-            use_container_width=True,
-        )
+    res_df = st.session_state.get("pathao_res_df")
+    if res_df is not None:
+        st.dataframe(res_df, use_container_width=True, hide_index=True)
+        st.download_button("Download repaired Pathao file", to_excel_bytes(res_df), "Pathao_Final.xlsx", type="primary")
 
     render_reset_confirm("pathao", _reset_pathao_state)
