@@ -870,11 +870,12 @@ def _render_wp_orders_dashboard(result_df: pd.DataFrame, result_meta: dict):
     currency = metrics.get("currency", "")
 
     metric_1, metric_2, metric_3, metric_4, metric_5 = st.columns(5)
-    metric_1.metric("Orders", f"{metrics['orders']:,}")
-    metric_2.metric("Gross Sales", _format_money(metrics["gross_sales"], currency))
-    metric_3.metric("Avg Order Value", _format_money(metrics["avg_order_value"], currency))
-    metric_4.metric("Unique Customers", f"{metrics['unique_customers']:,}")
-    metric_5.metric("Items Sold", f"{metrics['items_sold']:,.0f}")
+    from src.ui.components import render_metric_hud
+    with metric_1: render_metric_hud("Orders", f"{metrics['orders']:,}", "🛒")
+    with metric_2: render_metric_hud("Gross Sales", _format_money(metrics["gross_sales"], currency), "💰")
+    with metric_3: render_metric_hud("Avg Order Value", _format_money(metrics["avg_order_value"], currency), "🛍️")
+    with metric_4: render_metric_hud("Unique Customers", f"{metrics['unique_customers']:,}", "👥")
+    with metric_5: render_metric_hud("Items Sold", f"{metrics['items_sold']:,.0f}", "📦")
 
     st.caption(f"Date range: {result_meta.get('date_range', 'N/A')}")
     st.caption(f"Endpoint: {result_meta.get('endpoint', 'N/A')}")

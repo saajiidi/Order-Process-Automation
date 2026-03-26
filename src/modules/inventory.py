@@ -75,9 +75,10 @@ def render_distribution_tab(search_q, guided: bool = True):
              _, _, tc, sc = inv_core.identify_columns(master_df)
              title_col, sku_col = tc or title_col, sc or sku_col
              
+             from src.ui.components import render_metric_hud
              c1, c2 = st.columns(2)
-             c1.metric("Master Rows", len(master_df))
-             c2.metric("Detected Title", title_col or "N/A")
+             with c1: render_metric_hud("Master Rows", f"{len(master_df):,}", "📦")
+             with c2: render_metric_hud("Detected Title", title_col or "N/A", "🏷️")
 
         run_btn, clr_btn = render_action_bar("Analyze distribution", "inv_run", "Clear", "inv_clr")
 

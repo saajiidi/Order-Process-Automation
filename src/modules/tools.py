@@ -87,9 +87,10 @@ def render_data_quality_monitor_tab():
 
     auto_cols, missing_required, issues_df, quality_score = _evaluate_data_quality(df)
     c1, c2, c3 = st.columns(3)
-    c1.metric("Rows", len(df))
-    c2.metric("Detected Mappings", len(auto_cols))
-    c3.metric("Quality Score", f"{quality_score}%")
+    from src.ui.components import render_metric_hud
+    with c1: render_metric_hud("Rows", f"{len(df):,}", "📋")
+    with c2: render_metric_hud("Detected Mappings", f"{len(auto_cols):,}", "🔗")
+    with c3: render_metric_hud("Quality Score", f"{quality_score}%", "🧪")
 
     if missing_required:
         st.error(f"Missing required logical columns: {', '.join(missing_required)}")
@@ -183,6 +184,7 @@ def render_daily_summary_export_tab():
             daily = valid.groupby("_d", as_index=False)["Total Amount"].sum().sort_values("_d")
             prev_val = float(daily.iloc[-2]["Total Amount"])
             curr_val = float(daily.iloc[-1]["Total Amount"])
+            # Corrected: Removed misplaced inventory metrics from sales trend loop
             delta = curr_val - prev_val
             pct = (delta / prev_val * 100) if prev_val else 0
             change_note = (
