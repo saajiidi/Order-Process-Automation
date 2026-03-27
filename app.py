@@ -36,8 +36,19 @@ def run_app():
     inject_base_styles()
     
     with st.sidebar:
-        st.image("https://cdn.brandfetch.io/deencommerce.com", width=40)
-        st.markdown(f"### OPS COMMAND\nAutomation Pivot")
+        st.markdown("""
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 2rem;">
+                <a href="https://deencommerce.com" target="_blank">
+                    <img src="https://cdn.brandfetch.io/deencommerce.com" width="45" style="border-radius: 8px;">
+                </a>
+                <div>
+                    <div style="font-size: 0.75rem; font-weight: 700; color: #2563eb; letter-spacing: 0.1em; text-transform: uppercase;">OPS COMMAND</div>
+                    <a href="https://deencommerce.com" target="_blank" style="text-decoration: none; color: inherit;">
+                        <div style="font-size: 1.1rem; font-weight: 600; line-height: 1.1;">Automation Pivot</div>
+                    </a>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
         
         if "main_nav" not in st.session_state:
             st.session_state.main_nav = "📡 Live Sync"
