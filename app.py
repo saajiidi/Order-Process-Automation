@@ -132,11 +132,13 @@ def run_app():
             "🛠️ System"
         ]
         
+        st.markdown("#### Navigation Hub")
         st.session_state.main_nav = st.radio(
-            "Navigation Hub",
+            "Navigation",
             nav_options,
             index=nav_options.index(st.session_state.main_nav) if st.session_state.main_nav in nav_options else 0,
-            key="main_nav_radio"
+            key="main_nav_radio",
+            label_visibility="collapsed"
         )
         
         st.divider()

@@ -20,7 +20,7 @@ def inject_base_styles():
     }
 
     /* THEME SYNC & TYPOGRAPHY */
-    .stApp, .stApp p, .stApp span, [data-testid="stMarkdownContainer"] p {
+    .stApp, .stApp p, [data-testid="stMarkdownContainer"] p {
         color: var(--text-color) !important;
         font-family: 'Outfit', sans-serif;
     }
@@ -30,10 +30,24 @@ def inject_base_styles():
         letter-spacing: -0.02em;
     }
 
+    /* SIDEBAR NAV - PREVENT OVERLAP */
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] {
+        margin-bottom: 0.5rem !important;
+        font-weight: 700 !important;
+    }
+    
+    [data-testid="stSidebar"] div[role="radiogroup"] {
+        gap: 8px !important;
+    }
+    
+    [data-testid="stSidebar"] label[data-testid="stWidgetLabel"] {
+        color: var(--text-color) !important;
+    }
+
     /* FLAT CARD SYSTEM - Using Native Background Variables */
     .hub-card {
         background: var(--secondary-background-color);
-        border: 1px solid rgba(128, 128, 128, 0.15);
+        border: 1px solid var(--secondary-background-color); /* More resilient to theme changes */
         border-radius: 12px;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
