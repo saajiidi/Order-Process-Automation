@@ -44,7 +44,7 @@ def run_app():
                 <div>
                     <div style="font-size: 0.75rem; font-weight: 700; color: #2563eb; letter-spacing: 0.1em; text-transform: uppercase;">OPS COMMAND</div>
                     <a href="https://deencommerce.com" target="_blank" style="text-decoration: none; color: inherit;">
-                        <div style="font-size: 1.1rem; font-weight: 600; line-height: 1.1;">Automation Pivot</div>
+                        <div style="font-size: 1.1rem; font-weight: 600; line-height: 1.1;">DEEN Commerce</div>
                     </a>
                 </div>
             </div>

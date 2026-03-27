@@ -420,15 +420,26 @@ def parse_date_from_tab_name(name):
 def get_all_statements_master(full_history: bool = False, force_refresh: bool = False):
     """
     Intelligent Incremental Builder for Statement Master.
-    Treats historical data (2022-2025) as immutable local blocks.
-    Only syncs 2026/Live tabs frequently.
     """
     from src.core.paths import GSHEETS_CACHE_DIR
-    from src.core.sync import load_sheet_with_cache, is_volatile, load_published_sheet_tabs
-    
     cache_file = GSHEETS_CACHE_DIR / (
         "master_full.parquet" if full_history else "master_recent.parquet"
     )
+
+    # 1. Fast Path: Local-First (Bypass cloud if cache is fresh < 60 mins)
+    if cache_file.exists() and not force_refresh and not full_history:
+        mtime = datetime.fromtimestamp(os.path.getmtime(cache_file))
+        age_mins = (datetime.now() - mtime).total_seconds() / 60
+        if age_mins < 60:
+             try:
+                 df = pd.read_parquet(cache_file)
+                 if not df.empty:
+                      return df, f"Local Hub (Cached {int(age_mins)}m ago)"
+             except Exception:
+                 pass
+
+    # 2. Cloud Revalidation (Slower Path)
+    from src.core.sync import load_sheet_with_cache, is_volatile, load_published_sheet_tabs
 
     # 1. Initialize empty or existing master foundation
     master_df = pd.DataFrame()
