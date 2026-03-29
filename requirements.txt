@@ -1,22 +1,23 @@
 # Core app and analytics
-streamlit
-pandas
-plotly
-openpyxl
-xlsxwriter
-pyarrow
-pillow
-beautifulsoup4
+streamlit==1.54.0
+pandas==2.3.3
+plotly==6.5.0
+openpyxl==3.1.5
+XlsxWriter==3.2.9
+pyarrow==23.0.0
+Pillow==12.0.0
+beautifulsoup4==4.14.3
 
 # Parsing and matching
-rapidfuzz
-dateparser
+rapidfuzz==3.14.3
+dateparser==1.4.0
 
 # Google Sheets and AI integrations
-google-api-python-client
-google-auth
-google-generativeai
-openai
+google-api-python-client==2.187.0
+google-auth==2.41.1
+google-generativeai==0.8.6
+openai==2.24.0
 
 # Utilities
-pyshorteners
+pyshorteners==1.0.1
+requests==2.32.5
