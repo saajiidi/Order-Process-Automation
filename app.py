@@ -6,7 +6,9 @@ import streamlit as st
 
 # Ensure the app root is in the python path for module discovery
 # especially important for remote environments like Streamlit Cloud
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 st.set_page_config(
     page_title="DEEN Commerce | Ops Command",
