@@ -858,7 +858,7 @@ def render_reset_confirm(state_key: str, reset_fn):
             st.success("Workflow reset complete.")
             st.rerun()
         if c2.button("Cancel", key=f"confirm_no_{state_key}"):
-            st.session_state[f"confirm_reset_{state_key}") = False
+            st.session_state[f"confirm_reset_{state_key}"] = False
 
 
 def sample_file_download(label: str, data: list[dict], file_name: str):
