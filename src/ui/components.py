@@ -593,7 +593,6 @@ def render_header():
             <div class="app-shell-brand">
                 <div class="app-shell-label">Commerce Operations</div>
                 <div class="app-shell-title">{APP_TITLE} <span style="font-size:0.8rem;color:var(--text-dim);font-weight:600;">{APP_VERSION}</span></div>
-                <div class="app-shell-subtitle">Consistent, high-contrast dashboard for live queue review, analysis, and daily decisions.</div>
             </div>
             <div class="app-shell-chip-row">
                 <div class="app-shell-chip">LAST SYNC {last_sync}</div>
