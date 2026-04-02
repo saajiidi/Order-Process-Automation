@@ -55,7 +55,7 @@ def _validate_wp_columns(df: pd.DataFrame):
 
 
 def render_wp_tab():
-    render_reset_confirm("wp", _reset_wp_state)
+    render_reset_confirm("WhatsApp Messenger", "wp", _reset_wp_state)
     section_card(
         "WhatsApp Verification",
         "Generate personalized verification links and export for bulk operations.",

@@ -62,18 +62,34 @@ def run_app():
             save_state()
             st.success("Session state saved.")
 
-        if st.button("Reset Application Data", use_container_width=True, type="secondary"):
+        # Unified Workspace Control Hub
+        st.divider()
+        st.subheader("Workspace Control")
+        with st.expander("Reset Active Tool Data", expanded=True):
+             registered = st.session_state.get("registered_resets", {})
+             if not registered:
+                 st.info("No active tool data found.")
+             else:
+                 tool_to_wipe = st.selectbox("Select tool", list(registered.keys()))
+                 if st.button("Reset Tool Now", use_container_width=True, type="primary"):
+                     registered[tool_to_wipe]["fn"]()
+                     st.session_state.confirm_tool_reset = False
+                     st.success("Cleaned!")
+                     st.rerun()
+
+        st.divider()
+        if st.button("Full System Reset", use_container_width=True, type="secondary"):
              st.session_state.confirm_app_reset = True
         
         if st.session_state.get("confirm_app_reset"):
-             st.warning("Are you sure? This clears ALL data.")
+             st.warning("⚠️ Wipe EVERYTHING?")
              c1, c2 = st.columns(2)
-             if c1.button("Yes, Reset", type="primary", use_container_width=True):
+             if c1.button("Yes", type="primary", use_container_width=True):
                  from app_modules.persistence import STATE_FILE
                  if os.path.exists(STATE_FILE): os.remove(STATE_FILE)
                  st.session_state.clear()
                  st.rerun()
-             if c2.button("Cancel", use_container_width=True):
+             if c2.button("No", use_container_width=True):
                  st.session_state.confirm_app_reset = False
                  st.rerun()
 

@@ -191,12 +191,12 @@ def render_sidebar_branding():
         sync_label = "Just now" if mins < 1 else f"{mins}m ago"
         sync_html = f'<div style="font-size:0.75rem; color:#64748b; margin-top:10px;">🔄 Last Synced: {sync_label}</div>'
 
-    # Render exactly as previous
+    # Render exactly as previous vertical stack
     st.markdown(
-        f"""<div style="padding:4px 14px 12px 14px; border-bottom:1px solid rgba(128,128,128,0.1); margin-bottom:12px;">
-            <div style="text-align:left;">
-                <div style="font-size:1.05rem; font-weight:700; color:inherit; line-height:1.1;">Automation Hub Pro</div>
-                <div style="color:#1d4ed8; font-size:0.75rem; font-weight:600; margin-top:2px;">v9.0</div>
+        f"""<div style="padding:10px 16px; border-bottom:1px solid rgba(128,128,128,0.1); margin-bottom:15px;">
+            <div style="font-weight:700; font-size:1.1rem; line-height:1.2;">
+                Automation Hub Pro<br>
+                <span style="font-size:0.85rem; font-weight:400; color:#64748b;">v9.0</span>
             </div>
         </div>""",
         unsafe_allow_html=True
@@ -296,23 +296,18 @@ def render_action_bar(
     return primary_clicked, secondary_clicked
 
 
-def render_reset_confirm(state_key: str, reset_fn):
-    with st.sidebar:
-        st.divider()
-        if st.button("Reset current workflow", key=f"reset_{state_key}", use_container_width=True, type="secondary"):
-            st.session_state[f"confirm_reset_{state_key}"] = True
-
-        if st.session_state.get(f"confirm_reset_{state_key}"):
-            st.warning("Confirm reset: clear current data?")
-            c1, c2 = st.columns(2)
-            if c1.button("Confirm", key=f"confirm_yes_{state_key}", type="primary", use_container_width=True):
-                reset_fn()
-                st.session_state[f"confirm_reset_{state_key}"] = False
-                st.success("Workflow reset complete.")
-                st.rerun()
-            if c2.button("Cancel", key=f"confirm_no_{state_key}", use_container_width=True):
-                st.session_state[f"confirm_reset_{state_key}"] = False
-                st.rerun()
+def render_reset_confirm(label: str, state_key: str, reset_fn):
+    """
+    Registers a tool's reset function for the unified sidebar.
+    Doesn't render anything in the sidebar immediately to avoid duplicates.
+    """
+    if "registered_resets" not in st.session_state:
+        st.session_state.registered_resets = {}
+    
+    st.session_state.registered_resets[label] = {
+        "fn": reset_fn,
+        "key": state_key
+    }
 
 
 

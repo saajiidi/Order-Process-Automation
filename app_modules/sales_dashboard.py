@@ -835,7 +835,7 @@ def render_manual_tab():
         st.session_state.manual_generate = False
         st.session_state.manual_res = None
     
-    render_reset_confirm("manual", _reset_manual_state)
+    render_reset_confirm("Sales Dashboard (Manual)", "manual", _reset_manual_state)
     section_card("Manual Upload Dashboard", "Upload sales data, confirm column mapping, then generate charts and exports.")
     uploaded_file = st.file_uploader("Upload Sales Data (Excel or CSV)", type=['xlsx', 'csv'])
 
@@ -898,7 +898,7 @@ def render_live_tab():
         st.session_state.live_sync_time = None
         st.session_state.live_res = None
     
-    render_reset_confirm("live", _reset_live_state)
+    render_reset_confirm("Live Dashboard", "live", _reset_live_state)
     """Always running dashboard from selected source."""
     tz_bd = timezone(timedelta(hours=6))
     current_t = datetime.now(tz_bd).strftime('%B %d, %Y %I:%M %p')
