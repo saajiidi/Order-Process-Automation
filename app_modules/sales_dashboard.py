@@ -836,7 +836,6 @@ def render_manual_tab():
         st.session_state.manual_res = None
     
     render_reset_confirm("Sales Dashboard (Manual)", "manual", _reset_manual_state)
-    section_card("Manual Upload Dashboard", "Upload sales data, confirm column mapping, then generate charts and exports.")
     uploaded_file = st.file_uploader("Upload Sales Data (Excel or CSV)", type=['xlsx', 'csv'])
 
     if uploaded_file is None:

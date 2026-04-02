@@ -274,10 +274,6 @@ def _reset_parser_state():
 
 def render_fuzzy_parser_tab():
     render_reset_confirm("Delivery Data Parser", "parser", _reset_parser_state)
-    section_card(
-        "Delivery Text Parser",
-        "Convert copied delivery text into spreadsheet-ready records.",
-    )
 
     sample = """Cons. ID
 DD040326KR9NUU

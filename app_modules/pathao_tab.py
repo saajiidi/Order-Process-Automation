@@ -31,10 +31,6 @@ def _reset_pathao_state():
 
 def render_pathao_tab():
     render_reset_confirm("Pathao Processor", "pathao", _reset_pathao_state)
-    section_card(
-        "Pathao Order Processor",
-        "Upload order file, validate required columns, generate repaired export.",
-    )
 
     up_pathao = st.file_uploader("Upload Orders (CSV/XLSX) OR pull from Live Source below", type=["xlsx", "csv"], key="pathao_up")
     
