@@ -175,7 +175,7 @@ def render_distribution_tab(search_q, guided: bool = True):
                 pie = px.pie(values=totals.values, names=totals.index, title="Location stock distribution", hole=0.4)
                 st.plotly_chart(pie, use_container_width=True)
 
-            threshold = st.session_state.low_stock_threshold
+            threshold = st.session_state.get("low_stock_threshold", 5)
             total_stock = inv_df[locs].apply(pd.to_numeric, errors="coerce").fillna(0).sum(axis=1)
             low_stock = inv_df[total_stock < threshold]
 

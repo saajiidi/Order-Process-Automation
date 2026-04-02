@@ -1,4 +1,4 @@
-﻿import pandas as pd
+import pandas as pd
 import streamlit as st
 
 from app_modules.error_handler import log_error
@@ -44,11 +44,41 @@ def render_pathao_tab(guided: bool = True):
             step = 2
         render_steps(["Upload", "Validate", "Preview", "Export"], min(step + 1, 3))
 
-    up_pathao = st.file_uploader("Upload Orders (CSV/XLSX)", type=["xlsx", "csv"], key="pathao_up")
+    up_pathao = st.file_uploader("Upload Orders (CSV/XLSX) OR pull from Live Source below", type=["xlsx", "csv"], key="pathao_up")
+    
+    fetch_live_clicked = st.button("Pull from Live Dash Data & Auto-Process", type="secondary", use_container_width=True)
 
     preview_df = None
     valid_file = False
-    if up_pathao:
+    
+    if fetch_live_clicked:
+        try:
+            from app_modules.sales_dashboard import load_live_source, get_setting, DEFAULT_GSHEET_URL, get_gcp_service_account_info
+            source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
+            default_idx = 0
+            if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
+                default_idx = 1
+            elif get_setting("GSHEET_ID"):
+                default_idx = 1
+            elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
+                default_idx = 2
+            
+            with st.spinner(f"Fetching from {source_options[default_idx]}..."):
+                df_live, source_name, _ = load_live_source(source_options[default_idx])
+                
+            preview_df = df_live
+            st.session_state.pathao_preview_df = preview_df
+            st.session_state.pathao_uploaded_name = source_name
+            st.session_state.pathao_auto_process = True
+            
+            missing = [c for c in REQUIRED_COLUMNS if c not in preview_df.columns]
+            valid_file = len(missing) == 0
+            st.success("Fetched from Live Source perfectly. Processing...")
+            
+        except Exception as exc:
+            log_error(exc, context="Pathao Live Pull")
+            st.error(f"Failed to fetch live source: {exc}")
+    elif up_pathao:
         try:
             preview_df = _read_uploaded(up_pathao)
             st.session_state.pathao_preview_df = preview_df
@@ -57,6 +87,10 @@ def render_pathao_tab(guided: bool = True):
         except Exception as exc:
             log_error(exc, context="Pathao Upload")
             st.error("Failed to read uploaded file.")
+    elif st.session_state.get("pathao_preview_df") is not None:
+        preview_df = st.session_state.pathao_preview_df
+        missing = [c for c in REQUIRED_COLUMNS if c not in preview_df.columns]
+        valid_file = len(missing) == 0
 
     run_clicked, clear_clicked = render_action_bar(
         primary_label="Process orders",
@@ -64,14 +98,18 @@ def render_pathao_tab(guided: bool = True):
         secondary_label="Clear upload",
         secondary_key="pathao_clear_btn",
     )
+    
+    if st.session_state.get("pathao_auto_process"):
+        run_clicked = True
+        st.session_state.pathao_auto_process = False
 
     if clear_clicked:
         _reset_pathao_state()
         st.rerun()
 
     if run_clicked:
-        if not up_pathao or not valid_file:
-            st.warning("Upload a valid file before processing.")
+        if preview_df is None or not valid_file:
+            st.warning("Upload a valid file or pull from live source before processing.")
         else:
             try:
                 with st.status("Processing orders...", expanded=True) as status:

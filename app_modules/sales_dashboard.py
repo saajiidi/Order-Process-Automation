@@ -170,7 +170,7 @@ def get_category(name):
         return any(re.search(rf'\b{re.escape(kw.lower())}\b', text, re.IGNORECASE) for kw in keywords)
 
     specific_cats = {
-        'TankTop': ['tank top'],
+        'Tank Top': ['tank top'],
         'Boxer': ['boxer'],
         'Jeans': ['jeans'],
         'Denim': ['denim'],
@@ -182,7 +182,7 @@ def get_category(name):
         'Mask': ['mask'],
         'Bag': ['bag', 'backpack'],
         'Water Bottle': ['water bottle'],
-        'Contrast': ['contrast'],
+        'Contrast Shirt': ['contrast'],
         'Turtleneck': ['turtleneck', 'mock neck'],
         'Drop Shoulder': ['drop', 'shoulder'],
         'Wallet': ['wallet'],
@@ -533,19 +533,12 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
             m1, m2, m3, m4 = st.columns(4)
             m1.metric(get_items_sold_label(last_updated), f"{t_qty:,.0f}")
             total_orders = basket.get("total_orders", 0)
-            m2.metric("Total Orders", f"{total_orders:,.0f}" if total_orders else "-")
+            m2.metric("Number of Orders", f"{total_orders:,.0f}" if total_orders else "-")
             m3.metric("Revenue", f"TK {t_rev:,.2f}")
-            m4.metric("Avg Price", f"TK {(t_rev / t_qty if t_qty > 0 else 0):,.2f}")
-
-        if focus in ("all", "basket_analysis"):
-            st.subheader("Basket Analysis")
-            m5, m6 = st.columns(2)
-            if basket.get("avg_basket_qty", 0) > 0:
-                m5.metric("Avg Basket (Qty)", f"{basket['avg_basket_qty']:.2f} items")
-                m6.metric("Avg Basket (TK)", f"TK {basket['avg_basket_value']:,.2f}")
+            if basket.get("avg_basket_value", 0) > 0:
+                m4.metric("Basket Value (TK)", f"TK {basket['avg_basket_value']:,.2f}")
             else:
-                m5.metric("Avg Basket (Qty)", "-")
-                m6.metric("Avg Basket (TK)", "-")
+                m4.metric("Basket Value (TK)", "-")
 
         if focus in ("all", "visual_analytics"):
             st.subheader("Visual Analytics")
@@ -647,14 +640,12 @@ def render_dashboard_output(drill, summ, top, timeframe, basket, source_name, la
         show_welcome_popup(summ, basket, last_updated, "all")
 
     st.caption("Focused task popups")
-    p1, p2, p3, p4 = st.columns(4)
+    p1, p2, p3 = st.columns(3)
     if p1.button("Core Metrics", key=f"focus_core_{source_key}", use_container_width=True):
         show_welcome_popup(summ, basket, last_updated, "core_metrics")
-    if p2.button("Basket Analysis", key=f"focus_basket_{source_key}", use_container_width=True):
-        show_welcome_popup(summ, basket, last_updated, "basket_analysis")
-    if p3.button("Visual Analytics", key=f"focus_visual_{source_key}", use_container_width=True):
+    if p2.button("Visual Analytics", key=f"focus_visual_{source_key}", use_container_width=True):
         show_welcome_popup(summ, basket, last_updated, "visual_analytics")
-    if p4.button("Full Summary", key=f"focus_all_{source_key}", use_container_width=True):
+    if p3.button("Full Summary", key=f"focus_all_{source_key}", use_container_width=True):
         show_welcome_popup(summ, basket, last_updated, "all")
 
     t_qty = summ['Total Qty'].sum()
@@ -666,18 +657,12 @@ def render_dashboard_output(drill, summ, top, timeframe, basket, source_name, la
         m1, m2, m3, m4 = st.columns(4)
         m1.metric(get_items_sold_label(last_updated), f"{t_qty:,.0f}")
         total_orders = basket.get("total_orders", 0)
-        m2.metric("Total Orders", f"{total_orders:,.0f}" if total_orders else "-")
+        m2.metric("Number of Orders", f"{total_orders:,.0f}" if total_orders else "-")
         m3.metric("Revenue", f"TK {t_rev:,.2f}")
-        m4.metric("Avg Price", f"TK {(t_rev / t_qty if t_qty > 0 else 0):,.2f}")
-
-        st.subheader("Basket Analysis")
-        m5, m6 = st.columns(2)
-        if basket.get("avg_basket_qty", 0) > 0:
-            m5.metric("Avg Basket (Qty)", f"{basket['avg_basket_qty']:.2f} items")
-            m6.metric("Avg Basket (TK)", f"TK {basket['avg_basket_value']:,.2f}")
+        if basket.get("avg_basket_value", 0) > 0:
+            m4.metric("Basket Value (TK)", f"TK {basket['avg_basket_value']:,.2f}")
         else:
-            m5.metric("Avg Basket (Qty)", "-")
-            m6.metric("Avg Basket (TK)", "-")
+            m4.metric("Basket Value (TK)", "-")
 
         st.divider()
 
@@ -853,44 +838,22 @@ def render_live_tab():
     """Always running dashboard from selected source."""
     section_card("Live Dashboard", "Reads from configured live source and auto-maps required columns.")
     
-    # -----------------------------------------
-    # âš™ï¸ CONFIGURATION EXPANDER (Hidden by default)
-    # -----------------------------------------
-    with st.expander("Live Data Configuration", expanded=False):
-        source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
-        default_idx = 0
-        if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
-            default_idx = 1
-        elif get_setting("GSHEET_ID"):
-            default_idx = 1
-        elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
-            default_idx = 2
-
-        source_mode = st.selectbox("Live source", source_options, index=default_idx, key="live_source_mode")
-
-        if source_mode == "Incoming Folder":
-            st.caption(f"Incoming folder: {os.path.abspath(INCOMING_DIR)}")
-        elif source_mode == "Google Sheet":
-            st.caption("Uses GSHEET_URL (recommended) or GSHEET_ID + GSHEET_GID from st.secrets/environment.")
-        elif source_mode == "Google Drive Folder":
-            st.caption("Uses GDRIVE_FOLDER_ID and gcp_service_account credentials from st.secrets.")
-
-        refresh_sec = st.slider("Auto refresh every (seconds)", min_value=15, max_value=300, value=30, step=5, key="live_refresh_sec")
-        if hasattr(st, "autorefresh"):
-            st.autorefresh(interval=refresh_sec * 1000, key="live_autorefresh")
-        else:
-            st.info("Auto-refresh is not available in this Streamlit version. Click below to reload.")
-            st.button("Refresh Now", key="live_refresh_now")
-
-        with st.expander("Cloud setup keys"):
-            st.code(
-                "# .streamlit/secrets.toml\nGSHEET_URL = \"https://docs.google.com/spreadsheets/d/e/.../pubhtml\"\n# Optional fallback if not using GSHEET_URL:\nGSHEET_ID = \"<google_sheet_id>\"\nGSHEET_GID = \"0\"\n\nGDRIVE_FOLDER_ID = \"<drive_folder_id>\"\n\n[gcp_service_account]\ntype = \"service_account\"\nproject_id = \"...\"\nprivate_key_id = \"...\"\nprivate_key = \"-----BEGIN PRIVATE KEY-----\\n...\\n-----END PRIVATE KEY-----\\n\"\nclient_email = \"...\"\nclient_id = \"...\"\nauth_uri = \"https://accounts.google.com/o/oauth2/auth\"\ntoken_uri = \"https://oauth2.googleapis.com/token\"\nauth_provider_x509_cert_url = \"https://www.googleapis.com/oauth2/v1/certs\"\nclient_x509_cert_url = \"...\""
-            )
+    source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
+    default_idx = 0
+    if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
+        default_idx = 1
+    elif get_setting("GSHEET_ID"):
+        default_idx = 1
+    elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
+        default_idx = 2
+    
+    source_mode = source_options[default_idx]
+    
+    if hasattr(st, "autorefresh"):
+        st.autorefresh(interval=30000, key="live_autorefresh")
 
     try:
         df_live, source_name, modified_at = load_live_source(source_mode)
-        if modified_at:
-            st.caption(f"Last updated: {modified_at}")
 
         auto_cols = find_columns(df_live)
         missing_required = [k for k in ['name', 'cost', 'qty'] if k not in auto_cols]
