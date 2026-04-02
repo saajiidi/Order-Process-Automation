@@ -583,7 +583,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
             <div style="font-size:0.65rem; color:#64748b; margin-top:-10px;">
                 Powered by <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">
                     <img src="{logo_src}" width="14" style="vertical-align:middle; margin: 0 3px; border-radius:2px;" onerror="this.style.display='none'">
-                    DEEN commerce
+                    DEEN Commerce
                 </a>
             </div>
             """,

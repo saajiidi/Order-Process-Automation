@@ -246,7 +246,7 @@ def render_footer():
                 <span style="color:#64748b; margin:0 12px; opacity:0.5;">|</span>
                 <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">
                     <img src="{logo_src}" width="20" class="deen-logo-small" onerror="this.style.display='none'">
-                    Powered by <b>DEEN commerce</b>
+                    Powered by <b>DEEN Commerce</b>
                 </a>
             </div>
         </div>
