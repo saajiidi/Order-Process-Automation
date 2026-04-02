@@ -264,7 +264,6 @@ from app_modules.persistence import clear_state_keys
 from app_modules.ui_components import (
     render_action_bar,
     render_reset_confirm,
-    render_steps,
     section_card,
 )
 

@@ -26,45 +26,59 @@ st.set_page_config(
 
 def run_app():
     # Lazy imports keep bootstrap resilient on cloud when a module has runtime incompatibilities.
-    from app_modules.ai_chat import render_ai_chat_tab
     from app_modules.bike_animation import render_bike_animation
     from app_modules.distribution_tab import render_distribution_tab
     from app_modules.error_handler import get_logs, log_error
     from app_modules.fuzzy_parser_tab import render_fuzzy_parser_tab
-    from app_modules.more_tools import (
-        render_daily_summary_export_tab,
-        render_data_quality_monitor_tab,
-    )
     from app_modules.pathao_tab import render_pathao_tab
     from app_modules.persistence import init_state, save_state
     from app_modules.sales_dashboard import render_live_tab, render_manual_tab
     from app_modules.ui_components import (
         inject_base_styles,
         render_header,
-        sample_file_download,
+        render_footer,
+        render_sidebar_branding,
         section_card,
     )
     from app_modules.ui_config import PRIMARY_NAV
     from app_modules.error_handler import ERROR_LOG_FILE
     import os
-    from app_modules.whatsapp_api import render_whatsapp_api_tab
     from app_modules.wp_tab import render_wp_tab
 
     init_state()
     inject_base_styles()
 
     with st.sidebar:
+        render_sidebar_branding()
         st.subheader("Global Settings")
 
 
         st.session_state.show_animation = st.toggle(
             "Show motion effects",
-            value=st.session_state.get("show_animation", False),
+            value=st.session_state.get("show_animation", True),
         )
 
         if st.button("Save session state", use_container_width=True):
             save_state()
             st.success("Session state saved.")
+
+        if st.button("Reset Application Data", use_container_width=True, type="secondary"):
+             st.session_state.confirm_app_reset = True
+        
+        if st.session_state.get("confirm_app_reset"):
+             st.warning("Are you sure? This clears ALL data across all tools.")
+             c1, c2 = st.columns(2)
+             if c1.button("Yes, Reset", type="primary", use_container_width=True):
+                 # Clear most important keys
+                 from app_modules.persistence import STATE_FILE
+                 if os.path.exists(ERROR_LOG_FILE): os.remove(ERROR_LOG_FILE)
+                 if os.path.exists(STATE_FILE): os.remove(STATE_FILE)
+                 st.session_state.clear()
+                 st.success("Application reset. Reloading...")
+                 st.rerun()
+             if c2.button("Cancel", use_container_width=True):
+                 st.session_state.confirm_app_reset = False
+                 st.rerun()
 
         with st.expander("System Logs", expanded=False):
             logs = get_logs()
@@ -82,10 +96,9 @@ def run_app():
 
 
 
+    render_header()
     if st.session_state.get("show_animation"):
         render_bike_animation()
-
-    render_header()
 
 
     nav_tabs = st.tabs(PRIMARY_NAV)
@@ -109,6 +122,8 @@ def run_app():
 
     with nav_tabs[5]:
         render_wp_tab()
+
+    render_footer()
 
 
 

@@ -8,7 +8,6 @@ from app_modules.ui_components import (
     render_action_bar,
     render_file_summary,
     render_reset_confirm,
-    render_steps,
     section_card,
     to_excel_bytes,
 )

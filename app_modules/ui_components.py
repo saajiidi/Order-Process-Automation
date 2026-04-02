@@ -15,7 +15,6 @@ def inject_base_styles():
         :root {
             --primary: var(--primary-color, #1d4ed8);
             --surface: var(--background-color, #f8fafc);
-            --border: var(--secondary-background-color, #dbeafe);
             --text-muted: var(--text-color, #64748b);
             --step-surface: var(--background-color, #ffffff);
             --step-text: var(--text-color, #0f172a);
@@ -23,13 +22,49 @@ def inject_base_styles():
             --action-surface: var(--background-color, rgba(255, 255, 255, 0.96));
             --card-shadow: rgba(0, 0, 0, 0.15);
         }
+        .hub-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #64748b;
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(226, 232, 240, 0.8);
+            z-index: 999;
+        }
+        .hub-footer a {
+            color: #1d4ed8;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        /* Extra padding for main content so it doesn't get hidden by fixed footer */
+        .main .block-container {
+            padding-bottom: 80px !important;
+        }
+        .deen-logo-small {
+            vertical-align: middle;
+            margin-right: 6px;
+            border-radius: 4px;
+        }
         .hub-title-row {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             border-bottom: 2px solid var(--border);
-            padding: 8px 0 12px 0;
-            margin-bottom: 8px;
+            padding: 8px 0 16px 0;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+        /* Restore standard padding */
+        .main .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 80px !important;
         }
         .hub-title {
             margin: 0;
@@ -47,19 +82,6 @@ def inject_base_styles():
             padding: 14px 16px;
             margin-bottom: 12px;
             box-shadow: 0 8px 24px var(--card-shadow);
-        }
-        .hub-step {
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 8px 10px;
-            font-size: 0.9rem;
-            background: var(--step-surface);
-            color: var(--step-text);
-        }
-        .hub-step.active {
-            border-color: var(--primary);
-            background: var(--step-active-bg);
-            font-weight: 600;
         }
         .hub-action-wrap {
             position: sticky;
@@ -87,15 +109,6 @@ def inject_base_styles():
                 padding: 10px 12px;
                 border-radius: 10px;
             }
-            .hub-step {
-                font-size: 0.78rem;
-                padding: 6px 8px;
-                min-height: 46px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                text-align: center;
-            }
             .hub-action-wrap {
                 position: static;
                 margin-top: 6px;
@@ -107,14 +120,46 @@ def inject_base_styles():
     )
 
 
+def render_sidebar_branding():
+    """Elegant sidebar branding to save main screen space."""
+    logo_src = "https://logo.clearbit.com/deencommerce.com"
+    try:
+        import base64
+        import os
+        logo_jpg = os.path.join("assets", "deen_logo.jpg")
+        if os.path.exists(logo_jpg):
+            with open(logo_jpg, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode()
+            logo_src = f"data:image/jpeg;base64,{b64}"
+    except:
+        pass
+
+    # Add Last Synced info if available
+    sync_html = ""
+    if st.session_state.get("live_sync_time"):
+        diff = datetime.now() - st.session_state.live_sync_time
+        mins = int(diff.total_seconds() / 60)
+        sync_label = "Just now" if mins < 1 else f"{mins}m ago"
+        sync_html = f'<div style="font-size:0.75rem; color:#64748b; margin-top:10px;">🔄 Last Synced: {sync_label}</div>'
+
+    st.markdown(
+        f"""
+        <div style="text-align:center; padding:10px 0 20px 0; border-bottom:1px solid rgba(128,128,128,0.2); margin-bottom:20px;">
+            <img src="{logo_src}" width="40" style="border-radius:8px; margin-bottom:10px;" onerror="this.style.display='none'">
+            <h2 style="margin:0; font-size:1.15rem;">Automation Hub Pro</h2>
+            <span style="color:#1d4ed8; font-size:0.85rem; font-weight:600;">v9.0</span>
+            {sync_html}
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 def render_header():
+    """Minimal header for the main page content area."""
     st.markdown(
         f"""
         <div class="hub-title-row">
-          <div>
             <h1 class="hub-title">{APP_TITLE} <span style="color:#1d4ed8;">{APP_VERSION}</span></h1>
-            <p class="hub-subtitle">Unified logistics operations workspace</p>
-          </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -132,13 +177,34 @@ def section_card(title: str, help_text: str = ""):
         unsafe_allow_html=True,
     )
 
+def render_footer():
+    """Renders a robust and persistent branding footer."""
+    logo_src = "https://logo.clearbit.com/deencommerce.com"
+    try:
+        import base64
+        logo_jpg = os.path.join("assets", "deen_logo.jpg")
+        if os.path.exists(logo_jpg):
+            with open(logo_jpg, "rb") as f:
+                b64 = base64.b64encode(f.read()).decode()
+            logo_src = f"data:image/jpeg;base64,{b64}"
+    except:
+        pass
 
-def render_steps(steps: list[str], current_step: int):
-    cols = st.columns(len(steps))
-    for idx, step in enumerate(steps):
-        is_active = idx == current_step
-        cls = "hub-step active" if is_active else "hub-step"
-        cols[idx].markdown(f'<div class="{cls}">{idx + 1}. {step}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f"""
+        <div class="hub-footer">
+            <div style="width:100%; text-align:center;">
+                <span style="color:#64748b; margin-right:12px;">© 2026 <a href="https://github.com/saajiidi" target="_blank" style="color:#1d4ed8;">Sajid Islam</a>. All rights reserved.</span>
+                <span style="color:#64748b; margin:0 12px; opacity:0.5;">|</span>
+                <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">
+                    <img src="{logo_src}" width="20" class="deen-logo-small" onerror="this.style.display='none'">
+                    Powered by <b>DEEN commerce</b>
+                </a>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 
 
 def render_file_summary(uploaded_file, df: pd.DataFrame | None, required_columns: list[str]):
@@ -198,16 +264,7 @@ def render_reset_confirm(state_key: str, reset_fn):
             st.session_state[f"confirm_reset_{state_key}"] = False
 
 
-def sample_file_download(label: str, data: list[dict], file_name: str):
-    df = pd.DataFrame(data)
-    csv_bytes = df.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label=label,
-        data=csv_bytes,
-        file_name=file_name,
-        mime="text/csv",
-        use_container_width=True,
-    )
+
 
 
 def to_excel_bytes(df: pd.DataFrame, sheet_name: str = "Sheet1") -> bytes:

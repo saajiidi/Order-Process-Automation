@@ -7,7 +7,6 @@ from app_modules.ui_components import (
     render_action_bar,
     render_file_summary,
     render_reset_confirm,
-    render_steps,
     section_card,
     to_excel_bytes,
 )
@@ -186,6 +185,11 @@ def render_wp_tab():
             type="primary",
             use_container_width=True,
         )
+
+        with st.expander("📝 Copy Individual Summaries", expanded=True):
+            for _, row in links_df.head(20).iterrows():
+                summary = row.get("order_summary", "No summary available")
+                st.code(summary, language="text")
 
         with st.expander("Open first 10 links", expanded=False):
             preview_rows = links_df.head(10)

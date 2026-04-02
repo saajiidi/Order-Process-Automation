@@ -1,8 +1,6 @@
-
 import pandas as pd
 import re
-from app_modules.zones import KNOWN_ZONES
-from app_modules.utils import get_category_from_name, normalize_city_name, extract_best_zone, format_address_logic
+from app_modules.utils import get_category_from_name, normalize_city_name
 from fuzzywuzzy import process
 
 def clean_dataframe(df):
@@ -156,25 +154,19 @@ def process_single_order_group(phone, group, data_cols):
         
         full_desc += f"; ({' - '.join(suffix_parts)})"
 
-    # --- Address Processing ---
+    # Address Processing
     addr_col = data_cols['addr_col']
     raw_address = str(first_row.get(addr_col, '')).strip()
     if not raw_address or raw_address.lower() == 'nan':
          raw_address = str(first_row.get('State Name (Billing)', '')).strip()
 
-    # Normalize City
+    # Normalize City & Address
     raw_city = str(first_row.get('State Name (Billing)', '')).strip()
     recipient_city = normalize_city_name(raw_city)
-
-    # Extract Zone
-    temp_addr_clean = " ".join(raw_address.split()).title()
-    extracted_zone = extract_best_zone(temp_addr_clean, KNOWN_ZONES)
+    address_val = " ".join(raw_address.split()).title()
     
-    # Format Address
-    address_val = format_address_logic(raw_address, recipient_city, extracted_zone, raw_city)
-    
-    if not extracted_zone:
-        extracted_zone = "Sadar"
+    # RecipientZone: Empty as requested (no default Sadar)
+    extracted_zone = ""
     
     # Area (Null as requested)
     recipient_area = "" 

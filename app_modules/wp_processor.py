@@ -278,6 +278,17 @@ class WhatsAppOrderProcessor:
             message = "\n".join(lines)
             encoded_message = urllib.parse.quote(message)
             df.at[idx, 'whatsapp_link'] = f"https://wa.me/+88{phone}?text={encoded_message}"
+            
+            # Simple Summary for copy-pasting
+            summary_parts = []
+            products = str(row[self.config['product_col']]).split('\n- ')
+            total_qty = 0
+            for prod in products:
+                summary_parts.append(prod.strip())
+            
+            summary_text = f"Order {row[self.config['order_id_col']]}: " + ", ".join(summary_parts)
+            summary_text += f" | Total: {float(row[self.config['order_total_col']]):.0f} BDT"
+            df.at[idx, 'order_summary'] = summary_text
         
         return df
 

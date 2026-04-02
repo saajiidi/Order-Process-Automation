@@ -275,9 +275,6 @@ def process_data(df, selected_cols):
         
         # Scrub dashboard analytics, pivot tables, and empty totals from live exports
         df = scrub_raw_dataframe(df)
-        if 'order_id' in selected_cols and selected_cols['order_id'] in df.columns:
-            clean_id = df[selected_cols['order_id']].astype(str).str.strip().str.lower()
-            df = df[~clean_id.isin(['', 'nan', 'none', 'null'])]
 
         if df.empty:
             raise ValueError("Dataset is empty after stripping metrics/analytics rows.")
@@ -531,12 +528,17 @@ def load_latest_from_gdrive_folder():
 
 def load_live_source(source_mode):
     """Routes loading by selected source mode."""
+    res = None
     if source_mode == "Incoming Folder":
-        return load_latest_from_incoming()
-    if source_mode == "Google Sheet":
-        return load_from_google_sheet()
-    if source_mode == "Google Drive Folder":
-        return load_latest_from_gdrive_folder()
+        res = load_latest_from_incoming()
+    elif source_mode == "Google Sheet":
+        res = load_from_google_sheet()
+    elif source_mode == "Google Drive Folder":
+        res = load_latest_from_gdrive_folder()
+    
+    if res:
+        st.session_state.live_sync_time = datetime.now()
+        return res
     raise ValueError(f"Unsupported source mode: {source_mode}")
 
 
@@ -564,6 +566,12 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
         st.markdown('<div id="snapshot-target-popup"></div>', unsafe_allow_html=True)
         tz_bd = timezone(timedelta(hours=6))
         st.caption(f"Current time: {datetime.now(tz_bd).strftime('%B %d, %Y %I:%M %p')}")
+        st.markdown(
+            '<div style="font-size:0.65rem; color:#64748b; margin-top:-10px;">'
+            'Powered by <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">DEEN commerce</a>'
+            '</div>',
+            unsafe_allow_html=True
+        )
         if focus != "all":
             st.info(f"Focused view: {focus.replace('_', ' ').title()}")
 
@@ -674,18 +682,7 @@ def render_dashboard_output(drill, summ, top, timeframe, basket, source_name, la
         show_welcome_popup(summ, basket, last_updated)
         st.session_state[popup_key] = True
 
-    reopen_popup, _ = render_action_bar("Open quick summary popup", f"open_summary_{source_key}")
-    if reopen_popup:
-        show_welcome_popup(summ, basket, last_updated, "all")
 
-    st.caption("Focused task popups")
-    p1, p2, p3 = st.columns(3)
-    if p1.button("Core Metrics", key=f"focus_core_{source_key}", use_container_width=True):
-        show_welcome_popup(summ, basket, last_updated, "core_metrics")
-    if p2.button("Visual Analytics", key=f"focus_visual_{source_key}", use_container_width=True):
-        show_welcome_popup(summ, basket, last_updated, "visual_analytics")
-    if p3.button("Full Summary", key=f"focus_all_{source_key}", use_container_width=True):
-        show_welcome_popup(summ, basket, last_updated, "all")
 
     t_qty = summ['Total Qty'].sum()
     t_rev = summ['Total Amount'].sum()
@@ -887,6 +884,13 @@ def render_live_tab():
         default_idx = 2
     
     source_mode = source_options[default_idx]
+    
+    # Freshness Indicator
+    if st.session_state.get("live_sync_time"):
+        diff = datetime.now() - st.session_state.live_sync_time
+        mins = int(diff.total_seconds() / 60)
+        sync_label = "Just now" if mins < 1 else f"{mins}m ago"
+        st.caption(f"🔄 Last Synced: {sync_label}")
     
     if hasattr(st, "autorefresh"):
         st.autorefresh(interval=30000, key="live_autorefresh")
