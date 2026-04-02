@@ -1227,3 +1227,116 @@ def render_customer_pulse_tab():
         if '_src_tab' in db.columns:
             source_grp = db.groupby('_src_tab').size().reset_index(name='Records')
             st.plotly_chart(px.bar(source_grp, x='Records', y='_src_tab', orientation='h', title="Records by Statement Source"), use_container_width=True)
+
+
+def compute_unique_customer_count(df: pd.DataFrame) -> int:
+    """Compute unique customer count from dataframe using phone/email/name."""
+    if df is None or df.empty:
+        return 0
+    
+    # Try multiple identification methods
+    for col in ["phone", "_p_phone", "email", "_p_email", "customer_name", "_p_cust_name", "Internal_Customer"]:
+        if col in df.columns:
+            count = df[col].replace("", pd.NA).dropna().nunique()
+            if count > 0:
+                return int(count)
+    
+    # Fallback to order_id
+    for col in ["order_id", "_p_order", "Internal_Order"]:
+        if col in df.columns:
+            return int(df[col].nunique())
+    
+    return 0
+
+
+def render_cache_health_panel():
+    """Display cache health metrics and system diagnostics."""
+    from src.core.paths import GSHEETS_CACHE_DIR, GSHEETS_MANIFEST, CACHE_DIR
+    
+    st.markdown("### 🏥 Cache Health & System Diagnostics")
+    
+    # Cache metrics
+    manifest_exists = GSHEETS_MANIFEST.exists()
+    manifest_size = 0
+    if manifest_exists:
+        try:
+            with open(GSHEETS_MANIFEST, 'r') as f:
+                import json
+                manifest = json.load(f)
+                manifest_size = len(manifest)
+        except Exception:
+            pass
+    
+    # Count cached files
+    raw_count = 0
+    norm_count = 0
+    if GSHEETS_CACHE_DIR.exists():
+        raw_dir = GSHEETS_CACHE_DIR / "raw"
+        norm_dir = GSHEETS_CACHE_DIR / "normalized"
+        if raw_dir.exists():
+            raw_count = len(list(raw_dir.glob("*.csv")))
+        if norm_dir.exists():
+            norm_count = len(list(norm_dir.glob("*.parquet")))
+    
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Manifest Entries", f"{manifest_size}")
+    col2.metric("Raw CSV Files", f"{raw_count}")
+    col3.metric("Normalized Parquet", f"{norm_count}")
+    col4.metric("Cache Status", "Healthy" if manifest_size > 0 else "Empty")
+    
+    # Cache actions
+    st.markdown("#### Cache Actions")
+    if st.button("🧹 Clear Cache", use_container_width=True, type="primary"):
+        clear_sync_cache()
+        st.success("Cache cleared successfully!")
+        st.rerun()
+    
+    if st.button("🔄 Refresh Manifest", use_container_width=True):
+        if GSHEETS_MANIFEST.exists():
+            try:
+                with open(GSHEETS_MANIFEST, 'r') as f:
+                    import json
+                    manifest = json.load(f)
+                st.json(manifest, expanded=False)
+            except Exception as e:
+                st.error(f"Failed to read manifest: {e}")
+
+
+def render_data_completeness_report():
+    """Display data completeness and quality metrics."""
+    from src.core.paths import GSHEETS_CACHE_DIR
+    
+    st.markdown("### 📊 Data Completeness Report")
+    
+    try:
+        # Load live queue to check data quality
+        from src.services.live_ops import load_live_queue
+        package = load_live_queue(force_refresh=False)
+        
+        df = package.normalized_df
+        if df is not None and not df.empty:
+            # Calculate completeness per column
+            completeness = {}
+            for col in df.columns:
+                non_null = df[col].notna().sum()
+                total = len(df)
+                completeness[col] = {
+                    "non_null": int(non_null),
+                    "total": int(total),
+                    "pct": round((non_null / total) * 100, 1)
+                }
+            
+            # Display as metrics
+            st.markdown("#### Column Completeness")
+            cols = st.columns(3)
+            for idx, (col, stats) in enumerate(sorted(completeness.items(), key=lambda x: x[1]["pct"])):
+                with cols[idx % 3]:
+                    st.metric(
+                        label=col,
+                        value=f"{stats['pct']}%",
+                        delta=f"{stats['non_null']}/{stats['total']}"
+                    )
+        else:
+            st.info("No data available for completeness report.")
+    except Exception as e:
+        st.warning(f"Could not generate completeness report: {e}")

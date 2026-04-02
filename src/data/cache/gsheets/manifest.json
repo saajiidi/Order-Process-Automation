@@ -1,10 +1,30 @@
 {
   "tabs_docs.google.com": {
-    "fetched_at": "2026-04-02T22:42:38.593273+00:00",
+    "fetched_at": "2026-04-02T23:37:38.854282+00:00",
     "tabs": [
       {
-        "name": "Dashboard",
-        "gid": "2118542421"
+        "name": "LatestSales",
+        "gid": "0"
+      },
+      {
+        "name": "2026",
+        "gid": "436235820"
+      },
+      {
+        "name": "2025",
+        "gid": "650598355"
+      },
+      {
+        "name": "2024",
+        "gid": "1926926142"
+      },
+      {
+        "name": "2023",
+        "gid": "1563731937"
+      },
+      {
+        "name": "2022",
+        "gid": "714428268"
       }
     ]
   },
@@ -14,6 +34,14 @@
     "etag": null,
     "last_modified": null,
     "fetched_at": "2026-04-02T20:00:30.367868+00:00",
+    "row_count": 24
+  },
+  "gid_0": {
+    "gid": "0",
+    "tab_name": "LatestSales",
+    "etag": null,
+    "last_modified": null,
+    "fetched_at": "2026-04-02T23:37:45.489756+00:00",
     "row_count": 24
   }
 }

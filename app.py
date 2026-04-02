@@ -39,23 +39,11 @@ st.set_page_config(
 def run_app():
     from src.core.errors import get_logs
     from src.core.persistence import init_state, save_state
-    from src.modules.ai import render_ai_chat_tab
-    from src.modules.ecommerce import render_wp_tab
-    from src.modules.inventory import render_distribution_tab
-    from src.modules.logistics import render_pathao_tab
-    from src.modules.parser import render_fuzzy_parser_tab
     from src.modules.sales import (
-        render_cache_health_panel,
         render_custom_period_tab,
         render_customer_pulse_tab,
-        render_data_completeness_report,
         render_live_tab,
     )
-    from src.modules.tools import (
-        render_daily_summary_export_tab,
-        render_data_quality_monitor_tab,
-    )
-    from src.modules.woo_report import render_wp_api_orders_tab
     from src.ui.components import (
         inject_base_styles,
         render_header,
@@ -63,7 +51,6 @@ def run_app():
         render_sidebar_workspace_control,
         render_footer,
     )
-    from src.modules.whatsapp import render_whatsapp_api_tab
     from src.ui.bike_animation import render_bike_animation
 
     init_state()
@@ -85,8 +72,6 @@ def run_app():
             "Live Queue",
             "Sales Analysis",
             "Customer Pulse",
-            "Operations",
-            "System",
         ]
 
         st.session_state.main_nav = st.radio(
@@ -114,22 +99,6 @@ def run_app():
 
         render_sidebar_workspace_control()
 
-        with st.expander("System Logs", expanded=False):
-            logs = get_logs()
-            if not logs:
-                st.info("No system events logged.")
-            else:
-                for entry in reversed(logs[-10:]):
-                    st.caption(f"**{entry.get('timestamp')}** | {entry.get('context')}")
-                    st.text(entry.get("error"))
-                    st.divider()
-                if st.button("Clear logs", use_container_width=True):
-                    from src.core.errors import ERROR_LOG_FILE
-
-                    if os.path.exists(ERROR_LOG_FILE):
-                        os.remove(ERROR_LOG_FILE)
-                    st.rerun()
-
     render_header()
     if st.session_state.get("show_animation"):
         render_bike_animation()
@@ -140,50 +109,6 @@ def run_app():
         render_custom_period_tab()
     elif st.session_state.main_nav == "Customer Pulse":
         render_customer_pulse_tab()
-    elif st.session_state.main_nav == "Operations":
-        sub_nav = ["Pathao", "Parser", "Inventory", "WhatsApp", "WooCommerce"]
-        sub = st.segmented_control(
-            "Operations Hub",
-            sub_nav,
-            selection_mode="single",
-            default="Pathao",
-        )
-
-        if sub == "Pathao":
-            render_pathao_tab(guided=False)
-        elif sub == "Parser":
-            render_fuzzy_parser_tab(guided=False)
-        elif sub == "Inventory":
-            render_distribution_tab(
-                search_q=st.session_state.get("inv_matrix_search", ""), guided=False
-            )
-        elif sub == "WhatsApp":
-            render_wp_tab(guided=False)
-        elif sub == "WooCommerce":
-            render_wp_api_orders_tab()
-    elif st.session_state.main_nav == "System":
-        s_nav = ["Health", "Exports", "AI Analyst", "Logs"]
-        s_sub = st.segmented_control(
-            "System Tools", s_nav, selection_mode="single", default="Health"
-        )
-
-        if s_sub == "Health":
-            render_cache_health_panel()
-            st.divider()
-            render_data_completeness_report()
-            st.divider()
-            render_data_quality_monitor_tab()
-        elif s_sub == "Exports":
-            render_daily_summary_export_tab()
-        elif s_sub == "AI Analyst":
-            render_ai_chat_tab()
-        elif s_sub == "Logs":
-            logs = get_logs()
-            if logs:
-                for entry in reversed(logs):
-                    st.error(f"[{entry['timestamp']}] {entry['context']}: {entry['error']}")
-            else:
-                st.success("System stable. No logged anomalies.")
 
     # Footer
     st.markdown("---")
