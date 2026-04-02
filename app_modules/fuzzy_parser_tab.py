@@ -273,6 +273,7 @@ def _reset_parser_state():
 
 
 def render_fuzzy_parser_tab():
+    render_reset_confirm("parser", _reset_parser_state)
     section_card(
         "Delivery Text Parser",
         "Convert copied delivery text into spreadsheet-ready records.",
@@ -385,4 +386,4 @@ POD"""
                 type="primary",
             )
 
-    render_reset_confirm("Delivery Data Parser", "parser", _reset_parser_state)
+

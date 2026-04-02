@@ -52,9 +52,6 @@ def inject_base_styles():
             margin-right: 6px;
             border-radius: 4px;
         }
-        header {display: none !important;}
-        .stAppHeader {display: none !important;}
-        
         .hub-title-row {
             display: flex;
             align-items: center;
@@ -67,11 +64,11 @@ def inject_base_styles():
             border-radius: 0 4px 4px 0;
             text-align: center;
         }
-        /* Aggressively remove top space for small screens */
+        /* Remove the top gap without touching the sidebar toggle */
         .main .block-container {
             padding-top: 0 !important;
-            margin-top: -3.5rem !important;
-            padding-bottom: 60px !important;
+            margin-top: -1.0rem !important;
+            padding-bottom: 80px !important;
         }
         .hub-title {
             margin: 0;
@@ -125,25 +122,46 @@ def inject_base_styles():
         
         @media (max-width: 900px) {
             .block-container {
-                padding-left: 0.75rem !important;
-                padding-right: 0.75rem !important;
+                padding-left: 0.5rem !important;
+                padding-right: 0.5rem !important;
+                margin-top: -2.5rem !important;
             }
             .hub-title {
-                font-size: 1.35rem !important;
-                line-height: 1.3;
+                font-size: 1.2rem !important;
+                line-height: 1.2;
             }
             .hub-subtitle {
-                font-size: 0.85rem !important;
+                font-size: 0.8rem !important;
             }
             .hub-card {
-                padding: 10px 12px;
-                border-radius: 10px;
+                padding: 10px;
+                border-radius: 8px;
             }
             .hub-action-wrap {
                 position: static;
-                margin-top: 12px;
+                margin-top: 8px;
                 box-shadow: none;
+                padding: 12px;
             }
+            /* Metric Font Scaling for Small Screens */
+            div[data-testid="stMetricValue"] {
+                font-size: 1.2rem !important;
+            }
+            div[data-testid="stMetricLabel"] {
+                font-size: 0.75rem !important;
+            }
+            /* Compact Tabs on Mobile */
+            div[data-testid="stTab"] button {
+                padding: 8px 12px !important;
+                font-size: 0.8rem !important;
+            }
+        }
+        
+        /* Ensure dialogs are scrollable and properly sized */
+        div[role="dialog"] {
+            max-width: 95vw !important;
+            max-height: 90vh !important;
+            overflow-y: auto !important;
         }
         </style>
         """,
@@ -173,14 +191,12 @@ def render_sidebar_branding():
         sync_label = "Just now" if mins < 1 else f"{mins}m ago"
         sync_html = f'<div style="font-size:0.75rem; color:#64748b; margin-top:10px;">🔄 Last Synced: {sync_label}</div>'
 
-    # Render robustly text-only
+    # Render exactly as previous
     st.markdown(
         f"""<div style="padding:4px 14px 12px 14px; border-bottom:1px solid rgba(128,128,128,0.1); margin-bottom:12px;">
             <div style="text-align:left;">
-                <span style="font-size:1.05rem; font-weight:700; color:inherit; line-height:1.1; display:flex; align-items:center; gap:6px;">
-                    Automation Hub Pro <span style="color:#1d4ed8; font-size:0.75rem;">v9.0</span>
-                </span>
-                {sync_html}
+                <div style="font-size:1.05rem; font-weight:700; color:inherit; line-height:1.1;">Automation Hub Pro</div>
+                <div style="color:#1d4ed8; font-size:0.75rem; font-weight:600; margin-top:2px;">v9.0</div>
             </div>
         </div>""",
         unsafe_allow_html=True
@@ -280,18 +296,23 @@ def render_action_bar(
     return primary_clicked, secondary_clicked
 
 
-def render_reset_confirm(label: str, state_key: str, reset_fn):
-    """
-    Registers a tool's reset function for the unified sidebar.
-    Doesn't render anything in the sidebar immediately to avoid duplicates.
-    """
-    if "registered_resets" not in st.session_state:
-        st.session_state.registered_resets = {}
-    
-    st.session_state.registered_resets[label] = {
-        "fn": reset_fn,
-        "key": state_key
-    }
+def render_reset_confirm(state_key: str, reset_fn):
+    with st.sidebar:
+        st.divider()
+        if st.button("Reset current workflow", key=f"reset_{state_key}", use_container_width=True, type="secondary"):
+            st.session_state[f"confirm_reset_{state_key}"] = True
+
+        if st.session_state.get(f"confirm_reset_{state_key}"):
+            st.warning("Confirm reset: clear current data?")
+            c1, c2 = st.columns(2)
+            if c1.button("Confirm", key=f"confirm_yes_{state_key}", type="primary", use_container_width=True):
+                reset_fn()
+                st.session_state[f"confirm_reset_{state_key}"] = False
+                st.success("Workflow reset complete.")
+                st.rerun()
+            if c2.button("Cancel", key=f"confirm_no_{state_key}", use_container_width=True):
+                st.session_state[f"confirm_reset_{state_key}"] = False
+                st.rerun()
 
 
 

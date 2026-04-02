@@ -30,6 +30,7 @@ def _reset_pathao_state():
 
 
 def render_pathao_tab():
+    render_reset_confirm("pathao", _reset_pathao_state)
     section_card(
         "Pathao Order Processor",
         "Upload order file, validate required columns, generate repaired export.",
@@ -128,4 +129,4 @@ def render_pathao_tab():
             use_container_width=True,
         )
 
-    render_reset_confirm("Pathao Processor", "pathao", _reset_pathao_state)
+

@@ -10,7 +10,7 @@ from io import BytesIO
 from email.utils import parsedate_to_datetime
 from urllib.request import Request, urlopen
 from urllib.parse import parse_qs, urlparse
-from app_modules.ui_components import section_card, render_action_bar
+from app_modules.ui_components import section_card, render_action_bar, render_reset_confirm
 
 
 
@@ -831,7 +831,11 @@ def render_dashboard_output(drill, summ, top, timeframe, basket, source_name, la
 
 
 def render_manual_tab():
-    """Existing manual upload flow."""
+    def _reset_manual_state():
+        st.session_state.manual_generate = False
+        st.session_state.manual_res = None
+    
+    render_reset_confirm("manual", _reset_manual_state)
     section_card("Manual Upload Dashboard", "Upload sales data, confirm column mapping, then generate charts and exports.")
     uploaded_file = st.file_uploader("Upload Sales Data (Excel or CSV)", type=['xlsx', 'csv'])
 
@@ -882,11 +886,7 @@ def render_manual_tab():
                 manual_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 render_dashboard_output(drill, summ, top, timeframe, basket, uploaded_file.name, manual_updated)
         
-        def _reset_manual_state():
-            st.session_state.manual_generate = False
-            # Any other manual keys...
-            
-        render_reset_confirm("Manual Data Ingestion", "manual", _reset_manual_state)
+
 
     except Exception as e:
         log_system_event("FILE_ERROR", str(e))
@@ -894,6 +894,11 @@ def render_manual_tab():
 
 
 def render_live_tab():
+    def _reset_live_state():
+        st.session_state.live_sync_time = None
+        st.session_state.live_res = None
+    
+    render_reset_confirm("live", _reset_live_state)
     """Always running dashboard from selected source."""
     tz_bd = timezone(timedelta(hours=6))
     current_t = datetime.now(tz_bd).strftime('%B %d, %Y %I:%M %p')
@@ -964,6 +969,8 @@ def render_live_tab():
         drill, summ, top, timeframe, basket = process_data(df_live, live_mapping)
         if drill is not None:
             render_dashboard_output(drill, summ, top, timeframe, basket, source_name, modified_at)
+        
+
 
     except Exception as e:
         log_system_event("LIVE_FILE_ERROR", str(e))
