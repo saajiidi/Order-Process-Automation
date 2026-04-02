@@ -56,9 +56,12 @@ def inject_base_styles():
             display: flex;
             align-items: center;
             justify-content: center;
-            border-bottom: 2px solid var(--border);
-            padding: 8px 0 16px 0;
-            margin-bottom: 12px;
+            background: linear-gradient(90deg, rgba(29, 78, 216, 0.03) 0%, rgba(29, 78, 216, 0) 100%);
+            border-left: 4px solid #1d4ed8;
+            border-bottom: 1px solid var(--border);
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            border-radius: 0 8px 8px 0;
             text-align: center;
         }
         /* Restore standard padding */
@@ -85,14 +88,37 @@ def inject_base_styles():
         }
         .hub-action-wrap {
             position: sticky;
-            bottom: 0;
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: var(--action-surface);
-            backdrop-filter: blur(3px);
-            z-index: 10;
+            bottom: 60px; /* Offset to stay above fixed footer */
+            padding: 16px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+            z-index: 100;
+            margin-top: 20px;
         }
+        
+        /* Premium Tab Styling */
+        div[data-testid="stTab"] button {
+            font-size: 0.9rem !important;
+            font-weight: 600 !important;
+            color: #64748b !important;
+            transition: all 0.3s ease !important;
+            border: none !important;
+            background: transparent !important;
+            padding: 10px 20px !important;
+        }
+        div[data-testid="stTab"] button:hover {
+            color: #1d4ed8 !important;
+            background: rgba(29, 78, 216, 0.04) !important;
+            border-radius: 8px 8px 0 0 !important;
+        }
+        div[data-testid="stTab"] button[aria-selected="true"] {
+            color: #1d4ed8 !important;
+            border-bottom: 2px solid #1d4ed8 !important;
+        }
+        
         @media (max-width: 900px) {
             .block-container {
                 padding-left: 0.75rem !important;
@@ -111,7 +137,8 @@ def inject_base_styles():
             }
             .hub-action-wrap {
                 position: static;
-                margin-top: 6px;
+                margin-top: 12px;
+                box-shadow: none;
             }
         }
         </style>
@@ -142,15 +169,16 @@ def render_sidebar_branding():
         sync_label = "Just now" if mins < 1 else f"{mins}m ago"
         sync_html = f'<div style="font-size:0.75rem; color:#64748b; margin-top:10px;">🔄 Last Synced: {sync_label}</div>'
 
+    # Render robustly text-only
     st.markdown(
-        f"""
-        <div style="text-align:center; padding:10px 0 20px 0; border-bottom:1px solid rgba(128,128,128,0.2); margin-bottom:20px;">
-            <img src="{logo_src}" width="40" style="border-radius:8px; margin-bottom:10px;" onerror="this.style.display='none'">
-            <h2 style="margin:0; font-size:1.15rem;">Automation Hub Pro</h2>
-            <span style="color:#1d4ed8; font-size:0.85rem; font-weight:600;">v9.0</span>
-            {sync_html}
-        </div>
-        """,
+        f"""<div style="padding:4px 14px 12px 14px; border-bottom:1px solid rgba(128,128,128,0.1); margin-bottom:12px;">
+            <div style="text-align:left;">
+                <span style="font-size:1.05rem; font-weight:700; color:inherit; line-height:1.1; display:flex; align-items:center; gap:6px;">
+                    Automation Hub Pro <span style="color:#1d4ed8; font-size:0.75rem;">v9.0</span>
+                </span>
+                {sync_html}
+            </div>
+        </div>""",
         unsafe_allow_html=True
     )
 

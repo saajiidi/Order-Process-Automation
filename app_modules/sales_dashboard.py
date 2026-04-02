@@ -566,10 +566,27 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
         st.markdown('<div id="snapshot-target-popup"></div>', unsafe_allow_html=True)
         tz_bd = timezone(timedelta(hours=6))
         st.caption(f"Current time: {datetime.now(tz_bd).strftime('%B %d, %Y %I:%M %p')}")
+        logo_src = "https://logo.clearbit.com/deencommerce.com"
+        try:
+             import base64
+             import os
+             logo_jpg = os.path.join("assets", "deen_logo.jpg")
+             if os.path.exists(logo_jpg):
+                 with open(logo_jpg, "rb") as f:
+                     b64 = base64.b64encode(f.read()).decode()
+                 logo_src = f"data:image/jpeg;base64,{b64}"
+        except:
+             pass
+
         st.markdown(
-            '<div style="font-size:0.65rem; color:#64748b; margin-top:-10px;">'
-            'Powered by <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">DEEN commerce</a>'
-            '</div>',
+            f"""
+            <div style="font-size:0.65rem; color:#64748b; margin-top:-10px;">
+                Powered by <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">
+                    <img src="{logo_src}" width="14" style="vertical-align:middle; margin: 0 3px; border-radius:2px;" onerror="this.style.display='none'">
+                    DEEN commerce
+                </a>
+            </div>
+            """,
             unsafe_allow_html=True
         )
         if focus != "all":
@@ -872,7 +889,31 @@ def render_manual_tab():
 
 def render_live_tab():
     """Always running dashboard from selected source."""
-    section_card("Live Dashboard", "Reads from configured live source and auto-maps required columns.")
+    tz_bd = timezone(timedelta(hours=6))
+    current_t = datetime.now(tz_bd).strftime('%B %d, %Y %I:%M %p')
+    logo_src = "https://logo.clearbit.com/deencommerce.com"
+    try:
+         import base64
+         import os
+         logo_jpg = os.path.join("assets", "deen_logo.jpg")
+         if os.path.exists(logo_jpg):
+             with open(logo_jpg, "rb") as f:
+                 b64 = base64.b64encode(f.read()).decode()
+             logo_src = f"data:image/jpeg;base64,{b64}"
+    except:
+         pass
+
+    welcome_msg = f"""
+    Welcome! Today's Actionable Insights
+    <br><span style="font-size:0.8rem; color:#64748b;">Current time: {current_t}</span>
+    <div style="font-size:0.65rem; color:#64748b; margin-top:4px;">
+        Powered by <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">
+            <img src="{logo_src}" width="14" style="vertical-align:middle; margin: 0 3px; border-radius:2px;" onerror="this.style.display='none'">
+            DEEN commerce
+        </a>
+    </div>
+    """
+    section_card("Live Dashboard", welcome_msg)
     
     source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
     default_idx = 0
