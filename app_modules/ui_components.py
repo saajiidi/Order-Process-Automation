@@ -87,7 +87,8 @@ def inject_base_styles():
             margin-bottom: 12px;
             box-shadow: 0 8px 24px var(--card-shadow);
         }
-        .hub-action-wrap {
+        /* Target the streamlit container that HAS the hub-action-wrap marker inside it */
+        div[data-testid="stVerticalBlock"]:has(> div[data-testid="stMarkdownContainer"] .hub-action-wrap) {
             position: sticky;
             bottom: 60px; /* Offset to stay above fixed footer */
             padding: 16px;
@@ -98,6 +99,11 @@ def inject_base_styles():
             box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
             z-index: 100;
             margin-top: 20px;
+        }
+        
+        /* Ensure the marker itself doesn't take up space */
+        .hub-action-wrap {
+            display: none;
         }
         
         /* Premium Tab Styling */
@@ -137,7 +143,7 @@ def inject_base_styles():
                 padding: 10px;
                 border-radius: 8px;
             }
-            .hub-action-wrap {
+            div[data-testid="stVerticalBlock"]:has(> div[data-testid="stMarkdownContainer"] .hub-action-wrap) {
                 position: static;
                 margin-top: 8px;
                 box-shadow: none;
@@ -284,15 +290,16 @@ def render_action_bar(
     secondary_label: str | None = None,
     secondary_key: str | None = None,
 ):
-    st.markdown('<div class="hub-action-wrap">', unsafe_allow_html=True)
-    if secondary_label and secondary_key:
-        c1, c2 = st.columns([2, 1])
-        primary_clicked = c1.button(primary_label, type="primary", use_container_width=True, key=primary_key)
-        secondary_clicked = c2.button(secondary_label, use_container_width=True, key=secondary_key)
-    else:
-        primary_clicked = st.button(primary_label, type="primary", use_container_width=True, key=primary_key)
-        secondary_clicked = False
-    st.markdown("</div>", unsafe_allow_html=True)
+    with st.container():
+        # This marker allows the CSS :has() selector to style this entire container
+        st.markdown('<div class="hub-action-wrap"></div>', unsafe_allow_html=True)
+        if secondary_label and secondary_key:
+            c1, c2 = st.columns([2, 1])
+            primary_clicked = c1.button(primary_label, type="primary", use_container_width=True, key=primary_key)
+            secondary_clicked = c2.button(secondary_label, use_container_width=True, key=secondary_key)
+        else:
+            primary_clicked = st.button(primary_label, type="primary", use_container_width=True, key=primary_key)
+            secondary_clicked = False
     return primary_clicked, secondary_clicked
 
 
