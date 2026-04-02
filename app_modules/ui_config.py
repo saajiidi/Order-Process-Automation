@@ -2,7 +2,7 @@ APP_TITLE = "Automation Hub Pro"
 APP_VERSION = "v9.0"
 
 PRIMARY_NAV = [
-    "Dashboard",
+    "Live Dashboard",
     "Sales Data Ingestion",
     "Bulk Order Processer",
     "Delivery Data Parser",

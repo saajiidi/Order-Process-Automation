@@ -915,16 +915,16 @@ def render_live_tab():
          pass
 
     welcome_msg = f"""
-    Welcome! Today's Actionable Insights
-    <br><span style="font-size:0.8rem; color:#64748b;">Current time: {current_t}</span>
-    <div style="font-size:0.65rem; color:#64748b; margin-top:4px;">
+    <div style="font-weight:600; font-size:1rem; margin-bottom:4px;">Welcome! Today's Actionable Insights</div>
+    <div style="font-size:0.8rem; color:#64748b;">
+        Current time: {current_t} | 
         Powered by <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">
             <img src="{logo_src}" width="14" style="vertical-align:middle; margin: 0 3px; border-radius:2px;" onerror="this.style.display='none'">
-            DEEN commerce
+            <b>DEEN commerce</b>
         </a>
     </div>
     """
-    section_card("Live Dashboard", welcome_msg)
+    section_card("", welcome_msg)
     
     source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
     default_idx = 0
