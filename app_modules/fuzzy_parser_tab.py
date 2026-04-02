@@ -385,4 +385,4 @@ POD"""
                 type="primary",
             )
 
-    render_reset_confirm("parser", _reset_parser_state)
+    render_reset_confirm("Delivery Data Parser", "parser", _reset_parser_state)

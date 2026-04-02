@@ -881,6 +881,12 @@ def render_manual_tab():
             if drill is not None:
                 manual_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 render_dashboard_output(drill, summ, top, timeframe, basket, uploaded_file.name, manual_updated)
+        
+        def _reset_manual_state():
+            st.session_state.manual_generate = False
+            # Any other manual keys...
+            
+        render_reset_confirm("Manual Data Ingestion", "manual", _reset_manual_state)
 
     except Exception as e:
         log_system_event("FILE_ERROR", str(e))

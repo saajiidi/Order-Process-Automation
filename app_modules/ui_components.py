@@ -52,6 +52,9 @@ def inject_base_styles():
             margin-right: 6px;
             border-radius: 4px;
         }
+        header {display: none !important;}
+        .stAppHeader {display: none !important;}
+        
         .hub-title-row {
             display: flex;
             align-items: center;
@@ -59,15 +62,16 @@ def inject_base_styles():
             background: linear-gradient(90deg, rgba(29, 78, 216, 0.03) 0%, rgba(29, 78, 216, 0) 100%);
             border-left: 4px solid #1d4ed8;
             border-bottom: 1px solid var(--border);
-            padding: 16px 20px;
-            margin-bottom: 24px;
-            border-radius: 0 8px 8px 0;
+            padding: 2px 16px;
+            margin-bottom: 4px;
+            border-radius: 0 4px 4px 0;
             text-align: center;
         }
-        /* Restore standard padding */
+        /* Aggressively remove top space for small screens */
         .main .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 80px !important;
+            padding-top: 0 !important;
+            margin-top: -3.5rem !important;
+            padding-bottom: 60px !important;
         }
         .hub-title {
             margin: 0;
@@ -276,20 +280,18 @@ def render_action_bar(
     return primary_clicked, secondary_clicked
 
 
-def render_reset_confirm(state_key: str, reset_fn):
-    if st.button("Reset current workflow", key=f"reset_{state_key}"):
-        st.session_state[f"confirm_reset_{state_key}"] = True
-
-    if st.session_state.get(f"confirm_reset_{state_key}"):
-        st.warning("Confirm reset: this clears current workflow data.")
-        c1, c2 = st.columns(2)
-        if c1.button("Confirm reset", key=f"confirm_yes_{state_key}", type="primary"):
-            reset_fn()
-            st.session_state[f"confirm_reset_{state_key}"] = False
-            st.success("Workflow reset complete.")
-            st.rerun()
-        if c2.button("Cancel", key=f"confirm_no_{state_key}"):
-            st.session_state[f"confirm_reset_{state_key}"] = False
+def render_reset_confirm(label: str, state_key: str, reset_fn):
+    """
+    Registers a tool's reset function for the unified sidebar.
+    Doesn't render anything in the sidebar immediately to avoid duplicates.
+    """
+    if "registered_resets" not in st.session_state:
+        st.session_state.registered_resets = {}
+    
+    st.session_state.registered_resets[label] = {
+        "fn": reset_fn,
+        "key": state_key
+    }
 
 
 

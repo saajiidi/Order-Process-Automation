@@ -165,4 +165,4 @@ def render_distribution_tab(search_q):
 
 
 
-render_reset_confirm("inventory", _reset_inventory_state)
+    render_reset_confirm("Inventory Distribution", "inventory", _reset_inventory_state)

@@ -128,4 +128,4 @@ def render_pathao_tab():
             use_container_width=True,
         )
 
-    render_reset_confirm("pathao", _reset_pathao_state)
+    render_reset_confirm("Pathao Processor", "pathao", _reset_pathao_state)
