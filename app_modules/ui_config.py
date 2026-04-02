@@ -1,5 +1,5 @@
 APP_TITLE = "Automation Hub Pro"
-APP_VERSION = "v8.1"
+APP_VERSION = "v9.0"
 
 PRIMARY_NAV = [
     "Dashboard",

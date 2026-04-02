@@ -245,13 +245,36 @@ def find_columns(df):
 
 
 @st.cache_data(show_spinner=False)
+def scrub_raw_dataframe(df):
+    """Filters out dashboard analytics, empty rows, and summary tables from raw exports."""
+    if df is None or df.empty:
+        return df
+    
+    # 1. Drop completely empty rows
+    df = df.dropna(how='all')
+    
+    # 2. Heuristic: If a row has extremely few non-null values compared to the max, it's likely a summary or title
+    # We'll keep rows that have at least 30% of the columns filled
+    min_threshold = max(1, int(len(df.columns) * 0.3))
+    df = df.dropna(thresh=min_threshold)
+    
+    # 3. Filter out rows containing common summary keywords in any column
+    summary_keywords = ['total', 'grand total', 'summary', 'analytics', 'chart', 'metric']
+    mask = df.stack().astype(str).str.lower().str.contains('|'.join(summary_keywords)).unstack().any(axis=1)
+    # Only drop if the row is mostly text (summary rows) - be careful not to drop product names with "total" 
+    # Actually, a better indicator of summary rows is that they are sparse.
+    # Let's stick to sparsity and dropping based on ID if we have it later.
+    
+    return df
+
+
 def process_data(df, selected_cols):
     """Processed data using validated user-selected or auto-detected columns."""
     try:
         df = df.copy()
         
         # Scrub dashboard analytics, pivot tables, and empty totals from live exports
-        df = df.dropna(how='all')
+        df = scrub_raw_dataframe(df)
         if 'order_id' in selected_cols and selected_cols['order_id'] in df.columns:
             clean_id = df[selected_cols['order_id']].astype(str).str.strip().str.lower()
             df = df[~clean_id.isin(['', 'nan', 'none', 'null'])]
@@ -421,6 +444,7 @@ def load_latest_from_incoming():
 
     modified_ts = os.path.getmtime(latest_file)
     df_live = _read_local_sales_file(latest_file, modified_ts)
+    df_live = scrub_raw_dataframe(df_live)
     modified_at = datetime.fromtimestamp(modified_ts).strftime("%Y-%m-%d %H:%M:%S")
     return df_live, os.path.basename(latest_file), modified_at
 
@@ -432,6 +456,7 @@ def load_from_google_sheet():
     if sheet_url:
         csv_url = normalize_gsheet_url_to_csv(sheet_url)
         df_live, modified_at = _read_csv_with_last_modified(csv_url)
+        df_live = scrub_raw_dataframe(df_live)
         return df_live, "google_sheet_live.csv", modified_at
 
     sheet_id = get_setting("GSHEET_ID")
@@ -441,6 +466,7 @@ def load_from_google_sheet():
 
     csv_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
     df_live, modified_at = _read_csv_with_last_modified(csv_url)
+    df_live = scrub_raw_dataframe(df_live)
     source_name = f"gsheet_{sheet_id}_{gid}.csv"
     return df_live, source_name, modified_at
 
@@ -497,6 +523,7 @@ def load_latest_from_gdrive_folder():
     file_bytes.seek(0)
     file_name = latest.get("name", "gdrive_file")
     df_live = read_sales_file(file_bytes, file_name)
+    df_live = scrub_raw_dataframe(df_live)
     modified_at = latest.get("modifiedTime", "")
 
     return df_live, file_name, modified_at

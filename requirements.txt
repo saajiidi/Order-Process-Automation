@@ -6,10 +6,14 @@ openpyxl
 xlsxwriter
 pillow
 fuzzywuzzy==0.18.0
+python-Levenshtein
 
-# Fuzzy Matching (better than fuzzywuzzy)
+# Machine Learning / Fuzzy Matching
 rapidfuzz
 
-# Google API
+# Google Cloud / Drive Integration
 google-api-python-client
 google-auth
+google-auth-oauthlib
+google-auth-httplib2
+requests

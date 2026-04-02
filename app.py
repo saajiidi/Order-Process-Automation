@@ -45,6 +45,8 @@ def run_app():
         section_card,
     )
     from app_modules.ui_config import PRIMARY_NAV
+    from app_modules.error_handler import ERROR_LOG_FILE
+    import os
     from app_modules.whatsapp_api import render_whatsapp_api_tab
     from app_modules.wp_tab import render_wp_tab
 
@@ -63,6 +65,20 @@ def run_app():
         if st.button("Save session state", use_container_width=True):
             save_state()
             st.success("Session state saved.")
+
+        with st.expander("System Logs", expanded=False):
+            logs = get_logs()
+            if not logs:
+                st.info("No system events logged.")
+            else:
+                for log in reversed(logs[-20:]):
+                    st.caption(f"**{log.get('timestamp')}** | {log.get('context')}")
+                    st.text(log.get('error'))
+                    st.divider()
+                if st.button("Clear logs", use_container_width=True):
+                    if os.path.exists(ERROR_LOG_FILE):
+                        os.remove(ERROR_LOG_FILE)
+                    st.rerun()
 
 
 

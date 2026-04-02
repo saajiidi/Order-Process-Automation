@@ -1,26 +1,26 @@
-﻿# Automation Hub Pro v8.1
+# Automation Hub Pro v9.0
 
-Automation Hub Pro is a Streamlit workspace for order processing, inventory distribution, and WhatsApp verification.
+Automation Hub Pro is a streamlined Streamlit workspace for sales analysis, order processing, inventory distribution, and messaging.
 
 ## Main Navigation
 
-- Dashboard: live and manual sales dashboards
-- Orders: Pathao order processor and delivery text parser
-- Inventory: matrix analyzer, insights, and pick manifest
-- Messaging: WhatsApp verification link generation
-- More Tools: system logs and developer lab
+- **Dashboard**: Live Sales Dashboard from Google Sheets / GDrive.
+- **Sales Data Ingestion**: Manual sales file upload and analysis tool.
+- **Bulk Order Processor**: Pathao order repair and formatting tool.
+- **Delivery Data Parser**: Copy-paste courier text parser (Standard & Fuzzy).
+- **Inventory Distribution**: Consolidated stock analyzer and distribution hub.
+- **WhatsApp Messaging**: Personalized verification link generator with live data support.
 
-## UX Improvements Included
+## Key Updates in v9.0
 
-- Guided workflow steps for major modules
-- Upload -> validate -> preview -> export pattern
-- Shared action bar and reset confirmation controls
-- Unified labels and status messaging
-- Optional motion effects toggle
-- Sidebar sample template downloads
+- **Unified Navigation**: 6 independent main tabs for faster access (no nested sub-tabs).
+- **Scrubbing Engine**: Improved live data processing that auto-filters dashboard analytics from raw exports.
+- **1-Based Indexing**: All data previews now start at row 1 for easier manual verification.
+- **No Guided Mode**: Simplified interface removes the toggle in favor of direct action buttons.
+- **Live-Link Verified**: WhatsApp messaging now supports "Pull from Live Dash" natively.
+- **System Logs**: Moved to the Sidebar for instant diagnostic access.
 
-## Run
-
+## Quick Start
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
@@ -28,10 +28,10 @@ streamlit run app.py
 
 ## Project Structure
 
-- `app.py`: application shell and navigation
-- `app_modules/ui_config.py`: UI constants and labels
-- `app_modules/ui_components.py`: reusable UI components
-- `app_modules/pathao_tab.py`: Pathao workflow
-- `app_modules/distribution_tab.py`: inventory workflow
-- `app_modules/wp_tab.py`: WhatsApp workflow
-- `app_modules/fuzzy_parser_tab.py`: text parser workflow
+- `app.py`: Application shell, sidebar settings, and navigation.
+- `app_modules/sales_dashboard.py`: Core logic for live/manual sales analytics.
+- `app_modules/pathao_tab.py`: Optimized bulk order processing.
+- `app_modules/fuzzy_parser_tab.py`: Advanced text-to-data extraction.
+- `app_modules/distribution_tab.py`: Inventory and distribution management.
+- `app_modules/wp_tab.py`: WhatsApp link generation and live integration.
+- `app_modules/persistence.py`: Session state saving and file handling.
