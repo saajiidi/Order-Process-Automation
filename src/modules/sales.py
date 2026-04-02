@@ -1047,296 +1047,100 @@ def render_custom_period_tab():
 
 
 def render_customer_pulse_tab():
-    from src.ui.components import render_date_range_selector
-    cur_start, cur_end = render_date_range_selector("cust_pulse")
-    selected_period = format_period_label(cur_start, cur_end)
-
-    if st.button("Refresh Customer Core", use_container_width=True, key="refresh_pulse_btn"):
-        get_all_statements_master(force_refresh=True)
-        st.toast("Refreshing customer dataset...")
-        st.rerun()
-
-    master, msg = get_all_statements_master()
-    if master is None or master.empty:
-        st.error(f"Failed to load customer foundation: {msg}")
-        return
-
-    master["UID"] = (
-        master.get("_p_phone", pd.Series(dtype=str))
-        .fillna(master.get("_p_email", pd.Series(dtype=str)))
-        .astype(str).str.strip().str.lower()
-    )
-
-    db = master[
-        (master["_p_date"].dt.date >= cur_start) & (master["_p_date"].dt.date <= cur_end)
-    ].copy()
-
-    if db.empty:
-        st.info(f"No customer activity found between {cur_start} and {cur_end}.")
-        return
-
-    try:
-        render_customer_pulse_core(db, display_period=selected_period)
-    except Exception as e:
-        from src.core.errors import log_error
-        log_error(e, context="Customer Pulse Tab")
-        st.error(f"Pulse analysis failed: {e}")
-        st.info("Try Clear Cache in the sidebar if the source data changed structure.")
-
-
-def render_customer_pulse_core(db, display_period: str | None = None):
-    if db.empty:
-        st.warning("No data found for selected pulse range.")
-        return
-
-    # Advanced Metrics
-    db["Total_Amount"] = db["_p_cost"] * db["_p_qty"]
-    total_revenue = db["Total_Amount"].sum()
-
-    unique_customers = db["UID"].nunique()
-    # Group by UID and take the last name seen as the most accurate
-    freq = (
-        db.groupby("UID")
-        .agg(
-            {
-                "_p_cust_name": "last",
-                "_p_order": "nunique",
-                "Total_Amount": "sum",
-                "_p_date": "max",
-            }
-        )
-        .reset_index()
-    )
-    freq.columns = ["UID", "Name", "Orders", "LifetimeValue", "LastActive"]
-    # Fallback for display - handle both None and placeholder strings
-    freq["Name"] = (
-        freq["Name"].replace(["N/A", "None", None, ""], pd.NA).fillna(freq["UID"])
-    )
-
-    returning_count = len(freq[freq["Orders"] > 1])
-    retention_rate = (
-        (returning_count / unique_customers * 100) if unique_customers > 0 else 0
-    )
-    avg_clv = total_revenue / unique_customers if unique_customers > 0 else 0
-    avg_orders = db.groupby("UID")["_p_order"].nunique().mean() if unique_customers > 0 else 0
-    last_orders = db.groupby("UID")["_p_date"].max()
-    avg_recency = (pd.Timestamp.now() - last_orders).dt.days.mean() if not last_orders.empty else 0
-    one_time_count = max(unique_customers - returning_count, 0)
-
-    # Key customer KPIs
-    render_ops_hero(
-        "Customer Pulse",
-        "Key customer KPIs from the workbook-backed master dataset plus the latest 2026 delta.",
-        [
-            f"Period {display_period or 'Selected Range'}",
-            f"Customers {unique_customers:,}",
-            f"Retention {retention_rate:.1f}%",
-            f"Avg CLV TK {avg_clv:,.0f}",
-        ],
-    )
-    st.caption(f"Charts and KPIs reflect {display_period or 'the selected period'}.")
-
-    top_row = st.columns(4)
-    with top_row[0]:
-        render_ops_kpi(
-            "Unique Customers",
-            f"{unique_customers:,}",
-            "Distinct customer identities in the selected period",
-        )
-    with top_row[1]:
-        render_ops_kpi(
-            "Returning Customers",
-            f"{returning_count:,}",
-            "Customers with more than one order",
-        )
-    with top_row[3]:
-        render_ops_kpi("Avg CLV", f"TK {avg_clv:,.0f}", "Value per customer")
-        
-    # NEW: Customer Insights
-    render_automated_insights(
-        db, 
-        sm=None, 
-        bk=None, 
-        cust_metrics={"retention": retention_rate, "avg_clv": avg_clv}
-    )
-    with top_row[3]:
-        render_ops_kpi(
-            "Avg CLV",
-            f"TK {avg_clv:,.0f}",
-            "Average lifetime value per customer",
-        )
-
-    chart_a, chart_b = st.columns(2)
-    with chart_a:
-        cust_acq = (
-            db.sort_values("_p_date").groupby("UID")["_p_date"].min().reset_index()
-        )
-        cust_acq.columns = ["UID", "AcqDate"]
-        cust_acq["Month"] = cust_acq["AcqDate"].dt.strftime("%Y-%m")
-        trend_grp = cust_acq.groupby("Month").size().reset_index(name="New")
-        trend_grp["Cumulative"] = trend_grp["New"].cumsum()
-
-        fig_growth = px.line(
-            trend_grp,
-            x="Month",
-            y=["Cumulative", "New"],
-            title="Customer Scaling Factor",
-            color_discrete_sequence=["#2563eb", "#0f766e"],
-        )
-        fig_growth.update_traces(mode="lines+markers")
-        from src.ui.components import render_plotly_chart
-        render_plotly_chart(fig_growth, key="pulse_scaling_line")
-
-    with chart_b:
-        retention_df = pd.DataFrame(
-            {
-                "Segment": ["Returning Loyals", "One-Time Shoppers"],
-                "Count": [returning_count, one_time_count],
-            }
-        )
-        fig_ret = px.pie(
-            retention_df,
-            values="Count",
-            names="Segment",
-            title="Retention Dynamics",
-            hole=0.6,
-            color_discrete_sequence=["#2563eb", "#94a3b8"],
-        )
-        render_plotly_chart(fig_ret, key="pulse_ret_pie")
-
-    vip = freq.sort_values("LifetimeValue", ascending=False).head(10).copy()
-    vip["Engagement Index"] = vip["Orders"].apply(
-        lambda x: "High" if x > 3 else "Mid"
-    )
-    lower_a, lower_b = st.columns([1.35, 1])
-    with lower_a:
-        st.markdown("#### Top Customers")
-        st.dataframe(
-            vip[["Name", "UID", "Orders", "LifetimeValue", "Engagement Index"]],
-            use_container_width=True,
-            hide_index=True,
-        )
-    with lower_b:
-        render_ops_list(
-            [
-                ("Avg Orders / Customer", f"{avg_orders:.1f}x"),
-                ("Avg Days Since Last Order", f"{int(avg_recency or 0)} days"),
-                ("One-Time Customers", f"{one_time_count:,}"),
-                ("Unique Orders", f"{db['_p_order'].nunique():,}"),
-            ]
-        )
-
-    if "_src_tab" in db.columns:
-        source_grp = db.groupby("_src_tab").size().reset_index(name="Volume")
-        if not source_grp.empty:
-            fig_src = px.bar(
-                source_grp.sort_values("Volume", ascending=True),
-                x="Volume",
-                y="_src_tab",
-                orientation="h",
-                title="Volume by Source Tab",
-                color="Volume",
-                color_continuous_scale="Blues",
-            )
-            render_plotly_chart(fig_src, key="pulse_source_bar")
-
-
-def render_cache_health_panel():
-    """System tool to inspect the GSheet cache status."""
-    from src.core.sync import load_manifest
-    from src.core.paths import GSHEETS_CACHE_DIR, GSHEETS_RAW_DIR, GSHEETS_NORM_DIR
-    import os
-
-    st.markdown("### GSheet Cache Health")
-    manifest = load_manifest()
-
-    if not manifest:
-        st.info("Cache is empty. Start a sync to populate.")
-        return
-
-    # Summary Metrics
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Manifest Entries", len(manifest))
+    section_card("👥 Customer Pulse", "Cross-statement unique customer insights and loyalty metrics.")
+    if st.button("🔄 Refresh Pulse Data", use_container_width=True, key="refresh_pulse_btn"): get_all_statements_master.clear(); st.rerun()
     
-    raw_size = sum(f.stat().st_size for f in GSHEETS_RAW_DIR.glob('*.csv')) / (1024 * 1024)
-    norm_size = sum(f.stat().st_size for f in GSHEETS_NORM_DIR.glob('*.parquet')) / (1024 * 1024)
+    # Check if we need full history for Pulse too
+    full_hist = st.toggle("Enable Full History Analytics", value=False, key="pulse_hist_toggle")
     
-    c2.metric("Raw Storage", f"{raw_size:.2f} MB")
-    c3.metric("Norm Storage", f"{norm_size:.2f} MB")
-
-    st.markdown("#### Cached Tabs")
-    cache_data = []
-    for k, v in manifest.items():
-        if k.startswith("tabs_"):
-            continue
-        
-        age = "N/A"
-        if "fetched_at" in v:
-            dt = datetime.fromisoformat(v["fetched_at"])
-            diff = datetime.now(timezone.utc) - dt
-            age = f"{int(diff.total_seconds() // 60)}m ago"
-        
-        cache_data.append({
-            "Tab": v.get("tab_name", "Unknown"),
-            "GID": v.get("gid"),
-            "Last Modified": v.get("last_modified", "Unknown"),
-            "Rows": v.get("row_count", 0),
-            "Age": age,
-            "Status": "Fresh" if "m ago" in age and int(age.split('m')[0]) < 60 else "Stale"
-        })
+    master, msg = get_all_statements_master(full_history=full_hist)
+    if master is None: st.info("Pulse data not yet ready."); return
     
-    if cache_data:
-        st.table(pd.DataFrame(cache_data))
+    # Default to last 30 days for Pulse overview
+    if '_p_date' in master.columns:
+        valid_dates = master[master['_p_date'].notna()]
+        if not valid_dates.empty:
+            min_d = valid_dates['_p_date'].min().date()
+            abs_min = date(2022, 1, 1)
+            f1, f2 = st.columns(2)
+            default_pulse_start = max(min_d, date.today() - timedelta(days=180))
+            p_start = f1.date_input("Pulse From", default_pulse_start, min_value=abs_min, max_value=date.today(), key="pulse_start")
+            p_end = f2.date_input("Pulse To", date.today(), min_value=abs_min, max_value=date.today(), key="pulse_end")
+            db = master[(master['_p_date'].dt.date >= p_start) & (master['_p_date'].dt.date <= p_end)].copy()
+        else:
+            db = master.copy()
+    else:
+        db = master.copy()
+
+    if db.empty: st.warning("No data found for selected pulse range."); return
     
-    if st.button("Export Current Pivot to Local CSVs", use_container_width=True, help="Dumps all cached data into Excel-readable files in your 'incoming' folder"):
-        from src.core.paths import INCOMING_DIR
-        try:
-            m_df, msg = get_all_statements_master(full_history=False)
-            if m_df is not None and not m_df.empty:
-                csv_path = INCOMING_DIR / f"pivot_snapshot_{datetime.now().strftime('%Y%m%d')}.csv"
-                m_df.to_csv(csv_path, index=False)
-                st.success(f"Pivot snapshot secured: {csv_path.name}")
-            else:
-                st.warning("Database is currently empty. Sync first.")
-        except Exception as e:
-            st.error(f"Native export failed: {e}")
+    # Identify unique customers across the ENTIRE current master (Global View)
+    master['UID'] = master.get('_p_phone', pd.Series(dtype=str)).fillna(master.get('_p_email', pd.Series(dtype=str))).astype(str).str.strip().str.lower()
+    global_unique = master[(master['UID'] != "") & (master['UID'] != "nan") & (master['UID'].notna())]['UID'].nunique()
+    
+    # Process Filtered View for New/Growth analysis
+    db['UID'] = db.get('_p_phone', pd.Series(dtype=str)).fillna(db.get('_p_email', pd.Series(dtype=str))).astype(str).str.strip().str.lower()
+    db = db[(db['UID'] != "") & (db['UID'] != "nan") & (db['UID'].notna())]
+    
+    cust = db.sort_values('_p_date').groupby('UID')['_p_date'].min().reset_index()
+    cust.columns = ['UID', 'AcqDate']
+    
+    # Calculate Acquisition Metrics
+    today = date.today()
+    this_m = date(today.year, today.month, 1)
+    last_m_end = this_m - timedelta(days=1)
+    last_m_start = date(last_m_end.year, last_m_end.month, 1)
+    
+    new_lm = len(cust[(cust['AcqDate'].dt.date >= last_m_start) & (cust['AcqDate'].dt.date <= last_m_end)])
+    new_tm = len(cust[cust['AcqDate'].dt.date >= this_m])
+    
+    m0, m1, m2, m3 = st.columns(4)
+    m0.metric("Total Customers (Current Data)", f"{global_unique:,}")
+    m1.metric("Range Unique Customers", f"{len(cust):,}")
+    m2.metric("New (Last Month)", f"{new_lm:,}")
+    m3.metric("New (This Month)", f"{new_tm:,}")
+    
+    # Visuals
+    trend = cust.dropna(subset=['AcqDate']).copy()
+    trend['Month'] = trend['AcqDate'].dt.strftime('%Y-%m')
+    trend_grp = trend.groupby('Month').size().reset_index(name='New')
+    trend_grp['Total (Cumulative)'] = trend_grp['New'].cumsum()
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        # Dual-series graph: Line for monthly new and total growth
+        fig_trend = px.line(
+            trend_grp, 
+            x='Month', 
+            y=['Total (Cumulative)', 'New'], 
+            title="Customer Growth & Acquisition", 
+            template="plotly_dark", 
+            color_discrete_sequence=['#3b82f6', '#10b981']
+        ).update_layout(hovermode="x unified")
+        # Add markers for better clarity on data points
+        fig_trend.update_traces(mode='lines+markers')
+        st.plotly_chart(fig_trend, use_container_width=True)
+    
+    with col2:
+        freq = db.groupby('UID').agg({'_p_order': 'nunique', '_p_cost': 'sum'}).reset_index()
+        freq.columns = ['UID', 'Orders', 'Revenue']
+        returning = len(freq[freq['Orders'] > 1])
+        one_time = len(freq[freq['Orders'] == 1])
+        retention_df = pd.DataFrame({'Type': ['Returning', 'One-time'], 'Count': [returning, one_time]})
+        st.plotly_chart(px.pie(retention_df, values='Count', names='Type', title="Retention Snapshot", hole=0.5, color_discrete_sequence=['#10b981', '#334155']), use_container_width=True)
 
-    if st.button("Wipe All Local Cache", type="secondary"):
-        from src.core.sync import clear_sync_cache
-        clear_sync_cache()
-        st.toast("Cache Purged")
-        st.rerun()
-
-
-def render_data_completeness_report():
-    """Detailed report on which months/tabs are loaded vs missing."""
-    st.markdown("### Data Completeness Report")
-    url = get_setting("GSHEET_URL", DEFAULT_GSHEET_URL)
-    try:
-        from src.core.sync import load_published_sheet_tabs, load_manifest
-        tabs = load_published_sheet_tabs(url)
-        manifest = load_manifest()
+    # NEW FEATURES: VIP Leaderboard
+    st.markdown("### 🏆 VIP Leaderboard (Top Spenders)")
+    vip = freq.sort_values('Revenue', ascending=False).head(10).copy()
+    # Mask UID for privacy if needed, but here we show it for internal use
+    st.table(vip.style.format({'Revenue': 'TK {:,.0f}'}))
+    
+    with st.expander("🔍 Customer Geography & Channel Hint"):
+        if '_p_phone' in db.columns:
+            total_with_phone = len(db[db['_p_phone'].str.startswith('01', na=False)])
+            st.info(f"Verified mobile contacts in database: {total_with_phone:,}")
         
-        report = []
-        for t in tabs:
-            if t["name"].lower() in TOTAL_SALES_EXCLUDED_TABS:
-                continue
-            
-            cache_key = f"gid_{t['gid']}"
-            cached = manifest.get(cache_key)
-            status = "Missing"
-            details = "Not yet synced"
-            
-            if cached:
-                status = "Synced"
-                details = f"{cached.get('row_count', 0)} rows, {cached.get('last_modified', 'No date')}"
-            
-            report.append({
-                "Sheet Tab": t["name"],
-                "Status": status,
-                "Details": details
-            })
-        
-        st.dataframe(pd.DataFrame(report), use_container_width=True, hide_index=True)
-    except Exception as e:
-        st.error(f"Failed to generate report: {e}")
+        # Acquisition source if multiple tabs
+        if '_src_tab' in db.columns:
+            source_grp = db.groupby('_src_tab').size().reset_index(name='Records')
+            st.plotly_chart(px.bar(source_grp, x='Records', y='_src_tab', orientation='h', title="Records by Statement Source"), use_container_width=True)
