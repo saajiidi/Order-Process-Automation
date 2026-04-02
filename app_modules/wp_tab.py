@@ -1,4 +1,4 @@
-﻿import pandas as pd
+import pandas as pd
 import streamlit as st
 
 from app_modules.error_handler import log_error
@@ -55,19 +55,11 @@ def _validate_wp_columns(df: pd.DataFrame):
     return len(missing) == 0, missing
 
 
-def render_wp_tab(guided: bool = True):
+def render_wp_tab():
     section_card(
         "WhatsApp Verification",
         "Generate personalized verification links and export for bulk operations.",
     )
-
-    if guided:
-        step = 0
-        if st.session_state.get("wp_preview_df") is not None:
-            step = 1
-        if st.session_state.get("wp_links_df") is not None:
-            step = 2
-        render_steps(["Upload", "Validate", "Preview", "Export"], min(step + 1, 3))
 
     with st.expander("Message template customization", expanded=False):
         st.caption("Variables: {name}, {salutation}, {order_id}")
@@ -84,11 +76,41 @@ def render_wp_tab(guided: bool = True):
             placeholder="Please confirm the order and address details.",
         )
 
-    wp_file = st.file_uploader("Upload Verification List (CSV/XLSX)", key="wp_up_2", type=["xlsx", "csv"])
+    wp_file = st.file_uploader("Upload Verification List (CSV/XLSX) OR pull from Live Source below", key="wp_up_2", type=["xlsx", "csv"])
+    
+    fetch_live_clicked = st.button("Pull from Live Dash Data & Auto-Process", type="secondary", use_container_width=True, key="wp_live")
 
     preview_df = None
     valid_file = False
-    if wp_file:
+    
+    if fetch_live_clicked:
+        try:
+            from app_modules.sales_dashboard import load_live_source, get_setting, DEFAULT_GSHEET_URL, get_gcp_service_account_info
+            source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
+            default_idx = 0
+            if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
+                default_idx = 1
+            elif get_setting("GSHEET_ID"):
+                default_idx = 1
+            elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
+                default_idx = 2
+            
+            with st.spinner(f"Fetching from {source_options[default_idx]}..."):
+                df_live, _, _ = load_live_source(source_options[default_idx])
+            preview_df = df_live
+            st.session_state.wp_preview_df = preview_df
+            st.session_state.wp_upload_name = f"Live Source ({source_options[default_idx]})"
+            st.session_state.wp_auto_generate = True
+            
+            valid_file, missing_fields = _validate_wp_columns(preview_df)
+            if valid_file:
+                st.success("Fetched from Live Source perfectly. Processing...")
+            else:
+                st.error(f"Live dataset missing required fields: {', '.join(missing_fields)}")
+        except Exception as exc:
+            log_error(exc, context="WP Live Pull")
+            st.error(f"Failed to fetch live source: {exc}")
+    elif wp_file:
         try:
             preview_df = _read_uploaded(wp_file)
             st.session_state.wp_preview_df = preview_df
@@ -116,9 +138,15 @@ def render_wp_tab(guided: bool = True):
         _reset_wp_state()
         st.rerun()
 
+    if st.session_state.get("wp_auto_generate"):
+        generate_clicked = True
+        valid_file, _ = _validate_wp_columns(st.session_state.wp_preview_df)
+        preview_df = st.session_state.wp_preview_df
+        st.session_state.wp_auto_generate = False
+
     if generate_clicked:
-        if not wp_file or not valid_file:
-            st.warning("Upload a valid verification file before generating links.")
+        if (not wp_file and st.session_state.get("wp_preview_df") is None) or not valid_file:
+            st.warning("Upload a valid verification file or pull from live dash before generating links.")
         else:
             try:
                 processor = WhatsAppOrderProcessor()
@@ -136,7 +164,7 @@ def render_wp_tab(guided: bool = True):
 
     links_df = st.session_state.get("wp_links_df")
     if links_df is not None:
-        st.dataframe(links_df.head(25), use_container_width=True, hide_index=True)
+        st.dataframe(links_df.head(25), use_container_width=True)
 
         bulk_blocks = []
         for _, row in links_df.iterrows():

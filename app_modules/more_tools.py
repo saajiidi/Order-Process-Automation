@@ -103,13 +103,13 @@ def render_data_quality_monitor_tab():
     else:
         st.success("Required columns are detected.")
 
-    st.dataframe(issues_df, use_container_width=True, hide_index=True)
+    st.dataframe(issues_df, use_container_width=True)
 
     with st.expander("Detected Column Mapping", expanded=False):
         mapping_df = pd.DataFrame(
             [{"Logical Field": k, "Mapped Column": v} for k, v in auto_cols.items()]
         )
-        st.dataframe(mapping_df, use_container_width=True, hide_index=True)
+        st.dataframe(mapping_df, use_container_width=True)
 
     out = BytesIO()
     with pd.ExcelWriter(out, engine="xlsxwriter") as writer:
@@ -208,7 +208,7 @@ def render_daily_summary_export_tab():
     )
 
     st.success("Executive summary generated.")
-    st.dataframe(kpi_df, use_container_width=True, hide_index=True)
+    st.dataframe(kpi_df, use_container_width=True)
 
     out = BytesIO()
     with pd.ExcelWriter(out, engine="xlsxwriter") as writer:

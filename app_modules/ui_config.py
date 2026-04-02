@@ -3,9 +3,11 @@ APP_VERSION = "v8.1"
 
 PRIMARY_NAV = [
     "Dashboard",
-    "Orders",
-    "Inventory",
-    "Messaging",
+    "Sales Data Ingestion",
+    "Bulk Order Processer",
+    "Delivery Data Parser",
+    "Inventory Distribution",
+    "WhatsApp Messaging",
 ]
 
 MORE_TOOLS = [

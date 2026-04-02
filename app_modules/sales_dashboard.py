@@ -82,7 +82,7 @@ def render_snapshot_button(marker_id="snapshot-target"):
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 FEEDBACK_DIR = os.path.join(DATA_DIR, "feedback")
 INCOMING_DIR = os.path.join(DATA_DIR, "incoming")
-DEFAULT_GSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBDukmkRJGgHjCRIAAwGmlWaiPwESXSp9UBXm3_sbs37bk2HxavPc62aobmL1cGWUfAKE4Zd6yJySO/pubhtml"
+DEFAULT_GSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTOiRkybNzMNvEaLxSFsX0nGIiM07BbNVsBbsX1dG8AmGOmSu8baPrVYL0cOqoYN4tRWUj1UjUbH1Ij/pubhtml"
 os.makedirs(FEEDBACK_DIR, exist_ok=True)
 os.makedirs(INCOMING_DIR, exist_ok=True)
 
@@ -249,6 +249,16 @@ def process_data(df, selected_cols):
     """Processed data using validated user-selected or auto-detected columns."""
     try:
         df = df.copy()
+        
+        # Scrub dashboard analytics, pivot tables, and empty totals from live exports
+        df = df.dropna(how='all')
+        if 'order_id' in selected_cols and selected_cols['order_id'] in df.columns:
+            clean_id = df[selected_cols['order_id']].astype(str).str.strip().str.lower()
+            df = df[~clean_id.isin(['', 'nan', 'none', 'null'])]
+
+        if df.empty:
+            raise ValueError("Dataset is empty after stripping metrics/analytics rows.")
+
         df['Internal_Name'] = df[selected_cols['name']].fillna('Unknown Product').astype(str)
         df = df[~df['Internal_Name'].str.contains('Choose Any', case=False, na=False)]
 
@@ -359,8 +369,9 @@ def normalize_gsheet_url_to_csv(sheet_url):
 
     if "/spreadsheets/d/e/" in path:
         base = f"{parsed.scheme}://{parsed.netloc}{path.split('/pubhtml')[0].split('/pub')[0]}"
-        gid = query.get("gid", ["0"])[0]
-        return f"{base}/pub?output=csv&gid={gid}"
+        if "gid" in query:
+            return f"{base}/pub?output=csv&gid={query['gid'][0]}"
+        return f"{base}/pub?output=csv"
 
     if "/spreadsheets/d/" in path:
         parts = [p for p in path.split("/") if p]
@@ -368,8 +379,9 @@ def normalize_gsheet_url_to_csv(sheet_url):
             idx = parts.index("d")
             if idx + 1 < len(parts):
                 sheet_id = parts[idx + 1]
-                gid = query.get("gid", ["0"])[0]
-                return f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}"
+                if "gid" in query:
+                    return f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={query['gid'][0]}"
+                return f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
 
     return url
 
@@ -759,11 +771,11 @@ def render_dashboard_output(drill, summ, top, timeframe, basket, source_name, la
 
     tabs = st.tabs(["Summary", "Rankings", "Drilldown"])
     with tabs[0]:
-        st.dataframe(summ.sort_values('Total Amount', ascending=False), use_container_width=True, hide_index=True)
+        st.dataframe(summ.sort_values('Total Amount', ascending=False), use_container_width=True)
     with tabs[1]:
-        st.dataframe(top.head(20), use_container_width=True, hide_index=True)
+        st.dataframe(top.head(20), use_container_width=True)
     with tabs[2]:
-        st.dataframe(drill.sort_values(['Category', 'Price (TK)']), use_container_width=True, hide_index=True)
+        st.dataframe(drill.sort_values(['Category', 'Price (TK)']), use_container_width=True)
 
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine='xlsxwriter') as wr:

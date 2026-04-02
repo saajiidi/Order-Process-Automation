@@ -1,4 +1,4 @@
-﻿import re
+import re
 from io import BytesIO
 from datetime import datetime
 
@@ -273,16 +273,11 @@ def _reset_parser_state():
     clear_state_keys(["standard_parsed_df", "fuzzy_parsed_df"])
 
 
-def render_fuzzy_parser_tab(guided: bool = True):
+def render_fuzzy_parser_tab():
     section_card(
         "Delivery Text Parser",
         "Convert copied delivery text into spreadsheet-ready records.",
     )
-    if guided:
-        step = 0
-        if st.session_state.get("standard_parsed_df") is not None or st.session_state.get("fuzzy_parsed_df") is not None:
-            step = 2
-        render_steps(["Paste", "Parse", "Preview", "Export"], step)
 
     sample = """Cons. ID
 DD040326KR9NUU
@@ -307,7 +302,7 @@ POD"""
     with tab1:
         raw_text = st.text_area(
             "Paste raw text",
-            value=sample,
+            value="",
             height=340,
             placeholder="Paste copied courier detail blocks...",
             key="standard_raw_text",
@@ -331,7 +326,7 @@ POD"""
                 st.success(f"Parsed {len(parsed_df)} records.")
 
         if st.session_state.get("standard_parsed_df") is not None:
-            st.dataframe(st.session_state.standard_parsed_df, use_container_width=True, hide_index=True)
+            st.dataframe(st.session_state.standard_parsed_df, use_container_width=True)
             st.download_button(
                 "Download standard parser output",
                 df_to_excel_bytes(st.session_state.standard_parsed_df),
@@ -381,7 +376,7 @@ POD"""
                     st.success(f"Parsed {len(parsed_df)} records using fuzzy fallback.")
 
         if st.session_state.get("fuzzy_parsed_df") is not None:
-            st.dataframe(st.session_state.fuzzy_parsed_df, use_container_width=True, hide_index=True)
+            st.dataframe(st.session_state.fuzzy_parsed_df, use_container_width=True)
             st.download_button(
                 "Download fuzzy parser output",
                 df_to_excel_bytes(st.session_state.fuzzy_parsed_df),

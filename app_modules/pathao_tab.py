@@ -30,23 +30,15 @@ def _reset_pathao_state():
     clear_state_keys(["pathao_res_df", "pathao_preview_df", "pathao_uploaded_name"])
 
 
-def render_pathao_tab(guided: bool = True):
+def render_pathao_tab():
     section_card(
         "Pathao Order Processor",
         "Upload order file, validate required columns, generate repaired export.",
     )
 
-    if guided:
-        step = 0
-        if st.session_state.get("pathao_preview_df") is not None:
-            step = 1
-        if st.session_state.get("pathao_res_df") is not None:
-            step = 2
-        render_steps(["Upload", "Validate", "Preview", "Export"], min(step + 1, 3))
-
     up_pathao = st.file_uploader("Upload Orders (CSV/XLSX) OR pull from Live Source below", type=["xlsx", "csv"], key="pathao_up")
     
-    fetch_live_clicked = st.button("Pull from Live Dash Data & Auto-Process", type="secondary", use_container_width=True)
+    fetch_live_clicked = st.button("Pull from Live Dash Data & Auto-Process", type="secondary", use_container_width=True, key="pathao_live")
 
     preview_df = None
     valid_file = False
@@ -126,7 +118,7 @@ def render_pathao_tab(guided: bool = True):
     result_df = st.session_state.get("pathao_res_df")
     if result_df is not None:
         with st.expander("Preview output", expanded=True):
-            st.dataframe(result_df, use_container_width=True, hide_index=True)
+            st.dataframe(result_df, use_container_width=True)
 
         st.download_button(
             "Download repaired Pathao file",
