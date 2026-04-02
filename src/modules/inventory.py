@@ -163,6 +163,7 @@ def render_distribution_tab(search_q=None, guided: bool = True):
                 "Stock_Distribution.xlsx",
                 type="primary",
                 key="inv_ex_btn",
+                use_container_width=True,
             )
 
     with i_tab:
@@ -173,6 +174,7 @@ def render_distribution_tab(search_q=None, guided: bool = True):
                 st.session_state.inv_t_col,
             )
             from src.ui.components import render_plotly_chart
+
             c1, c2 = st.columns(2)
             with c1:
                 melt = df.melt(
@@ -187,7 +189,7 @@ def render_distribution_tab(search_q=None, guided: bool = True):
                     title="Stock Heatmap",
                 )
                 render_plotly_chart(fig_hm, key="inv_heatmap")
-                
+
             with c2:
                 tots = df[locs].apply(pd.to_numeric, errors="coerce").fillna(0).sum()
                 fig_pie = px.pie(
@@ -220,4 +222,4 @@ def render_distribution_tab(search_q=None, guided: bool = True):
         else:
             st.info("Run analysis to see pick list.")
 
-    render_reset_confirm("inventory", _reset_inventory_state)
+    render_reset_confirm("Distribution Hub", "inventory", _reset_inventory_state)

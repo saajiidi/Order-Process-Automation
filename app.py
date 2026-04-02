@@ -1,8 +1,23 @@
-import os
-import sys
-from datetime import date
-
 import streamlit as st
+
+_original_dataframe = st.dataframe
+
+
+def _numbered_dataframe(data, *args, **kwargs):
+    try:
+        import pandas as pd
+
+        if isinstance(data, pd.DataFrame) or isinstance(data, pd.Series):
+            d = data.copy()
+            if len(d) > 0:
+                d.index = range(1, len(d) + 1)
+            return _original_dataframe(d, *args, **kwargs)
+    except Exception:
+        pass
+    return _original_dataframe(data, *args, **kwargs)
+
+
+st.dataframe = _numbered_dataframe
 
 # Ensure the app root is in the python path for module discovery
 # especially important for remote environments like Streamlit Cloud
@@ -38,7 +53,13 @@ def run_app():
         render_data_quality_monitor_tab,
     )
     from src.modules.woo_report import render_wp_api_orders_tab
-    from src.ui.components import inject_base_styles, render_header, render_sidebar_shell
+    from src.ui.bike_animation import render_bike_animation
+    from src.ui.components import (
+        inject_base_styles,
+        render_header,
+        render_sidebar_shell,
+        render_sidebar_workspace_control,
+    )
 
     init_state()
     inject_base_styles()
@@ -49,6 +70,12 @@ def run_app():
         if "main_nav" not in st.session_state:
             st.session_state.main_nav = "Live Queue"
 
+        st.caption("Navigation")
+        st.session_state.show_animation = st.toggle(
+            "Show motion effects",
+            value=st.session_state.get("show_animation", True),
+        )
+
         nav_options = [
             "Live Queue",
             "Sales Analysis",
@@ -57,7 +84,6 @@ def run_app():
             "System",
         ]
 
-        st.caption("Navigation")
         st.session_state.main_nav = st.radio(
             "Navigation",
             nav_options,
@@ -81,7 +107,27 @@ def run_app():
             st.cache_data.clear()
             st.rerun()
 
+        render_sidebar_workspace_control()
+
+        with st.expander("System Logs", expanded=False):
+            logs = get_logs()
+            if not logs:
+                st.info("No system events logged.")
+            else:
+                for entry in reversed(logs[-10:]):
+                    st.caption(f"**{entry.get('timestamp')}** | {entry.get('context')}")
+                    st.text(entry.get("error"))
+                    st.divider()
+                if st.button("Clear logs", use_container_width=True):
+                    from src.core.errors import ERROR_LOG_FILE
+
+                    if os.path.exists(ERROR_LOG_FILE):
+                        os.remove(ERROR_LOG_FILE)
+                    st.rerun()
+
     render_header()
+    if st.session_state.get("show_animation"):
+        render_bike_animation()
 
     if st.session_state.main_nav == "Live Queue":
         render_live_tab()

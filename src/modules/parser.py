@@ -420,4 +420,4 @@ POD"""
                 key="parser_fuz_dl",
             )
 
-    render_reset_confirm("parser", _reset_parser_state)
+    render_reset_confirm("Delivery Text Parser", "parser", _reset_parser_state)

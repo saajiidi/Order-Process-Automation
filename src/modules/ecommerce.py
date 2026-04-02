@@ -160,6 +160,7 @@ def render_wp_tab(guided: bool = True):
             to_excel_bytes(links_df),
             "WhatsApp_Links.xlsx",
             key="ec_ex_xl",
+            use_container_width=True,
         )
 
-    render_reset_confirm("wp", _reset_wp_state)
+    render_reset_confirm("WhatsApp Verification", "wp", _reset_wp_state)

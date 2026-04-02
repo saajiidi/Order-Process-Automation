@@ -918,3 +918,48 @@ def show_last_updated(path: str):
         "%Y-%m-%d %H:%M:%S"
     )
     st.caption(f"Last updated: {updated}")
+
+
+def render_reset_confirm(label: str, state_key: str, reset_fn):
+    """
+    Registers a tool's reset function for the unified sidebar.
+    """
+    if "registered_resets" not in st.session_state:
+        st.session_state.registered_resets = {}
+
+    st.session_state.registered_resets[label] = {"fn": reset_fn, "key": state_key}
+
+
+def render_sidebar_workspace_control():
+    """renders the unified workspace control hub in the sidebar."""
+    st.divider()
+    st.subheader("Workspace Control", divider="gray")
+    with st.expander("Reset Active Tool Data", expanded=True):
+        registered = st.session_state.get("registered_resets", {})
+        if not registered:
+            st.info("No active tool data found.")
+        else:
+            tool_to_wipe = st.selectbox(
+                "Select tool to clear", list(registered.keys()), key="sidebar_reset_tool"
+            )
+            if st.button("Reset Tool Now", use_container_width=True, type="primary"):
+                registered[tool_to_wipe]["fn"]()
+                st.success(f"Wiped {tool_to_wipe} data.")
+                st.rerun()
+
+    if st.button("Full System Reset", use_container_width=True, type="secondary"):
+        st.session_state.confirm_app_reset = True
+
+    if st.session_state.get("confirm_app_reset"):
+        st.warning("⚠️ Wipe EVERYTHING?")
+        c1, c2 = st.columns(2)
+        if c1.button("Yes", type="primary", use_container_width=True):
+            from src.core.persistence import STATE_FILE
+
+            if os.path.exists(STATE_FILE):
+                os.remove(STATE_FILE)
+            st.session_state.clear()
+            st.rerun()
+        if c2.button("No", use_container_width=True):
+            st.session_state.confirm_app_reset = False
+            st.rerun()
