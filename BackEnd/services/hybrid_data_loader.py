@@ -182,6 +182,12 @@ def load_hybrid_data(start_date: Optional[str] = None, end_date: Optional[str] =
     
     con.close()
     
+    # Ensure numeric columns are properly typed
+    if 'Order Total Amount' in df_merged.columns:
+        df_merged['Order Total Amount'] = pd.to_numeric(df_merged['Order Total Amount'], errors='coerce')
+    elif 'order_total' in df_merged.columns:
+        df_merged['order_total'] = pd.to_numeric(df_merged['order_total'], errors='coerce')
+    
     return df_merged
 
 
