@@ -227,6 +227,43 @@ def inject_base_styles():
             }
         }
         
+        /* Metric container alignment */
+        [data-testid="stMetricContainer"] {
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        
+        /* Consistent metric value alignment */
+        [data-testid="stMetricValue"] {
+            font-size: 1.4rem !important;
+            font-weight: 600 !important;
+            line-height: 1.2 !important;
+        }
+        
+        /* Metric label alignment */
+        [data-testid="stMetricLabel"] {
+            font-size: 0.8rem !important;
+            font-weight: 500 !important;
+            color: #64748b !important;
+        }
+        
+        /* Ensure proper column stacking on mobile */
+        @media (max-width: 640px) {
+            [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+                min-width: 100% !important;
+                flex: 1 1 100% !important;
+            }
+            /* Mobile metric adjustments */
+            [data-testid="stMetricValue"] {
+                font-size: 1.1rem !important;
+            }
+            [data-testid="stMetricContainer"] {
+                min-height: auto !important;
+            }
+        }
+        
         /* Ensure dialogs are scrollable and properly sized */
         div[role="dialog"] {
             max-width: 95vw !important;

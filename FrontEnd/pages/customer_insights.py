@@ -40,6 +40,8 @@ def render_customer_insight_tab():
             key="insight_end_date"
         )
     with col3:
+        # Add vertical spacing to align button with date input fields
+        st.markdown("<div style='height: 1.75rem;'></div>", unsafe_allow_html=True)
         load_clicked = st.button("🔍 Load Insights", use_container_width=True, type="primary")
     
     # Search box

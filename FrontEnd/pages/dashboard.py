@@ -43,6 +43,8 @@ def render_dashboard_tab():
             key="dashboard_end_date"
         )
     with col3:
+        # Add vertical spacing to align button with date input fields
+        st.markdown("<div style='height: 1.75rem;'></div>", unsafe_allow_html=True)
         load_clicked = st.button("🔄 Load Dashboard", use_container_width=True, type="primary")
     
     if load_clicked or 'dashboard_data' in st.session_state:
@@ -149,9 +151,10 @@ def render_executive_summary(df_sales: pd.DataFrame, df_customers: pd.DataFrame,
     elif 'shipped_date' in df_sales.columns:
         pending_count = df_sales['shipped_date'].isna().sum()
     
-    # Row 1: Main KPIs with Delta (Today vs Yesterday)
+    # Row 1: Main KPIs with Delta (Today vs Yesterday) - Responsive layout
     st.markdown("#### 📊 Today's Performance vs Yesterday")
-    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
+    # Use responsive column ratios for better alignment
+    kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns([3, 3, 3, 2])
     
     with kpi_col1:
         # Revenue with delta vs yesterday
@@ -243,7 +246,8 @@ def render_executive_summary(df_sales: pd.DataFrame, df_customers: pd.DataFrame,
         repeat_rate = 0
         new_pct = 0
     
-    health_col1, health_col2, health_col3, health_col4 = st.columns(4)
+    # Use responsive column ratios for better alignment
+    health_col1, health_col2, health_col3, health_col4 = st.columns([3, 3, 3, 2])
     
     with health_col1:
         st.metric(

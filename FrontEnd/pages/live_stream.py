@@ -594,7 +594,8 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
 
         if focus in ("all", "core_metrics"):
             st.subheader("Core Metrics")
-            m1, m2, m3, m4 = st.columns(4)
+            # Responsive column ratios for better alignment
+            m1, m2, m3, m4 = st.columns([3, 3, 3, 2])
             m1.metric(get_items_sold_label(last_updated), f"{t_qty:,.0f}")
             total_orders = basket.get("total_orders", 0)
             m2.metric("Number of Orders", f"{total_orders:,.0f}" if total_orders else "-")
@@ -707,7 +708,8 @@ def render_dashboard_output(drill, summ, top, timeframe, basket, source_name, la
     with st.container():
         st.markdown('<div id="snapshot-target-main"></div>', unsafe_allow_html=True)
         st.subheader("Core Metrics")
-        m1, m2, m3, m4 = st.columns(4)
+        # Responsive column ratios for better alignment
+        m1, m2, m3, m4 = st.columns([3, 3, 3, 2])
         m1.metric(get_items_sold_label(last_updated), f"{t_qty:,.0f}")
         total_orders = basket.get("total_orders", 0)
         m2.metric("Number of Orders", f"{total_orders:,.0f}" if total_orders else "-")
@@ -859,6 +861,8 @@ def render_manual_tab():
     with col2:
         end_date = st.date_input("To", value=date.today(), key="manual_end_date")
     with col3:
+        # Add vertical spacing to align button with date input fields
+        st.markdown("<div style='height: 1.75rem;'></div>", unsafe_allow_html=True)
         search_clicked = st.button("🔍 Search", use_container_width=True, type="primary")
     
     if search_clicked:
@@ -902,7 +906,7 @@ def render_manual_tab():
         qty_col = 'Qty' if 'Qty' in df.columns else 'qty'
         customer_col = 'Customer Name' if 'Customer Name' in df.columns else 'customer_name'
         
-        m1, m2, m3, m4 = st.columns(4)
+        m1, m2, m3, m4 = st.columns([3, 3, 3, 2])
         with m1:
             st.metric("Total Orders", f"{df[order_col].nunique():,}")
         with m2:
