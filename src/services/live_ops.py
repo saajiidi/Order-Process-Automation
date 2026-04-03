@@ -9,7 +9,7 @@ from src.core.gsheet_archive import (
     is_archive_auto_enabled,
     sync_live_sales_archive,
 )
-from src.core.sync import LIVE_SALES_TAB_NAME, load_shared_gsheet
+from src.core.sync import LIVE_SALES_TAB_NAME, load_direct_tsv_sheet
 from src.data.normalized_sales import compute_sales_analytics, normalize_sales_dataframe
 
 
@@ -27,16 +27,14 @@ class LiveQueuePackage:
 
 
 def load_live_queue(force_refresh: bool = False) -> LiveQueuePackage:
-    raw_df, source_name, last_refresh = load_shared_gsheet(
-        LIVE_SALES_TAB_NAME, force_refresh=force_refresh
-    )
-    normalized_df, _ = normalize_sales_dataframe(raw_df, source_tab=source_name)
+    raw_df, last_refresh = load_direct_tsv_sheet(force_refresh=force_refresh)
+    normalized_df, _ = normalize_sales_dataframe(raw_df, source_tab="DirectSheet")
     analytics = compute_sales_analytics(normalized_df)
     queue_metrics = compute_live_queue_metrics(normalized_df)
     return LiveQueuePackage(
         raw_df=raw_df,
         normalized_df=normalized_df,
-        source_name=source_name,
+        source_name="Live Sheet",
         last_refresh=last_refresh,
         analytics=analytics,
         queue_metrics=queue_metrics,

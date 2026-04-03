@@ -1,47 +1,10 @@
 {
-  "tabs_docs.google.com": {
-    "fetched_at": "2026-04-02T23:37:38.854282+00:00",
-    "tabs": [
-      {
-        "name": "LatestSales",
-        "gid": "0"
-      },
-      {
-        "name": "2026",
-        "gid": "436235820"
-      },
-      {
-        "name": "2025",
-        "gid": "650598355"
-      },
-      {
-        "name": "2024",
-        "gid": "1926926142"
-      },
-      {
-        "name": "2023",
-        "gid": "1563731937"
-      },
-      {
-        "name": "2022",
-        "gid": "714428268"
-      }
-    ]
-  },
-  "gid_2118542421": {
-    "gid": "2118542421",
-    "tab_name": "Dashboard",
+  "direct_sheet": {
+    "gid": "direct",
+    "tab_name": "DirectSheet",
     "etag": null,
     "last_modified": null,
-    "fetched_at": "2026-04-02T20:00:30.367868+00:00",
-    "row_count": 24
-  },
-  "gid_0": {
-    "gid": "0",
-    "tab_name": "LatestSales",
-    "etag": null,
-    "last_modified": null,
-    "fetched_at": "2026-04-02T23:37:45.489756+00:00",
+    "fetched_at": "2026-04-03T05:57:53.627326+00:00",
     "row_count": 24
   }
 }

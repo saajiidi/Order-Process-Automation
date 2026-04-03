@@ -1,7 +1,7 @@
 import json
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Optional
 
 import streamlit as st
 from google.oauth2.service_account import Credentials

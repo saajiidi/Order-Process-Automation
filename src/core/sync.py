@@ -10,7 +10,7 @@ from html import unescape
 from src.utils.io import fetch_remote_csv_raw
 from src.core.paths import GSHEETS_RAW_DIR, GSHEETS_NORM_DIR, GSHEETS_MANIFEST
 
-DEFAULT_GSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTBDukmkRJGgHjCRIAAwGmlWaiPwESXSp9UBXm3_sbs37bk2HxavPc62aobmL1cGWUfAKE4Zd6yJySO/pubhtml"
+DEFAULT_GSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTOiRkybNzMNvEaLxSFsX0nGIiM07BbNVsBbsX1dG8AmGOmSu8baPrVYL0cOqoYN4tRWUj1UjUbH1Ij/pub?gid=2118542421&single=true&output=tsv"
 
 # Live sales tab configuration
 LIVE_SALES_TAB_NAME = "LatestSales"
@@ -184,7 +184,7 @@ def load_sheet_with_cache(sheet_url, gid, tab_name, force_refresh=False):
 
         from io import BytesIO
 
-        df = pd.read_csv(BytesIO(raw_bytes))
+        df = pd.read_csv(BytesIO(raw_bytes), sep='\t')
 
         # Save normalized parquet for speed
         df.to_parquet(norm_path, index=False)
@@ -204,6 +204,78 @@ def load_sheet_with_cache(sheet_url, gid, tab_name, force_refresh=False):
 
     except Exception as e:
         # Fallback to cache if available
+        if cache_key in manifest and norm_path.exists():
+            return pd.read_parquet(norm_path), manifest[cache_key].get(
+                "last_modified", "Offline/Stale"
+            )
+        raise e
+
+
+def load_direct_tsv_sheet(tsv_url=None, force_refresh=False):
+    """Load data directly from a TSV export URL without tab lookup."""
+    if tsv_url is None:
+        tsv_url = _get_setting("GSHEET_URL", DEFAULT_GSHEET_URL)
+    
+    # Use the URL directly as cache key since there's no gid
+    cache_key = "direct_sheet"
+    raw_path = GSHEETS_RAW_DIR / f"{cache_key}.tsv"
+    norm_path = GSHEETS_NORM_DIR / f"{cache_key}.parquet"
+    
+    manifest = load_manifest()
+    ttl_seconds = 60  # Always treat as volatile for live queue
+    
+    # Check cache
+    if cache_key in manifest and not force_refresh:
+        cached = manifest[cache_key]
+        fetched_at = datetime.fromisoformat(cached["fetched_at"])
+        if fetched_at.tzinfo is None:
+            fetched_at = fetched_at.replace(tzinfo=timezone.utc)
+        if (datetime.now(timezone.utc) - fetched_at).total_seconds() < ttl_seconds:
+            if norm_path.exists():
+                try:
+                    return pd.read_parquet(norm_path), cached.get("last_modified", "Cached")
+                except Exception:
+                    pass
+    
+    # Fetch directly from URL
+    try:
+        raw_bytes, headers = fetch_remote_csv_raw(tsv_url)
+        etag = headers.get("ETag")
+        last_mod = headers.get("Last-Modified")
+        
+        # Skip if ETag matches
+        if (
+            not force_refresh
+            and cache_key in manifest
+            and etag
+            and manifest[cache_key].get("etag") == etag
+            and norm_path.exists()
+        ):
+            df = pd.read_parquet(norm_path)
+            return df, last_mod or "304 Not Modified"
+        
+        # Save and parse
+        with open(raw_path, "wb") as f:
+            f.write(raw_bytes)
+        
+        from io import BytesIO
+        df = pd.read_csv(BytesIO(raw_bytes), sep='\t')
+        df.to_parquet(norm_path, index=False)
+        
+        # Update manifest
+        manifest[cache_key] = {
+            "gid": "direct",
+            "tab_name": "DirectSheet",
+            "etag": etag,
+            "last_modified": last_mod,
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "row_count": len(df),
+        }
+        save_manifest(manifest)
+        
+        return df, last_mod or "New Sync"
+    except Exception as e:
+        # Fallback to cache
         if cache_key in manifest and norm_path.exists():
             return pd.read_parquet(norm_path), manifest[cache_key].get(
                 "last_modified", "Offline/Stale"

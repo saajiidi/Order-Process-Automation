@@ -36,33 +36,33 @@ CANONICAL_COLUMNS = [
 # Mapping from common source column names to canonical names
 COLUMN_ALIASES = {
     # Order ID variations
-    "order_id": ["Order ID", "order id", "OrderID", "order_id", "OrderNumber", "order number", "Invoice", "invoice"],
+    "order_id": ["Order ID", "order id", "OrderID", "order_id", "OrderNumber", "order number", "Invoice", "invoice", "Order", "order", "Order #"],
     # Date variations
-    "order_date": ["Date", "date", "Order Date", "order date", "Created", "created", "Timestamp", "timestamp"],
+    "order_date": ["Date", "date", "Order Date", "order date", "Created", "created", "Timestamp", "timestamp", "Order Date", "Order date"],
     # Customer variations
-    "customer_name": ["Customer", "customer", "Customer Name", "customer name", "Name", "name", "Buyer", "buyer"],
+    "customer_name": ["Customer", "customer", "Customer Name", "customer name", "Name", "name", "Buyer", "buyer", "Full Name", "Billing Name", "Customer Name (Billing)"],
     # Phone variations
-    "phone": ["Phone", "phone", "Mobile", "mobile", "Contact", "contact", "Phone Number", "phone number"],
+    "phone": ["Phone", "phone", "Mobile", "mobile", "Contact", "contact", "Phone Number", "phone number", "Billing Phone", "Phone (Billing)"],
     # Email variations
-    "email": ["Email", "email", "E-mail", "e-mail", "Mail", "mail"],
+    "email": ["Email", "email", "E-mail", "e-mail", "Mail", "mail", "Billing Email"],
     # State/Region variations
-    "state": ["State", "state", "Region", "region", "Province", "province", "Division", "division"],
+    "state": ["State", "state", "Region", "region", "Province", "province", "Division", "division", "Billing State"],
     # Address variations
-    "address": ["Address", "address", "Location", "location", "Shipping Address", "shipping address"],
+    "address": ["Address", "address", "Location", "location", "Shipping Address", "shipping address", "Billing Address", "Address (Billing)"],
     # SKU variations
-    "sku": ["SKU", "sku", "Product Code", "product code", "Item Code", "item code"],
+    "sku": ["SKU", "sku", "Product Code", "product code", "Item Code", "item code", "Item SKU"],
     # Product name variations
-    "item_name": ["Product", "product", "Product Name", "product name", "Item", "item", "Name", "name", "Title", "title"],
+    "item_name": ["Product", "product", "Product Name", "product name", "Item", "item", "Name", "name", "Title", "title", "Product Name (main)", "Item name"],
     # Price variations
-    "unit_price": ["Price", "price", "Unit Price", "unit price", "Cost", "cost", "Rate", "rate"],
+    "unit_price": ["Price", "price", "Unit Price", "unit price", "Cost", "cost", "Rate", "rate", "Item cost", "Item Cost", "Unit cost"],
     # Quantity variations
-    "qty": ["Qty", "qty", "Quantity", "quantity", "Count", "count", "Units", "units"],
+    "qty": ["Qty", "qty", "Quantity", "quantity", "Count", "count", "Units", "units", "Item Quantity"],
     # Total variations
-    "order_total": ["Total", "total", "Order Total", "order total", "Grand Total", "grand total", "Amount", "amount"],
+    "order_total": ["Total", "total", "Order Total", "order total", "Grand Total", "grand total", "Amount", "amount", "Line Total", "line_total", "Line total", "Order Total Amount"],
     # Status variations
-    "order_status": ["Status", "status", "Order Status", "order status", "State", "state"],
+    "order_status": ["Status", "status", "Order Status", "order status", "State", "state", "Order State"],
     # Archive status variations
-    "archive_status": ["Archive Status", "archive status", "Sync Status", "sync status", "Archive", "archive"],
+    "archive_status": ["Archive Status", "archive status", "Sync Status", "sync status", "Archive", "archive", "Fulfillment Status"],
 }
 
 

@@ -603,249 +603,106 @@ def enable_live_auto_refresh(interval_seconds=LIVE_STREAM_REFRESH_SECONDS):
 
 
 def render_live_tab():
-    from src.core.gsheet_archive import has_archive_credentials, is_archive_auto_enabled
-    from src.ui.components import render_action_bar, render_plotly_chart, render_status_strip
+    from src.ui.components import render_action_bar, render_plotly_chart
 
     enable_live_auto_refresh()
-    section_card(
-        "Live Queue",
-        f"Operational queue built from the full {LIVE_SALES_TAB_NAME} tab. Historical analysis now uses the core workbook plus fresh 2026 rows from Google Sheets.",
-    )
-
-    manual_sync, manual_archive = render_action_bar(
-        "Refresh Queue",
-        "live_sync_btn",
-        "Archive Ready Orders",
-        "live_archive_btn",
-    )
-
-    force_refresh = False
-    if manual_sync:
-        clear_sync_cache()
-        force_refresh = True
-
-    archive_result = run_archive_if_requested(
-        manual_trigger=manual_archive, auto_trigger=not manual_archive
-    )
-    if archive_result is not None:
-        if archive_result.ok and archive_result.deleted_rows:
+    
+    # Clean header - just title and refresh button
+    st.markdown("## Live Queue")
+    
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        if st.button("🔄 Refresh", use_container_width=True):
             clear_sync_cache()
-            force_refresh = True
-            st.success(
-                f"{archive_result.message} Control column: {archive_result.control_column}."
-            )
-        elif archive_result.ok:
-            st.info(archive_result.message)
-        else:
-            st.warning(archive_result.message)
+            st.rerun()
 
     try:
-        package = load_live_queue(force_refresh=force_refresh)
+        package = load_live_queue(force_refresh=False)
         analytics = package.analytics
         metrics = package.queue_metrics
 
-        render_ops_hero(
-            f"{LIVE_SALES_TAB_NAME} Live Queue",
-            "Core metrics focus on active processing. Analytics engine: ACTIVE.",
-            [
-                f"Source {package.source_name}",
-                f"Refresh {package.last_refresh or 'N/A'}",
-                f"Auto archive {'ON' if is_archive_auto_enabled() else 'OFF'}",
-            ],
-        )
-        render_status_strip(
-            source=package.source_name,
-            rows=len(package.normalized_df),
-            last_refresh=package.last_refresh,
-            status="Active Queue",
-        )
-        
-        # NEW: Automated Insights for Live Queue
-        render_automated_insights(
-            package.normalized_df, 
-            analytics["summary"], 
-            analytics["basket"]
-        )
-
-        summary = analytics["summary"].copy()
-        if not summary.empty:
-            summary["Volume Share (%)"] = (
-                summary["Total Qty"] / max(summary["Total Qty"].sum(), 1) * 100
-            ).round(2)
-
+        # Essential KPIs only - 4 key metrics
         top_row = st.columns(4)
         with top_row[0]:
-            render_ops_kpi(
-                "Items To Be Sold",
-                f"{metrics['units']:,}",
-                f"{metrics['line_items']:,} sellable lines currently in queue",
-            )
+            st.metric("Items", f"{metrics['units']:,}")
         with top_row[1]:
-            render_ops_kpi(
-                "Total Orders",
-                f"{metrics['unique_orders']:,}",
-                f"{metrics['ready_to_archive']:,} orders already marked ready",
-            )
+            st.metric("Orders", f"{metrics['unique_orders']:,}")
         with top_row[2]:
-            render_ops_kpi(
-                "Revenue",
-                f"TK {metrics['queue_value']:,.0f}",
-                "Current queue value based on line totals",
-            )
+            st.metric("Revenue", f"TK {metrics['queue_value']:,.0f}")
         with top_row[3]:
-            render_ops_kpi(
-                "Avg Basket Value",
-                f"TK {analytics['basket']['avg_basket_value']:,.0f}",
-                f"Avg {analytics['basket']['avg_basket_qty']:.1f} items per basket",
-            )
+            st.metric("Avg Basket", f"TK {analytics['basket']['avg_basket_value']:,.0f}")
 
-        chart_a, chart_b = st.columns(2)
-        with chart_a:
-            if not summary.empty:
+        # Charts - only if we have data
+        summary = analytics["summary"]
+        if not summary.empty:
+            chart_a, chart_b = st.columns(2)
+            with chart_a:
                 fig_pie = px.pie(
                     summary.sort_values("Total Amount", ascending=False),
                     values="Total Amount",
                     names="Category",
                     hole=0.55,
-                    title="Revenue Share by Category",
+                    title="Revenue by Category",
                     color_discrete_sequence=px.colors.sequential.Blues_r,
                 )
-                render_plotly_chart(fig_pie, key="live_revenue_share")
-            else:
-                st.info("Revenue-share chart is not available for the current queue.")
-        with chart_b:
-            if not summary.empty:
-                fig_volume = px.bar(
-                    summary.sort_values("Total Qty", ascending=True),
-                    x="Total Qty",
-                    y="Category",
-                    orientation="h",
-                    title="Volume by Category",
-                    color="Total Qty",
-                    color_continuous_scale="Blues",
-                )
-                render_plotly_chart(fig_volume, key="live_category_volume")
-            else:
-                st.info("Category-volume chart is not available for the current queue.")
+                st.plotly_chart(fig_pie, use_container_width=True, key="live_revenue_share")
+            with chart_b:
+                # Products by Category view
+                top_products = analytics.get("top_products", pd.DataFrame())
+                if not top_products.empty and "Product Name" in top_products.columns:
+                    # Get normalized data with category info
+                    norm_df = package.normalized_df
+                    if "category" in norm_df.columns and "item_name" in norm_df.columns:
+                        # Aggregate by product and category
+                        prod_cat = norm_df.groupby(["category", "item_name"]).agg({
+                            "line_amount": "sum",
+                            "qty": "sum"
+                        }).reset_index()
+                        prod_cat.columns = ["Category", "Product", "Revenue", "Qty"]
+                        # Top 20 products by revenue
+                        prod_cat = prod_cat.sort_values("Revenue", ascending=False).head(20)
+                        
+                        fig_prod = px.treemap(
+                            prod_cat,
+                            path=["Category", "Product"],
+                            values="Revenue",
+                            title="Products by Category (Top 20)",
+                            color="Revenue",
+                            color_continuous_scale="Blues",
+                        )
+                        st.plotly_chart(fig_prod, use_container_width=True, key="live_products_by_cat")
+                    else:
+                        # Fallback to simple top products bar
+                        fig_prod = px.bar(
+                            top_products.head(15),
+                            x="Total Amount",
+                            y="Product Name",
+                            orientation="h",
+                            title="Top Products by Revenue",
+                            color="Total Amount",
+                            color_continuous_scale="Blues",
+                        )
+                        st.plotly_chart(fig_prod, use_container_width=True, key="live_top_products")
+                else:
+                    st.info("No product data available.")
 
-        side_a, side_b = st.columns([1.3, 1])
-        with side_a:
-            st.markdown("#### Product View")
+        # Simple data view
+        with st.expander("View Data", expanded=False):
             top_products_df = analytics.get("top_products", pd.DataFrame())
             if not top_products_df.empty:
-                st.dataframe(
-                    top_products_df.head(25),
-                    use_container_width=True,
-                    hide_index=True,
-                )
-            else:
-                st.info("No product data available.")
-        with side_b:
-            render_ops_list(
-                [
-                    ("Avg Basket Qty", f"{analytics['basket']['avg_basket_qty']:.1f}"),
-                    ("Avg Basket TK", f"TK {analytics['basket']['avg_basket_value']:,.0f}"),
-                    ("Total Item", f"{metrics['units']:,}"),
-                    ("Total Unique Order", f"{metrics['unique_orders']:,}"),
-                    ("Total Unique Customer", f"{compute_unique_customer_count(package.normalized_df):,}"),
-                ]
-            )
-
-        insight_tabs = st.tabs(
-            ["Queue Summary", "Products", "Customers", "Raw Queue", "Archive Automation"]
-        )
-
-        with insight_tabs[0]:
-            if not summary.empty:
-                st.dataframe(
-                    summary.sort_values("Total Amount", ascending=False),
-                    use_container_width=True,
-                    hide_index=True,
-                )
-            else:
-                st.info("No summary rows are available.")
-
-        with insight_tabs[1]:
-            st.dataframe(
-                analytics["top_products"].head(50),
-                use_container_width=True,
-                hide_index=True,
-            )
-
-        with insight_tabs[2]:
-            top_customers = analytics["top_customers"]
-            if top_customers is not None and not top_customers.empty:
-                st.dataframe(
-                    top_customers.head(25), use_container_width=True, hide_index=True
-                )
-            else:
-                st.info("Customer detail is not available in the current queue.")
-
-        with insight_tabs[3]:
+                st.dataframe(top_products_df.head(25), use_container_width=True, hide_index=True)
+            
             display_queue = package.normalized_df.copy()
             selected_columns = [
-                "order_id",
-                "order_date",
-                "customer_name",
-                "phone",
-                "state",
-                "sku",
-                "item_name",
-                "qty",
-                "unit_price",
-                "order_total",
-                "archive_status",
-                "customer_note",
+                "order_id", "order_date", "customer_name", 
+                "phone", "item_name", "qty", "unit_price", "order_total"
             ]
-            search_query = st.text_input(
-                "Search live queue",
-                key="live_queue_search",
-                placeholder="Order number, phone, product, customer...",
-            ).strip()
-            if search_query:
-                mask = (
-                    display_queue[selected_columns]
-                    .astype(str)
-                    .apply(lambda col: col.str.contains(search_query, case=False, na=False))
-                    .any(axis=1)
-                )
-                display_queue = display_queue[mask]
+            cols_present = [c for c in selected_columns if c in display_queue.columns]
+            if cols_present:
+                st.dataframe(display_queue[cols_present], use_container_width=True, hide_index=True)
 
-            st.caption(f"Showing {len(display_queue):,} rows from {LIVE_SALES_TAB_NAME}.")
-            st.dataframe(
-                display_queue[selected_columns],
-                use_container_width=True,
-                hide_index=True,
-            )
-
-        with insight_tabs[4]:
-            st.markdown(
-                """
-                Add one control column in `LatestSales`:
-                `Archive Status`, `Sync Status`, `Sync to 2026`, or `Archive to 2026`.
-                """
-            )
-            st.markdown(
-                """
-                Mark rows with one of these values to move them into `2026`:
-                `ready`, `done`, `completed`, `shipped`, `archive`, `synced`.
-                """
-            )
-            st.markdown(
-                """
-                Required write-access settings:
-                `GSHEET_SPREADSHEET_ID` or `GSHEET_EDIT_URL`,
-                plus `GSHEET_SERVICE_ACCOUNT_JSON`
-                or `GOOGLE_SERVICE_ACCOUNT_EMAIL` + `GOOGLE_PRIVATE_KEY`.
-                """
-            )
-            st.caption(
-                f"Auto archive enabled: {is_archive_auto_enabled()} | Credentials ready: {has_archive_credentials()}"
-            )
     except Exception as e:
-        st.error(f"Live queue failed to load: {e}")
-
-    render_reset_confirm("Live Queue", "sales_live", clear_sync_cache)
+        st.error(f"Failed to load: {e}")
 
 
 def parse_date_from_tab_name(name):

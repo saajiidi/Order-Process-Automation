@@ -34,7 +34,7 @@ def read_remote_csv(csv_url: str):
 
     try:
         raw, headers = fetch_remote_csv_raw(csv_url)
-        df = pd.read_csv(BytesIO(raw))
+        df = pd.read_csv(BytesIO(raw), sep='\t')
         lm = headers.get("Last-Modified")
         if lm:
             try:
