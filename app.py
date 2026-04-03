@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 
 _original_dataframe = st.dataframe
 
@@ -41,8 +42,6 @@ def run_app():
     )
     from app_modules.ui_config import PRIMARY_NAV
     from app_modules.error_handler import ERROR_LOG_FILE
-    import os
-    from app_modules.wp_tab import render_wp_tab
 
     init_state()
     inject_base_styles()
@@ -124,15 +123,6 @@ def run_app():
 
     with nav_tabs[3]:
         render_customer_insight_tab()
-
-    with nav_tabs[4]:
-        from app_modules.distribution_tab import render_distribution_tab
-        render_distribution_tab(
-            search_q=st.session_state.get("inv_matrix_search", "")
-        )
-
-    with nav_tabs[5]:
-        render_wp_tab()
 
     render_footer()
 

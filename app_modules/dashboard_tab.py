@@ -111,99 +111,214 @@ def render_dashboard_tab():
 
 def render_executive_summary(df_sales: pd.DataFrame, df_customers: pd.DataFrame, 
                               start_date: date, end_date: date):
-    """Render Executive Summary with KPI cards."""
-    st.subheader("Executive Summary")
+    """Render Executive Summary with Smart KPI cards featuring Delta comparisons."""
+    st.subheader("Executive Summary - Today's Performance")
     
-    # Calculate metrics
-    # Previous period for comparison
-    period_days = (end_date - start_date).days
-    prev_start = start_date - timedelta(days=period_days)
-    prev_end = start_date
+    # Ensure Order Date is datetime
+    date_col = 'Order Date' if 'Order Date' in df_sales.columns else 'order_date'
+    if date_col in df_sales.columns:
+        df_sales[date_col] = pd.to_datetime(df_sales[date_col], errors='coerce')
     
-    # Current period metrics
-    total_revenue = calculate_revenue(df_sales)
-    total_orders = calculate_orders(df_sales)
-    aov = total_revenue / total_orders if total_orders > 0 else 0
-    active_customers = calculate_active_customers(df_sales)
+    # Calculate TODAY's metrics
+    today = pd.Timestamp.now().normalize()
+    today_data = df_sales[df_sales[date_col] == today] if date_col in df_sales.columns else pd.DataFrame()
     
-    # Previous period metrics (for delta calculation)
-    try:
-        df_prev = load_hybrid_data(
-            start_date=prev_start.strftime('%Y-%m-%d'),
-            end_date=prev_end.strftime('%Y-%m-%d')
-        )
-        prev_revenue = calculate_revenue(df_prev) if not df_prev.empty else 0
-        prev_orders = calculate_orders(df_prev) if not df_prev.empty else 0
-        prev_aov = prev_revenue / prev_orders if prev_orders > 0 else 0
-        prev_customers = calculate_active_customers(df_prev) if not df_prev.empty else 0
-    except:
-        prev_revenue, prev_orders, prev_aov, prev_customers = 0, 0, 0, 0
+    # Calculate YESTERDAY's metrics for comparison
+    yesterday = today - pd.Timedelta(days=1)
+    yesterday_data = df_sales[df_sales[date_col] == yesterday] if date_col in df_sales.columns else pd.DataFrame()
     
-    # KPI Cards
+    # Revenue metrics
+    revenue_col = 'Order Total Amount' if 'Order Total Amount' in df_sales.columns else 'order_total'
+    
+    # Today's numbers
+    today_revenue = pd.to_numeric(today_data[revenue_col], errors='coerce').sum() if not today_data.empty else 0
+    today_orders = today_data['Order Number'].nunique() if 'Order Number' in today_data.columns else 0
+    
+    # Yesterday's numbers
+    yesterday_revenue = pd.to_numeric(yesterday_data[revenue_col], errors='coerce').sum() if not yesterday_data.empty else 0
+    yesterday_orders = yesterday_data['Order Number'].nunique() if 'Order Number' in yesterday_data.columns else 0
+    
+    # AOV calculations
+    today_aov = today_revenue / today_orders if today_orders > 0 else 0
+    yesterday_aov = yesterday_revenue / yesterday_orders if yesterday_orders > 0 else 0
+    
+    # Pending Orders (orders without shipped_date or status == 'Pending')
+    pending_count = 0
+    if 'Status' in df_sales.columns:
+        pending_count = len(df_sales[df_sales['Status'].str.lower() == 'pending'])
+    elif 'shipped_date' in df_sales.columns:
+        pending_count = df_sales['shipped_date'].isna().sum()
+    
+    # Row 1: Main KPIs with Delta (Today vs Yesterday)
+    st.markdown("#### 📊 Today's Performance vs Yesterday")
     kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
     
     with kpi_col1:
-        revenue_delta = ((total_revenue - prev_revenue) / prev_revenue * 100) if prev_revenue > 0 else 0
+        # Revenue with delta vs yesterday
+        if yesterday_revenue > 0:
+            revenue_delta_pct = ((today_revenue - yesterday_revenue) / yesterday_revenue) * 100
+            revenue_delta_label = f"{revenue_delta_pct:+.1f}% vs yesterday"
+        else:
+            revenue_delta_label = "No data yesterday"
+        
         st.metric(
-            "Total Revenue",
-            f"TK {total_revenue:,.0f}",
-            f"{revenue_delta:+.1f}% vs last period",
+            label="💰 Today's Revenue",
+            value=f"TK {today_revenue:,.0f}",
+            delta=revenue_delta_label,
             delta_color="normal"
         )
+        st.caption(f"Yesterday: TK {yesterday_revenue:,.0f}")
     
     with kpi_col2:
-        orders_delta = ((total_orders - prev_orders) / prev_orders * 100) if prev_orders > 0 else 0
+        # Orders with delta
+        if yesterday_orders > 0:
+            orders_delta_pct = ((today_orders - yesterday_orders) / yesterday_orders) * 100
+            orders_delta_label = f"{orders_delta_pct:+.0f}% vs yesterday"
+        else:
+            orders_delta_label = "No data yesterday"
+        
         st.metric(
-            "Total Orders",
-            f"{total_orders:,}",
-            f"{orders_delta:+.1f}% vs last period"
+            label="📦 Today's Orders",
+            value=f"{today_orders:,}",
+            delta=orders_delta_label
         )
+        st.caption(f"Yesterday: {yesterday_orders:,}")
     
     with kpi_col3:
-        aov_delta = ((aov - prev_aov) / prev_aov * 100) if prev_aov > 0 else 0
+        # AOV with delta
+        if yesterday_aov > 0:
+            aov_delta_pct = ((today_aov - yesterday_aov) / yesterday_aov) * 100
+            aov_delta_label = f"{aov_delta_pct:+.1f}% vs yesterday"
+        else:
+            aov_delta_label = None
+        
         st.metric(
-            "Average Order Value",
-            f"TK {aov:,.0f}",
-            f"{aov_delta:+.1f}% vs last period"
+            label="🛒 AOV (Avg Order Value)",
+            value=f"TK {today_aov:,.0f}",
+            delta=aov_delta_label
         )
+        if yesterday_aov > 0:
+            st.caption(f"Yesterday: TK {yesterday_aov:,.0f}")
     
     with kpi_col4:
-        customers_delta = ((active_customers - prev_customers) / prev_customers * 100) if prev_customers > 0 else 0
+        # Pending Orders Alert
+        delta_color = "inverse" if pending_count > 10 else "normal"
         st.metric(
-            "Active Customers",
-            f"{active_customers:,}",
-            f"{customers_delta:+.1f}% vs last period"
+            label="⏳ Pending Orders",
+            value=f"{pending_count}",
+            delta="Action needed" if pending_count > 5 else "On track",
+            delta_color=delta_color
+        )
+        if pending_count > 5:
+            st.warning(f"⚠️ You have {pending_count} orders waiting to be shipped!")
+    
+    # Row 2: Financial Health & Retention Metrics
+    st.divider()
+    st.markdown("#### 💵 Financial Health & Customer Retention")
+    
+    # Calculate period metrics
+    total_revenue = calculate_revenue(df_sales)
+    total_orders = calculate_orders(df_sales)
+    active_customers = calculate_active_customers(df_sales)
+    
+    # Sales Velocity (Revenue per day this month)
+    days_in_month = pd.Timestamp.now().day
+    month_revenue = df_sales[df_sales[date_col] >= pd.Timestamp.now().replace(day=1)][revenue_col].sum() if date_col in df_sales.columns else 0
+    sales_velocity = month_revenue / days_in_month if days_in_month > 0 else 0
+    
+    # Monthly target tracking
+    monthly_goal = 100000  # TK
+    progress = min(month_revenue / monthly_goal, 1.0) if monthly_goal > 0 else 0
+    projected_monthly = sales_velocity * 30
+    
+    # Customer Retention metrics
+    if not df_customers.empty and 'total_orders' in df_customers.columns:
+        repeat_customers = len(df_customers[df_customers['total_orders'] > 1])
+        total_customers = len(df_customers)
+        repeat_rate = (repeat_customers / total_customers * 100) if total_customers > 0 else 0
+        
+        new_customers = len(df_customers[df_customers['total_orders'] == 1])
+        new_pct = (new_customers / total_customers * 100) if total_customers > 0 else 0
+    else:
+        repeat_rate = 0
+        new_pct = 0
+    
+    health_col1, health_col2, health_col3, health_col4 = st.columns(4)
+    
+    with health_col1:
+        st.metric(
+            label="📈 Sales Velocity",
+            value=f"TK {sales_velocity:,.0f}/day",
+            delta=f"Projected: TK {projected_monthly:,.0f}/mo"
+        )
+        st.progress(progress, text=f"Monthly Goal: {progress*100:.1f}%")
+    
+    with health_col2:
+        st.metric(
+            label="🔄 Repeat Customer Rate",
+            value=f"{repeat_rate:.1f}%",
+            delta="Healthy" if repeat_rate > 40 else "Needs attention",
+            delta_color="normal" if repeat_rate > 40 else "inverse"
+        )
+        st.caption(f"{repeat_customers if 'repeat_customers' in locals() else 0} returning customers")
+    
+    with health_col3:
+        st.metric(
+            label="🆕 New Customer %",
+            value=f"{new_pct:.1f}%",
+            delta="High acquisition" if new_pct > 70 else "Balanced",
+            delta_color="normal" if new_pct < 70 else "off"
+        )
+        if new_pct > 70:
+            st.info("💡 Focus on retention strategies")
+    
+    with health_col4:
+        # Period AOV comparison
+        period_aov = total_revenue / total_orders if total_orders > 0 else 0
+        st.metric(
+            label="💎 Period AOV",
+            value=f"TK {period_aov:,.0f}",
+            delta=f"{total_orders:,} total orders"
         )
     
-    # Progress toward monthly goal (example: 100,000 TK)
+    # Smart Insights Section
     st.divider()
-    monthly_goal = 100000  # TK
-    progress = min(total_revenue / monthly_goal, 1.0)
+    st.markdown("#### 🧠 Smart Insights")
     
-    prog_col1, prog_col2 = st.columns([3, 1])
-    with prog_col1:
-        st.progress(progress, text=f"Monthly Goal Progress: {progress*100:.1f}%")
-    with prog_col2:
-        st.caption(f"TK {total_revenue:,.0f} / TK {monthly_goal:,.0f}")
+    insights = []
     
-    # Insight box
-    if aov_delta < -5:
-        st.warning("💡 **Insight:** AOV is dropping. Consider adding 'Frequently Bought Together' bundles to increase cart size.")
-    elif revenue_delta > 10:
-        st.success("💡 **Insight:** Revenue is growing strongly! Consider scaling ad spend to capitalize on momentum.")
+    # AOV Trend Insight
+    if today_aov < yesterday_aov * 0.95:  # 5% drop
+        insights.append(("warning", "💡 **AOV Alert:** Customers buying cheaper items today. Consider 'Frequently Bought Together' bundles."))
+    elif today_aov > yesterday_aov * 1.1:  # 10% increase
+        insights.append(("success", "💡 **AOV Growth:** Customers spending more! Upselling is working."))
     
-    # Quick stats row
-    st.divider()
-    stats_col1, stats_col2, stats_col3 = st.columns(3)
-    with stats_col1:
-        total_items = calculate_total_items(df_sales)
-        st.write(f"**Total Items Sold:** {total_items:,}")
-    with stats_col2:
-        avg_items_per_order = total_items / total_orders if total_orders > 0 else 0
-        st.write(f"**Avg Items/Order:** {avg_items_per_order:.1f}")
-    with stats_col3:
-        unique_products = df_sales['Item Name'].nunique() if 'Item Name' in df_sales.columns else df_sales.get('item_name', pd.Series()).nunique()
-        st.write(f"**Unique Products:** {unique_products}")
+    # Pending Orders Insight
+    if pending_count > 10:
+        insights.append(("error", f"⚠️ **Shipping Alert:** {pending_count} orders pending. Process immediately to avoid customer complaints."))
+    
+    # Sales Velocity Insight
+    if projected_monthly < monthly_goal * 0.9:
+        shortfall = monthly_goal - projected_monthly
+        insights.append(("warning", f"📉 **Goal Alert:** Projected to miss monthly target by TK {shortfall:,.0f}. Ramp up marketing!"))
+    elif projected_monthly > monthly_goal:
+        insights.append(("success", f"✅ **Goal On Track:** Projected to exceed monthly target by TK {projected_monthly - monthly_goal:,.0f}!"))
+    
+    # Retention Insight
+    if repeat_rate < 30 and new_pct > 60:
+        insights.append(("warning", "🔄 **Retention Issue:** Too many new customers vs returning. Implement loyalty program."))
+    
+    # Display insights
+    if insights:
+        for severity, message in insights:
+            if severity == "error":
+                st.error(message)
+            elif severity == "warning":
+                st.warning(message)
+            else:
+                st.success(message)
+    else:
+        st.info("📊 Business metrics are stable. No immediate actions required.")
 
 
 def render_sales_trends(df: pd.DataFrame):

@@ -176,12 +176,12 @@ def generate_customer_insights(start_date: Optional[str] = None, end_date: Optio
             MAX("Order Date") as last_order,
             AVG(CAST("Order Total Amount" AS DOUBLE)) as avg_order_value,
             -- RFM Metrics
-            DATEDIFF('day', MAX("Order Date"), CURRENT_DATE) as recency_days,
-            DATEDIFF('day', MIN("Order Date"), MAX("Order Date")) as customer_lifespan_days,
+            DATEDIFF('day', MAX(CAST("Order Date" AS DATE)), CURRENT_DATE) as recency_days,
+            DATEDIFF('day', MIN(CAST("Order Date" AS DATE)), MAX(CAST("Order Date" AS DATE))) as customer_lifespan_days,
             -- Purchase Cycle (avg days between orders)
             CASE 
                 WHEN COUNT(DISTINCT "Order Number") > 1 THEN 
-                    ROUND(DATEDIFF('day', MIN("Order Date"), MAX("Order Date")) / (COUNT(DISTINCT "Order Number") - 1), 0)
+                    ROUND(DATEDIFF('day', MIN(CAST("Order Date" AS DATE)), MAX(CAST("Order Date" AS DATE))) / (COUNT(DISTINCT "Order Number") - 1), 0)
                 ELSE NULL
             END as purchase_cycle_days,
             -- Customer Lifetime Value (same as total_revenue for now)
