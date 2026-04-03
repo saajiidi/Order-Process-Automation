@@ -831,7 +831,6 @@ def render_dashboard_output(drill, summ, top, timeframe, basket, source_name, la
 
 
 def render_manual_tab():
-<<<<<<< HEAD
     """Sales Data Ingestion with date range selector and hybrid data loading."""
     from datetime import date
     from pathlib import Path
@@ -920,52 +919,6 @@ def render_manual_tab():
             # Handle missing customer column
             if customer_col in df.columns:
                 st.metric("Customers", f"{df[customer_col].nunique():,}")
-=======
-    def _reset_manual_state():
-        st.session_state.manual_generate = False
-        st.session_state.manual_res = None
-    
-    render_reset_confirm("Sales Dashboard (Manual)", "manual", _reset_manual_state)
-    uploaded_file = st.file_uploader("Upload Sales Data (Excel or CSV)", type=['xlsx', 'csv'])
-
-    if uploaded_file is None:
-        return
-
-    try:
-        df = read_sales_file(uploaded_file, uploaded_file.name)
-        st.caption(f"File uploaded: {uploaded_file.name}")
-
-        auto_cols = find_columns(df)
-        all_cols = list(df.columns)
-
-        section_card("Column Mapping", "Detected columns are prefilled. Verify before generating dashboard output.")
-
-        def get_col_idx(key):
-            if key in auto_cols and auto_cols[key] in all_cols:
-                return all_cols.index(auto_cols[key])
-            return 0
-
-        mapped_name = st.selectbox("Product Name", all_cols, index=get_col_idx('name'), key="manual_name")
-        mapped_cost = st.selectbox("Price/Cost", all_cols, index=get_col_idx('cost'), key="manual_cost")
-        mapped_qty = st.selectbox("Quantity", all_cols, index=get_col_idx('qty'), key="manual_qty")
-        mapped_date = st.selectbox("Date (Optional)", ["None"] + all_cols, index=get_col_idx('date') + 1 if 'date' in auto_cols else 0, key="manual_date")
-        mapped_order = st.selectbox("Order ID (Optional)", ["None"] + all_cols, index=get_col_idx('order_id') + 1 if 'order_id' in auto_cols else 0, key="manual_order")
-        mapped_phone = st.selectbox("Phone (Optional)", ["None"] + all_cols, index=get_col_idx('phone') + 1 if 'phone' in auto_cols else 0, key="manual_phone")
-
-        final_mapping = {
-            'name': mapped_name,
-            'cost': mapped_cost,
-            'qty': mapped_qty,
-            'date': mapped_date if mapped_date != "None" else None,
-            'order_id': mapped_order if mapped_order != "None" else None,
-            'phone': mapped_phone if mapped_phone != "None" else None
-        }
-
-        with st.expander("Search Raw Data"):
-            search = st.text_input("Product search...", key="manual_search")
-            if search:
-                st.dataframe(df[df[mapped_name].astype(str).str.contains(search, case=False, na=False)], use_container_width=True)
->>>>>>> 7354d8155efcc061c7b32fdb5457a52ef2db3c77
             else:
                 st.metric("Customers", "N/A")
         
@@ -981,28 +934,22 @@ def render_manual_tab():
                 'phone': auto_cols.get('phone')
             }
             
-            drill, summ, top, timeframe, basket = process_data(df, final_mapping)
-            if drill is not None:
-<<<<<<< HEAD
-                render_dashboard_output(drill, summ, top, timeframe, basket, 
-                                       f"Hybrid Data: {st.session_state.manual_date_range}", 
-                                       datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            try:
+                drill, summ, top, timeframe, basket = process_data(df, final_mapping)
+                if drill is not None:
+                    manual_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    render_dashboard_output(drill, summ, top, timeframe, basket, 
+                                           f"Hybrid Data: {st.session_state.manual_date_range}", 
+                                           manual_updated)
+            except Exception as e:
+                log_system_event("FILE_ERROR", str(e))
+                st.error(f"Error processing data: {e}")
         else:
             # Raw data view if column mapping fails
             st.dataframe(df.head(100), use_container_width=True)
     else:
         # Show instructions
         st.info("Select a date range and click Search to analyze hybrid data (historical + live 2026).")
-=======
-                manual_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                render_dashboard_output(drill, summ, top, timeframe, basket, uploaded_file.name, manual_updated)
-        
-
-
-    except Exception as e:
-        log_system_event("FILE_ERROR", str(e))
-        st.error(f"File error: {e}")
->>>>>>> 7354d8155efcc061c7b32fdb5457a52ef2db3c77
 
 
 def render_live_tab():

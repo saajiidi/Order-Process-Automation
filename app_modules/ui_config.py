@@ -1,22 +1,13 @@
-<<<<<<< HEAD
 APP_TITLE = "Automation Pivot"
-APP_VERSION = "v2.0"
-=======
-APP_TITLE = "Automation Hub Pro"
-APP_VERSION = "v9.0"
->>>>>>> 7354d8155efcc061c7b32fdb5457a52ef2db3c77
+APP_VERSION = "v2.5.0"
 
 PRIMARY_NAV = [
-    "Live Dashboard",
-    "Sales Data Ingestion",
-<<<<<<< HEAD
-    "Customer Insight",
-=======
-    "Bulk Order Processer",
-    "Delivery Data Parser",
-    "Inventory Distribution",
-    "WhatsApp Messaging",
->>>>>>> 7354d8155efcc061c7b32fdb5457a52ef2db3c77
+    "� Dashboard",
+    "�📡 Live Stream",
+    "📦 Orders",
+    "🎯 Customer Insights",
+    "🏠 Inventory",
+    "💬 WhatsApp",
 ]
 
 MORE_TOOLS = [

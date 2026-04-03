@@ -17,9 +17,6 @@ google-auth
 google-auth-oauthlib
 google-auth-httplib2
 requests
-<<<<<<< HEAD
 
 # Analytics Database
 duckdb
-=======
->>>>>>> 7354d8155efcc061c7b32fdb5457a52ef2db3c77
