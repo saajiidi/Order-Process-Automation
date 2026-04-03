@@ -15,9 +15,13 @@ from .ui_components import (
 )
 from .animation import render_bike_animation
 
+# Backward-compatible alias for older imports.
+section_card = render_section_card
+
 __all__ = [
     'inject_base_styles',
     'render_section_card',
+    'section_card',
     'render_action_bar',
     'render_reset_confirm',
     'render_header',
