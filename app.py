@@ -27,21 +27,21 @@ st.set_page_config(
 
 def run_app():
     # Lazy imports keep bootstrap resilient on cloud when a module has runtime incompatibilities.
-    from app_modules.bike_animation import render_bike_animation
-    from app_modules.customer_insight import render_customer_insight_tab
-    from app_modules.dashboard_tab import render_dashboard_tab
-    from app_modules.error_handler import get_logs, log_error
-    from app_modules.persistence import init_state, save_state
-    from app_modules.sales_dashboard import render_live_tab, render_manual_tab
-    from app_modules.ui_components import (
+    from FrontEnd.components import render_bike_animation
+    from FrontEnd.pages import render_customer_insight_tab
+    from FrontEnd.pages import render_dashboard_tab
+    from FrontEnd.utils.error_handler import get_logs, log_error
+    from FrontEnd.utils.state import init_state, save_state
+    from FrontEnd.pages import render_live_tab, render_manual_tab
+    from FrontEnd.components import (
         inject_base_styles,
         render_header,
         render_footer,
         render_sidebar_branding,
         section_card,
     )
-    from app_modules.ui_config import PRIMARY_NAV
-    from app_modules.error_handler import ERROR_LOG_FILE
+    from FrontEnd.utils.config import PRIMARY_NAV
+    from FrontEnd.utils.error_handler import ERROR_LOG_FILE
 
     init_state()
     inject_base_styles()

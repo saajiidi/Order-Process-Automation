@@ -5,7 +5,7 @@ from io import BytesIO
 import pandas as pd
 import streamlit as st
 
-from app_modules.ui_config import APP_TITLE, APP_VERSION
+from FrontEnd.utils.config import APP_TITLE, APP_VERSION
 
 
 def inject_base_styles():
@@ -126,40 +126,104 @@ def inject_base_styles():
             border-bottom: 2px solid #1d4ed8 !important;
         }
         
-        @media (max-width: 900px) {
-            .block-container {
+        /* Responsive Design - Mobile First */
+        @media (max-width: 768px) {
+            .main .block-container {
                 padding-left: 0.5rem !important;
                 padding-right: 0.5rem !important;
-                margin-top: -2.5rem !important;
+                padding-bottom: 120px !important;
+                margin-top: -0.5rem !important;
+            }
+            .hub-title-row {
+                padding: 8px 12px;
+                margin-bottom: 8px;
             }
             .hub-title {
-                font-size: 1.2rem !important;
-                line-height: 1.2;
+                font-size: 1.1rem !important;
+                line-height: 1.3;
             }
             .hub-subtitle {
-                font-size: 0.8rem !important;
-            }
-            .hub-card {
-                padding: 10px;
-                border-radius: 8px;
-            }
-            div[data-testid="stVerticalBlock"]:has(> div[data-testid="stMarkdownContainer"] .hub-action-wrap) {
-                position: static;
-                margin-top: 8px;
-                box-shadow: none;
-                padding: 12px;
-            }
-            /* Metric Font Scaling for Small Screens */
-            div[data-testid="stMetricValue"] {
-                font-size: 1.2rem !important;
-            }
-            div[data-testid="stMetricLabel"] {
                 font-size: 0.75rem !important;
             }
-            /* Compact Tabs on Mobile */
+            .hub-card {
+                padding: 10px 12px;
+                border-radius: 8px;
+                margin-bottom: 8px;
+            }
+            /* Mobile Footer */
+            .hub-footer {
+                padding: 8px 12px;
+                font-size: 0.7rem;
+                flex-direction: column;
+                text-align: center;
+                gap: 4px;
+            }
+            /* Mobile Metrics */
+            div[data-testid="stMetricValue"] {
+                font-size: 1.1rem !important;
+            }
+            div[data-testid="stMetricLabel"] {
+                font-size: 0.7rem !important;
+            }
+            div[data-testid="stMetricDelta"] {
+                font-size: 0.65rem !important;
+            }
+            /* Mobile Tabs */
             div[data-testid="stTab"] button {
-                padding: 8px 12px !important;
+                padding: 6px 10px !important;
+                font-size: 0.75rem !important;
+            }
+            /* Mobile Tables */
+            .stDataFrame {
                 font-size: 0.8rem !important;
+            }
+            /* Mobile Buttons */
+            .stButton > button {
+                font-size: 0.85rem !important;
+                padding: 6px 12px !important;
+            }
+            /* Mobile Sidebar */
+            [data-testid="stSidebar"] {
+                width: 280px !important;
+            }
+        }
+        
+        /* Tablet / Small Laptop */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .main .block-container {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                padding-bottom: 100px !important;
+            }
+            .hub-title {
+                font-size: 1.3rem !important;
+            }
+            .hub-card {
+                padding: 12px 14px;
+            }
+            div[data-testid="stTab"] button {
+                padding: 8px 16px !important;
+                font-size: 0.85rem !important;
+            }
+        }
+        
+        /* Large Screens */
+        @media (min-width: 1400px) {
+            .main .block-container {
+                max-width: 1400px !important;
+                padding-left: 2rem !important;
+                padding-right: 2rem !important;
+            }
+            .hub-card {
+                padding: 18px 20px;
+            }
+        }
+        
+        /* Ensure proper column stacking on mobile */
+        @media (max-width: 640px) {
+            [data-testid="stHorizontalBlock"] > [data-testid="column"] {
+                min-width: 100% !important;
+                flex: 1 1 100% !important;
             }
         }
         
@@ -201,13 +265,8 @@ def render_sidebar_branding():
     st.markdown(
         f"""<div style="padding:10px 16px; border-bottom:1px solid rgba(128,128,128,0.1); margin-bottom:15px;">
             <div style="font-weight:700; font-size:1.1rem; line-height:1.2;">
-<<<<<<< HEAD
                 Automation Pivot<br>
-                <span style="font-size:0.85rem; font-weight:400; color:#64748b;">v2.0</span>
-=======
-                Automation Hub Pro<br>
-                <span style="font-size:0.85rem; font-weight:400; color:#64748b;">v9.0</span>
->>>>>>> 7354d8155efcc061c7b32fdb5457a52ef2db3c77
+                <span style="font-size:0.85rem; font-weight:400; color:#64748b;">v2.5.0</span>
             </div>
         </div>""",
         unsafe_allow_html=True
