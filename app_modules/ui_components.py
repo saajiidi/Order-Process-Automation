@@ -201,8 +201,13 @@ def render_sidebar_branding():
     st.markdown(
         f"""<div style="padding:10px 16px; border-bottom:1px solid rgba(128,128,128,0.1); margin-bottom:15px;">
             <div style="font-weight:700; font-size:1.1rem; line-height:1.2;">
+<<<<<<< HEAD
                 Automation Pivot<br>
                 <span style="font-size:0.85rem; font-weight:400; color:#64748b;">v2.0</span>
+=======
+                Automation Hub Pro<br>
+                <span style="font-size:0.85rem; font-weight:400; color:#64748b;">v9.0</span>
+>>>>>>> 7354d8155efcc061c7b32fdb5457a52ef2db3c77
             </div>
         </div>""",
         unsafe_allow_html=True

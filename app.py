@@ -29,6 +29,11 @@ def run_app():
     from app_modules.bike_animation import render_bike_animation
     from app_modules.customer_insight import render_customer_insight_tab
     from app_modules.error_handler import get_logs, log_error
+<<<<<<< HEAD
+=======
+    from app_modules.fuzzy_parser_tab import render_fuzzy_parser_tab
+    from app_modules.pathao_tab import render_pathao_tab
+>>>>>>> 7354d8155efcc061c7b32fdb5457a52ef2db3c77
     from app_modules.persistence import init_state, save_state
     from app_modules.sales_dashboard import render_live_tab, render_manual_tab
     from app_modules.ui_components import (
@@ -41,6 +46,10 @@ def run_app():
     from app_modules.ui_config import PRIMARY_NAV
     from app_modules.error_handler import ERROR_LOG_FILE
     import os
+<<<<<<< HEAD
+=======
+    from app_modules.wp_tab import render_wp_tab
+>>>>>>> 7354d8155efcc061c7b32fdb5457a52ef2db3c77
 
     init_state()
     inject_base_styles()
@@ -118,10 +127,28 @@ def run_app():
         render_manual_tab()
 
     with nav_tabs[2]:
+<<<<<<< HEAD
         render_customer_insight_tab()
 
     render_footer()
 
+=======
+        render_pathao_tab()
+
+    with nav_tabs[3]:
+        render_fuzzy_parser_tab()
+
+    with nav_tabs[4]:
+        render_distribution_tab(
+            search_q=st.session_state.get("inv_matrix_search", "")
+        )
+
+    with nav_tabs[5]:
+        render_wp_tab()
+
+    render_footer()
+
+>>>>>>> 7354d8155efcc061c7b32fdb5457a52ef2db3c77
 
 
 
