@@ -22,7 +22,7 @@ import requests
 # Default Google Sheet URL (TSV format)
 DEFAULT_GSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTOiRkybNzMNvEaLxSFsX0nGIiM07BbNVsBbsX1dG8AmGOmSu8baPrVYL0cOqoYN4tRWUj1UjUbH1Ij/pub?gid=2118542421&single=true&output=tsv"
 
-DATA_FOLDER = Path("data")
+DATA_FOLDER = Path(__file__).parent.parent / "data"
 
 def download_gsheet_data(url: str) -> pd.DataFrame:
     """Download data from Google Sheet TSV export."""
@@ -72,7 +72,12 @@ def normalize_and_partition(df: pd.DataFrame) -> pd.DataFrame:
     # Ensure year column exists
     if 'year' not in df.columns:
         if 'order_date' in df.columns:
+            original_count = len(df)
             df['order_date'] = pd.to_datetime(df['order_date'], errors='coerce')
+            invalid_dates = df['order_date'].isna().sum()
+            if invalid_dates > 0:
+                pct = (invalid_dates / original_count) * 100
+                print(f"Warning: {invalid_dates} rows ({pct:.1f}%) have invalid dates")
             df['year'] = df['order_date'].dt.year
         else:
             # Default to 2026 if no date column
@@ -110,9 +115,21 @@ def verify_update():
     df = pd.read_parquet(partition_path)
     
     print(f"Verified: {len(df)} rows in 2026 partition")
-    print(f"Date range: {df['order_date'].min()} to {df['order_date'].max()}")
-    print(f"Unique orders: {df['order_id'].nunique()}")
-    print(f"Total revenue: TK {df['order_total'].sum():,.0f}")
+    
+    if 'order_date' in df.columns:
+        print(f"Date range: {df['order_date'].min()} to {df['order_date'].max()}")
+    else:
+        print("Note: 'order_date' column not found for date range")
+    
+    if 'order_id' in df.columns:
+        print(f"Unique orders: {df['order_id'].nunique()}")
+    else:
+        print("Note: 'order_id' column not found for unique orders")
+    
+    if 'order_total' in df.columns:
+        print(f"Total revenue: TK {df['order_total'].sum():,.0f}")
+    else:
+        print("Note: 'order_total' column not found for revenue")
 
 
 def main():

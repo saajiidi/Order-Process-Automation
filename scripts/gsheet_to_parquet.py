@@ -21,7 +21,7 @@ import requests
 # Default Google Sheet URL (TSV format)
 DEFAULT_GSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTOiRkybNzMNvEaLxSFsX0nGIiM07BbNVsBbsX1dG8AmGOmSu8baPrVYL0cOqoYN4tRWUj1UjUbH1Ij/pub?gid=2118542421&single=true&output=tsv"
 
-DATA_FOLDER = Path("data")
+DATA_FOLDER = Path(__file__).parent.parent / "data"
 
 
 def download_gsheet_data(url: str) -> pd.DataFrame:
@@ -47,11 +47,7 @@ def save_to_parquet(df: pd.DataFrame, output_path: Path):
     # Ensure directory exists
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
-    # Convert all columns to string to avoid type issues
-    for col in df.columns:
-        df[col] = df[col].astype(str)
-    
-    # Save as parquet
+    # Save as parquet (preserve original data types)
     df.to_parquet(output_path, index=False)
     
     print(f"Saved to: {output_path}")

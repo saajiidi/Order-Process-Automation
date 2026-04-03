@@ -10,7 +10,7 @@ from pathlib import Path
 def merge_all_parquet_files():
     """Merge all year-partitioned parquet files into single data.parquet."""
     
-    DATA_FOLDER = Path("data")
+    DATA_FOLDER = Path(__file__).parent.parent / "data"
     output_file = DATA_FOLDER / "data.parquet"
     
     # Find all year folders
@@ -35,10 +35,6 @@ def merge_all_parquet_files():
             year = int(folder.name.replace("year=", ""))
             df['year'] = year
             
-            # Convert all columns to string to avoid type mismatches during merge
-            for col in df.columns:
-                df[col] = df[col].astype(str)
-            
             all_dfs.append(df)
             total_rows += len(df)
             print(f"  -> {len(df):,} rows")
@@ -53,10 +49,11 @@ def merge_all_parquet_files():
     print(f"Combined: {len(combined):,} rows (before dedup)")
     
     # Deduplicate based on order details
-    # Create a fingerprint from key columns
-    fingerprint_cols = ['Order Number', 'Item Name', 'SKU', 'Order Total Amount']
+    # Create a fingerprint from key columns (handle both normalized and original names)
+    fingerprint_cols = ['Order Number', 'order_id', 'Item Name', 'item_name', 'SKU', 'sku', 'Order Total Amount', 'order_total']
     available_cols = [c for c in fingerprint_cols if c in combined.columns]
     
+    # Need at least 2 columns for meaningful deduplication
     if len(available_cols) >= 2:
         print(f"Deduplicating using columns: {available_cols}")
         combined['dedup_key'] = combined[available_cols].astype(str).apply(

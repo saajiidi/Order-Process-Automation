@@ -10,7 +10,7 @@ def convert_excel_to_parquet(excel_path: Path, output_path: Path):
     print(f"Converted: {excel_path} -> {output_path} ({len(df)} rows)")
 
 def main():
-    base_dir = Path("g:/Github/Automation-Pivot")
+    base_dir = Path(__file__).parent.parent
     data_dir = base_dir / "data"
     source_dir = base_dir / "Toatl List untill March  2026"
     
