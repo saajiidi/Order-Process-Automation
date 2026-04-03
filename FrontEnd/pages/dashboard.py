@@ -16,14 +16,14 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import streamlit as st
 
-from FrontEnd.components.ui_components import section_card, to_excel_bytes
+from FrontEnd.components.ui_components import render_section_card, to_excel_bytes
 from BackEnd.services.hybrid_data_loader import load_hybrid_data
 from BackEnd.services.customer_insights import generate_customer_insights
 
 
 def render_dashboard_tab():
     """Render the comprehensive E-commerce Dashboard."""
-    section_card(
+    render_section_card(
         "📊 Retail Dashboard",
         "Executive insights into sales trends, product performance, and customer behavior"
     )

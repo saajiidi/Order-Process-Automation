@@ -321,7 +321,8 @@ def render_header():
     )
 
 
-def section_card(title: str, help_text: str = ""):
+def render_section_card(title: str, help_text: str = ""):
+    """Render a section card with title and optional help text."""
     st.markdown(
         f"""
         <div class="hub-card">

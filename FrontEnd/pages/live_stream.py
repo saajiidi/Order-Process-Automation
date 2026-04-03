@@ -10,7 +10,7 @@ from io import BytesIO
 from email.utils import parsedate_to_datetime
 from urllib.request import Request, urlopen
 from urllib.parse import parse_qs, urlparse
-from FrontEnd.components.ui_components import section_card, render_action_bar, render_reset_confirm
+from FrontEnd.components.ui_components import render_section_card, render_action_bar, render_reset_confirm
 
 
 
@@ -987,7 +987,7 @@ def render_live_tab():
         </a>
     </div>
     """
-    section_card("", welcome_msg)
+    render_section_card("", welcome_msg)
     
     source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
     default_idx = 0

@@ -9,7 +9,7 @@ from datetime import date, datetime, timedelta
 import pandas as pd
 import streamlit as st
 
-from FrontEnd.components.ui_components import render_action_bar, section_card, to_excel_bytes
+from FrontEnd.components.ui_components import render_action_bar, render_section_card, to_excel_bytes
 from BackEnd.services.customer_insights import (
     generate_customer_insights,
     get_customer_segments,
@@ -20,7 +20,7 @@ from BackEnd.services.customer_insights import (
 
 def render_customer_insight_tab():
     """Render the Customer Insight tab with RFM-powered insights."""
-    section_card(
+    render_section_card(
         "🎯 Customer Insight",
         "RFM Analysis (Recency, Frequency, Monetary) with DuckDB-powered customer segmentation"
     )
