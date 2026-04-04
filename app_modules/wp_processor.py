@@ -293,9 +293,9 @@ class WhatsAppOrderProcessor:
                 if i < len(prices):
                     item_line += f" - Price: {prices[i].strip()} BDT"
                 product_list.append(item_line)
-            
+
             products_str = "\n".join(product_list)
-            
+
             total_amount = float(row[self.config["order_total_col"]])
             collectable_amount = total_amount
             payment_col = self.config.get("payment_method_col")
@@ -305,7 +305,7 @@ class WhatsAppOrderProcessor:
                 if any(x in method for x in ["bkash", "online", "ssl", "paid"]):
                     collectable_amount = 0
                     is_paid = True
-            
+
             total_str = f"{total_amount:.2f} BDT"
             if is_paid:
                 total_str += " (PAID)"
