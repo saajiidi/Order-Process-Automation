@@ -258,7 +258,7 @@ class WhatsAppOrderProcessor:
         return grouped_df
 
     def create_whatsapp_links(
-        self, df: pd.DataFrame, custom_intro: str = None, custom_footer: str = None
+        self, df: pd.DataFrame, custom_template: str = None
     ) -> pd.DataFrame:
         """Generate formatted WhatsApp messages and links."""
         df["whatsapp_link"] = None
@@ -272,6 +272,7 @@ class WhatsAppOrderProcessor:
             # Determine Salutation
             name = row[self.config["name_col"]]
             salutation = self.detect_gender_salutation(name)
+            order_id = str(row[self.config["order_id_col"]])
 
             # Format Address
             formatted_address = self.format_address(
@@ -279,31 +280,8 @@ class WhatsAppOrderProcessor:
                 row.get(self.config.get("city_col"), ""),
             )
 
-            # Build Message Intro
-            if custom_intro:
-                intro_text = (
-                    custom_intro.replace("{name}", str(name))
-                    .replace("{salutation}", salutation)
-                    .replace("{order_id}", str(row[self.config["order_id_col"]]))
-                )
-                lines = intro_text.split("\n")
-                lines.extend(["", "*Your Order:*"])
-            else:
-                lines = [
-                    f"*Order Verification From DEEN Commerce*",
-                    "",
-                    f"Assalamu Alaikum, {salutation}!",
-                    "",
-                    f"Dear {name},",
-                    "",
-                    "Please verify your order details:",
-                    "",
-                    f"*Order ID:* {row[self.config['order_id_col']]}",
-                    "",
-                    "*Your Order:*",
-                ]
-
-            # Products
+            # Build Product List & Totals for template use
+            product_list = []
             products = str(row[self.config["product_col"]]).split("\n- ")
             quantities = str(row[self.config["quantity_col"]]).split("\n- ")
             prices = str(row[self.config["price_col"]]).split("\n- ")
@@ -314,49 +292,63 @@ class WhatsAppOrderProcessor:
                     item_line += f" - Qty: {quantities[i].strip()}"
                 if i < len(prices):
                     item_line += f" - Price: {prices[i].strip()} BDT"
-                lines.append(item_line)
-
-            # Totals & Payment Logic
+                product_list.append(item_line)
+            
+            products_str = "\n".join(product_list)
+            
             total_amount = float(row[self.config["order_total_col"]])
             collectable_amount = total_amount
-
             payment_col = self.config.get("payment_method_col")
+            is_paid = False
             if payment_col and payment_col in row and pd.notna(row[payment_col]):
                 method = str(row[payment_col]).lower()
                 if any(x in method for x in ["bkash", "online", "ssl", "paid"]):
                     collectable_amount = 0
+                    is_paid = True
+            
+            total_str = f"{total_amount:.2f} BDT"
+            if is_paid:
+                total_str += " (PAID)"
+            elif collectable_amount != total_amount:
+                total_str += f" (Collectable: {collectable_amount:.2f} BDT)"
 
-            lines.append("")
-            if collectable_amount == 0:
-                lines.append(f"*Total Amount:* {total_amount:.2f} BDT (PAID)")
-                lines.append(f"*Collectable Amount:* 0 BDT")
+            if custom_template:
+                message = (
+                    custom_template.replace("{name}", str(name))
+                    .replace("{salutation}", salutation)
+                    .replace("{order_id}", order_id)
+                    .replace("{products_list}", products_str)
+                    .replace("{total}", total_str)
+                    .replace("{address}", formatted_address)
+                )
             else:
-                lines.append(f"*Total Amount:* {total_amount:.2f} BDT")
-
-            lines.extend(
-                [
+                lines = [
+                    f"*Order Verification From DEEN Commerce*",
+                    "",
+                    f"Assalamu Alaikum, {salutation}!",
+                    "",
+                    f"Dear {name},",
+                    "",
+                    "Please verify your order details:",
+                    "",
+                    f"*Order ID:* {order_id}",
+                    "",
+                    "*Your Order:*",
+                    products_str,
+                    "",
+                    f"*Total Amount:* {total_str}",
                     "",
                     "*Shipping Address:*",
                     formatted_address,
                     "",
+                    "Please confirm the order and address.",
+                    "If any correction is needed, please let us know the possible adjustment.",
+                    "",
+                    "*Delivery fees apply for returns.*",
+                    "",
+                    "Thank you for shopping with DEEN Commerce! Grab our latest collection on: https://deencommerce.com/",
                 ]
-            )
-
-            if custom_footer:
-                lines.extend(custom_footer.split("\n"))
-            else:
-                lines.extend(
-                    [
-                        "Please confirm the order and address.",
-                        "If any correction is needed, please let us know the possible adjustment.",
-                        "",
-                        "*Delivery fees apply for returns.*",
-                        "",
-                        "Thank you for shopping with DEEN Commerce! Grab our latest collection on: https://deencommerce.com/",
-                    ]
-                )
-
-            message = "\n".join(lines)
+                message = "\n".join(lines)
             encoded_message = urllib.parse.quote(message)
             df.at[idx, "whatsapp_link"] = (
                 f"https://wa.me/+88{phone}?text={encoded_message}"

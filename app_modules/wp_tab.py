@@ -58,18 +58,11 @@ def render_wp_tab():
     # section_card("WhatsApp Verification", "")
 
     with st.expander("Message template customization", expanded=False):
-        st.caption("Variables: {name}, {salutation}, {order_id}")
-        custom_intro = st.text_area(
-            "Custom intro",
+        custom_msg = st.text_area(
+            "Custom message template",
             value="",
-            height=150,
-            placeholder="Assalamu Alaikum, {salutation}!\n\nDear {name}, ...",
-        )
-        custom_footer = st.text_area(
-            "Custom footer",
-            value="",
-            height=120,
-            placeholder="Please confirm the order and address details.",
+            height=200,
+            placeholder="Assalamu Alaikum, {salutation}!\n\nDear {name}, your order {order_id} is being processed.\n\nItems:\n{products_list}\n\nTotal: {total}\nAddress: {address}",
         )
 
     wp_file = st.file_uploader("", key="wp_up_2", type=["xlsx", "csv"])
@@ -170,8 +163,7 @@ def render_wp_tab():
                 processed = processor.process_orders(preview_df)
                 links_df = processor.create_whatsapp_links(
                     processed,
-                    custom_intro=custom_intro if custom_intro.strip() else None,
-                    custom_footer=custom_footer if custom_footer.strip() else None,
+                    custom_template=custom_msg if custom_msg.strip() else None,
                 )
                 st.session_state.wp_links_df = links_df
                 st.success(f"Generated {len(links_df)} WhatsApp links.")
