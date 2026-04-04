@@ -685,7 +685,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                 </script>
             </div>
             """,
-            unsafe_allow_html=True
+            unsafe_allow_html=True,
         )
         logo_src = "https://logo.clearbit.com/deencommerce.com"
         try:
@@ -1136,7 +1136,7 @@ def render_live_tab():
             </script>
         </div>
         """,
-        unsafe_allow_html=True
+        unsafe_allow_html=True,
     )
     welcome_html = f"""
     <div class="hub-welcome-banner">
