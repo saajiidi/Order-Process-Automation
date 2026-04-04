@@ -300,7 +300,7 @@ POD"""
         raw_text = st.text_area(
             "Paste raw text",
             value="",
-            height=340,
+            height=150,
             placeholder="Paste copied courier detail blocks...",
             key="standard_raw_text",
         )
@@ -332,7 +332,7 @@ POD"""
         fuzzy_raw_text = st.text_area(
             "Paste fuzzy text",
             value="",
-            height=340,
+            height=150,
             placeholder="Paste loosely structured text here...",
             key="fuzzy_raw_text",
         )
