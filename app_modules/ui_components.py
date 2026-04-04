@@ -28,16 +28,26 @@ def inject_base_styles():
             bottom: 0;
             left: 0;
             width: 100%;
-            background: var(--surface);
+            background: #ffffff;
+            color: #1e293b;
             backdrop-filter: blur(8px);
             padding: 12px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            color: var(--text-muted);
             font-size: 0.8rem;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid #e2e8f0;
             z-index: 999;
+        }
+        @media (prefers-color-scheme: dark) {
+            .hub-footer {
+                background: #000000 !important;
+                color: #ffffff !important;
+                border-top-color: #334155 !important;
+            }
+            .hub-footer a, .hub-footer span {
+                color: #ffffff !important;
+            }
         }
         .hub-footer a {
             color: #1d4ed8;
@@ -225,9 +235,9 @@ def render_footer():
         f"""
         <div class="hub-footer">
             <div style="width:100%; text-align:center;">
-                <span style="color:#64748b; margin-right:12px;">© 2026 <a href="https://github.com/saajiidi" target="_blank" style="color:#1d4ed8;">Sajid Islam</a>. All rights reserved.</span>
-                <span style="color:#64748b; margin:0 12px; opacity:0.5;">|</span>
-                <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">
+                <span style="margin-right:12px;">© 2026 <a href="https://github.com/saajiidi" target="_blank">Sajid Islam</a>. All rights reserved.</span>
+                <span style="margin:0 12px; opacity:0.5;">|</span>
+                <a href="https://deencommerce.com/" target="_blank" style="text-decoration:none;">
                     <img src="{logo_src}" width="20" class="deen-logo-small" onerror="this.style.display='none'">
                     Powered by <b>DEEN Commerce</b>
                 </a>
