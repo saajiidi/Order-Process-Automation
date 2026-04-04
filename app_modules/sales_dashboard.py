@@ -666,9 +666,26 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
     t_rev = summ["Total Amount"].sum()
     with st.container():
         st.markdown('<div id="snapshot-target-popup"></div>', unsafe_allow_html=True)
-        tz_bd = timezone(timedelta(hours=6))
-        st.caption(
-            f"Current time: {datetime.now(tz_bd).strftime('%B %d, %Y %I:%M %p')}"
+        st.markdown(
+            f"""
+            <div>
+                <div id="dynamic-clock-popup" style="font-size: 0.8rem; color: #64748b; margin-bottom: 4px;">Current time: {datetime.now(tz_bd).strftime('%B %d, %Y %I:%M %p')}</div>
+                <script>
+                    (function() {{
+                        function update() {{
+                            const options = {{ month: 'long', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }};
+                            const now = new Date();
+                            const timeStr = now.toLocaleString('en-US', options);
+                            const el = document.getElementById('dynamic-clock-popup');
+                            if (el) el.innerHTML = "Current time: " + timeStr;
+                        }}
+                        setInterval(update, 1000);
+                        update();
+                    }})();
+                </script>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
         logo_src = "https://logo.clearbit.com/deencommerce.com"
         try:
@@ -805,7 +822,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
 
 if hasattr(st, "dialog"):
 
-    @st.dialog("Welcome! Today's Actionable Insights", width="large")
+    @st.dialog(" ", width="large")
     def show_welcome_popup(summ, basket, last_updated="N/A", focus="all"):
         st.session_state.has_seen_dashboard_popup = True
         _render_welcome_popup_content(summ, basket, last_updated, focus)
@@ -1100,7 +1117,27 @@ def render_live_tab():
     except:
         pass
 
-    st.caption(f"Current time: {current_t}")
+    st.markdown(
+        f"""
+        <div>
+            <div id="dynamic-clock-live" style="font-size: 0.8rem; color: #64748b; margin-bottom: 4px;">Current time: {datetime.now(tz_bd).strftime('%B %d, %Y %I:%M %p')}</div>
+            <script>
+                (function() {{
+                    function update() {{
+                        const options = {{ month: 'long', day: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }};
+                        const now = new Date();
+                        const timeStr = now.toLocaleString('en-US', options);
+                        const el = document.getElementById('dynamic-clock-live');
+                        if (el) el.innerHTML = "Current time: " + timeStr;
+                    }}
+                    setInterval(update, 1000);
+                    update();
+                }})();
+            </script>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     welcome_html = f"""
     <div class="hub-welcome-banner">
         <div style="font-weight: 700; font-size: 1.15rem; margin-bottom: 4px;">Welcome! Today's Actionable Insights</div>
