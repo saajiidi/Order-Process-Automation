@@ -2,6 +2,7 @@ import os
 import base64
 import streamlit as st
 
+
 def render_bike_animation():
     """
     Renders a full-screen right-to-left overlay animation of a delivery bike.
@@ -9,17 +10,18 @@ def render_bike_animation():
     """
     # Load local bike image
     bike_uri = "https://cdn-icons-png.flaticon.com/512/2830/2830305.png"  # fallback
-    
+
     # Climb up from app_modules to root directory
     base_dir = os.path.dirname(os.path.dirname(__file__))
     bike_path = os.path.join(base_dir, "assets", "bike.png")
-    
+
     if os.path.exists(bike_path):
         with open(bike_path, "rb") as f:
             encoded = base64.b64encode(f.read()).decode("utf-8")
             bike_uri = f"data:image/png;base64,{encoded}"
 
-    st.markdown(f"""
+    st.markdown(
+        f"""
     <style>
     /* Global Full-Screen Bike Animation (Right to Left) */
     @keyframes moveFullScreen {{
@@ -75,4 +77,6 @@ def render_bike_animation():
             <div class="smoke"></div>
         </div>
     </div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )

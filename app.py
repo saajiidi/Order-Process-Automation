@@ -2,9 +2,11 @@ import streamlit as st
 
 _original_dataframe = st.dataframe
 
+
 def _numbered_dataframe(data, *args, **kwargs):
     try:
         import pandas as pd
+
         if isinstance(data, pd.DataFrame) or isinstance(data, pd.Series):
             d = data.copy()
             if len(d) > 0:
@@ -13,6 +15,7 @@ def _numbered_dataframe(data, *args, **kwargs):
     except Exception:
         pass
     return _original_dataframe(data, *args, **kwargs)
+
 
 st.dataframe = _numbered_dataframe
 
@@ -52,7 +55,6 @@ def run_app():
         render_sidebar_branding()
         st.subheader("Global Settings")
 
-
         st.session_state.show_animation = st.toggle(
             "Show motion effects",
             value=st.session_state.get("show_animation", True),
@@ -66,32 +68,36 @@ def run_app():
         st.divider()
         st.subheader("Workspace Control")
         with st.expander("Reset Active Tool Data", expanded=True):
-             registered = st.session_state.get("registered_resets", {})
-             if not registered:
-                 st.info("No active tool data found.")
-             else:
-                 tool_to_wipe = st.selectbox("Select tool", list(registered.keys()))
-                 if st.button("Reset Tool Now", use_container_width=True, type="primary"):
-                     registered[tool_to_wipe]["fn"]()
-                     st.session_state.confirm_tool_reset = False
-                     st.success("Cleaned!")
-                     st.rerun()
+            registered = st.session_state.get("registered_resets", {})
+            if not registered:
+                st.info("No active tool data found.")
+            else:
+                tool_to_wipe = st.selectbox("Select tool", list(registered.keys()))
+                if st.button(
+                    "Reset Tool Now", use_container_width=True, type="primary"
+                ):
+                    registered[tool_to_wipe]["fn"]()
+                    st.session_state.confirm_tool_reset = False
+                    st.success("Cleaned!")
+                    st.rerun()
 
         st.divider()
         if st.button("Full System Reset", use_container_width=True, type="secondary"):
-             st.session_state.confirm_app_reset = True
-        
+            st.session_state.confirm_app_reset = True
+
         if st.session_state.get("confirm_app_reset"):
-             st.warning("⚠️ Wipe EVERYTHING?")
-             c1, c2 = st.columns(2)
-             if c1.button("Yes", type="primary", use_container_width=True):
-                 from app_modules.persistence import STATE_FILE
-                 if os.path.exists(STATE_FILE): os.remove(STATE_FILE)
-                 st.session_state.clear()
-                 st.rerun()
-             if c2.button("No", use_container_width=True):
-                 st.session_state.confirm_app_reset = False
-                 st.rerun()
+            st.warning("⚠️ Wipe EVERYTHING?")
+            c1, c2 = st.columns(2)
+            if c1.button("Yes", type="primary", use_container_width=True):
+                from app_modules.persistence import STATE_FILE
+
+                if os.path.exists(STATE_FILE):
+                    os.remove(STATE_FILE)
+                st.session_state.clear()
+                st.rerun()
+            if c2.button("No", use_container_width=True):
+                st.session_state.confirm_app_reset = False
+                st.rerun()
 
         with st.expander("System Logs", expanded=False):
             logs = get_logs()
@@ -100,7 +106,7 @@ def run_app():
             else:
                 for log in reversed(logs[-20:]):
                     st.caption(f"**{log.get('timestamp')}** | {log.get('context')}")
-                    st.text(log.get('error'))
+                    st.text(log.get("error"))
                     st.divider()
                 if st.button("Clear logs", use_container_width=True):
                     if os.path.exists(ERROR_LOG_FILE):
@@ -110,7 +116,6 @@ def run_app():
     render_header()
     if st.session_state.get("show_animation"):
         render_bike_animation()
-
 
     nav_tabs = st.tabs(PRIMARY_NAV)
 
@@ -124,9 +129,7 @@ def run_app():
         render_pathao_tab()
 
     with nav_tabs[3]:
-        render_distribution_tab(
-            search_q=st.session_state.get("inv_matrix_search", "")
-        )
+        render_distribution_tab(search_q=st.session_state.get("inv_matrix_search", ""))
 
     with nav_tabs[4]:
         render_wp_tab()
@@ -137,8 +140,6 @@ def run_app():
     render_footer()
 
 
-
-
 try:
     run_app()
 except Exception as exc:
@@ -146,5 +147,7 @@ except Exception as exc:
     from app_modules.error_handler import log_error
 
     log_error(exc, context="App Bootstrap")
-    st.error("Application failed to render. Check 'More Tools -> System Logs' for details.")
+    st.error(
+        "Application failed to render. Check 'More Tools -> System Logs' for details."
+    )
     st.code(str(exc))

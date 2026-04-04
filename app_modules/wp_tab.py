@@ -12,7 +12,6 @@ from app_modules.ui_components import (
 )
 from app_modules.wp_processor import WhatsAppOrderProcessor
 
-
 FUZZY_REQUIRED_FIELDS = {
     "phone": ["phone", "mobile", "contact", "billing phone"],
     "name": ["full name", "billing name", "name", "first name", "customer"],
@@ -74,15 +73,26 @@ def render_wp_tab():
         )
 
     wp_file = st.file_uploader("", key="wp_up_2", type=["xlsx", "csv"])
-    
-    fetch_live_clicked = st.button("Pull from Live Dash Data & Auto-Process", type="secondary", use_container_width=True, key="wp_live")
+
+    fetch_live_clicked = st.button(
+        "Pull from Live Dash Data & Auto-Process",
+        type="secondary",
+        use_container_width=True,
+        key="wp_live",
+    )
 
     preview_df = None
     valid_file = False
-    
+
     if fetch_live_clicked:
         try:
-            from app_modules.sales_dashboard import load_live_source, get_setting, DEFAULT_GSHEET_URL, get_gcp_service_account_info
+            from app_modules.sales_dashboard import (
+                load_live_source,
+                get_setting,
+                DEFAULT_GSHEET_URL,
+                get_gcp_service_account_info,
+            )
+
             source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
             default_idx = 0
             if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
@@ -91,19 +101,23 @@ def render_wp_tab():
                 default_idx = 1
             elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
                 default_idx = 2
-            
+
             with st.spinner(f"Fetching from {source_options[default_idx]}..."):
                 df_live, _, _ = load_live_source(source_options[default_idx])
             preview_df = df_live
             st.session_state.wp_preview_df = preview_df
-            st.session_state.wp_upload_name = f"Live Source ({source_options[default_idx]})"
+            st.session_state.wp_upload_name = (
+                f"Live Source ({source_options[default_idx]})"
+            )
             st.session_state.wp_auto_generate = True
-            
+
             valid_file, missing_fields = _validate_wp_columns(preview_df)
             if valid_file:
                 st.success("Fetched from Live Source perfectly. Processing...")
             else:
-                st.error(f"Live dataset missing required fields: {', '.join(missing_fields)}")
+                st.error(
+                    f"Live dataset missing required fields: {', '.join(missing_fields)}"
+                )
         except Exception as exc:
             log_error(exc, context="WP Live Pull")
             st.error(f"Failed to fetch live source: {exc}")
@@ -118,7 +132,9 @@ def render_wp_tab():
             if valid_file:
                 st.success("Fuzzy required-column check passed.")
             else:
-                st.error(f"Missing required fields (fuzzy check): {', '.join(missing_fields)}")
+                st.error(
+                    f"Missing required fields (fuzzy check): {', '.join(missing_fields)}"
+                )
                 st.caption("Required logical fields: phone, customer name, product.")
         except Exception as exc:
             log_error(exc, context="WP Upload")
@@ -142,8 +158,12 @@ def render_wp_tab():
         st.session_state.wp_auto_generate = False
 
     if generate_clicked:
-        if (not wp_file and st.session_state.get("wp_preview_df") is None) or not valid_file:
-            st.warning("Upload a valid verification file or pull from live dash before generating links.")
+        if (
+            not wp_file and st.session_state.get("wp_preview_df") is None
+        ) or not valid_file:
+            st.warning(
+                "Upload a valid verification file or pull from live dash before generating links."
+            )
         else:
             try:
                 processor = WhatsAppOrderProcessor()
@@ -167,7 +187,9 @@ def render_wp_tab():
         for _, row in links_df.iterrows():
             to_name = row.get("Full Name (Billing)", "Unknown")
             to_phone = row.get("Phone (Billing)", "")
-            bulk_blocks.append(f"TO: {to_name} ({to_phone})\n{row.get('whatsapp_link', '')}")
+            bulk_blocks.append(
+                f"TO: {to_name} ({to_phone})\n{row.get('whatsapp_link', '')}"
+            )
 
         st.download_button(
             "Export bulk message text",
@@ -194,5 +216,3 @@ def render_wp_tab():
             for _, row in preview_rows.iterrows():
                 label = f"{row.get('Full Name (Billing)', 'Unknown')} ({row.get('Phone (Billing)', '')})"
                 st.link_button(label, row.get("whatsapp_link", ""))
-
-

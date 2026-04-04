@@ -25,7 +25,9 @@ def _read_uploaded(uploaded_file):
 
 
 def _reset_inventory_state():
-    clear_state_keys(["inv_res_data", "inv_active_l", "inv_t_col", "inv_master_df_live"])
+    clear_state_keys(
+        ["inv_res_data", "inv_active_l", "inv_t_col", "inv_master_df_live"]
+    )
 
 
 def _render_upload_summary(master_df, title_col):
@@ -37,24 +39,37 @@ def _render_upload_summary(master_df, title_col):
 def render_distribution_tab(search_q):
     render_reset_confirm("Inventory Distribution", "inventory", _reset_inventory_state)
     master_file = st.file_uploader("", type=["xlsx", "csv"], key="inv_up")
-        
-    fetch_live_clicked = st.button("Pull from Live Dash Data & Auto-Analyze", type="secondary", use_container_width=True, key="dist_live")
+
+    fetch_live_clicked = st.button(
+        "Pull from Live Dash Data & Auto-Analyze",
+        type="secondary",
+        use_container_width=True,
+        key="dist_live",
+    )
 
     loc_files = {}
     loc_cols = st.columns(len(INVENTORY_LOCATIONS))
     for i, loc in enumerate(INVENTORY_LOCATIONS):
         with loc_cols[i]:
-            uploaded = st.file_uploader(f"{loc}", key=f"inv_l_{loc}", type=["xlsx", "csv"])
+            uploaded = st.file_uploader(
+                f"{loc}", key=f"inv_l_{loc}", type=["xlsx", "csv"]
+            )
             if uploaded:
                 loc_files[loc] = uploaded
 
     master_df = None
     title_col = None
     sku_col = None
-    
+
     if fetch_live_clicked:
         try:
-            from app_modules.sales_dashboard import load_live_source, get_setting, DEFAULT_GSHEET_URL, get_gcp_service_account_info
+            from app_modules.sales_dashboard import (
+                load_live_source,
+                get_setting,
+                DEFAULT_GSHEET_URL,
+                get_gcp_service_account_info,
+            )
+
             source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
             default_idx = 0
             if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
@@ -63,18 +78,20 @@ def render_distribution_tab(search_q):
                 default_idx = 1
             elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
                 default_idx = 2
-            
+
             with st.spinner(f"Fetching from {source_options[default_idx]}..."):
                 df_live, source_name, _ = load_live_source(source_options[default_idx])
-                
+
             master_df = df_live
             st.session_state.inv_master_df_live = master_df
             st.session_state.inv_auto_analyze = True
-            
+
             _, _, title_col, sku_col = inv_core.identify_columns(master_df)
-            
+
             if not title_col:
-                st.error("Could not detect an item title/name column in the master list fetched.")
+                st.error(
+                    "Could not detect an item title/name column in the master list fetched."
+                )
             else:
                 st.success("Fetched from Live Source perfectly. Analyzing...")
         except Exception as exc:
@@ -87,7 +104,9 @@ def render_distribution_tab(search_q):
             _, _, title_col, sku_col = inv_core.identify_columns(master_df)
             _render_upload_summary(master_df, title_col)
             if not title_col:
-                st.error("Could not detect an item title/name column in the master list.")
+                st.error(
+                    "Could not detect an item title/name column in the master list."
+                )
             else:
                 st.success("Validation passed. Ready to run analysis.")
         except Exception as exc:
@@ -103,7 +122,7 @@ def render_distribution_tab(search_q):
         secondary_label="Clear inventory data",
         secondary_key="inv_clear_btn",
     )
-    
+
     if st.session_state.get("inv_auto_analyze"):
         analyze_clicked = True
         st.session_state.inv_auto_analyze = False
@@ -114,10 +133,14 @@ def render_distribution_tab(search_q):
 
     if analyze_clicked:
         if master_df is None or not title_col:
-            st.warning("Upload a valid master stock list or pull from live source before analysis.")
+            st.warning(
+                "Upload a valid master stock list or pull from live source before analysis."
+            )
         else:
             try:
-                inventory_map, warnings, _, sku_map = inv_core.load_inventory_from_uploads(loc_files)
+                inventory_map, warnings, _, sku_map = (
+                    inv_core.load_inventory_from_uploads(loc_files)
+                )
                 if warnings:
                     for warning in warnings:
                         st.warning(warning)
@@ -146,7 +169,12 @@ def render_distribution_tab(search_q):
         active_locations = st.session_state.inv_active_l
 
         if search_q:
-            df = df[df[title_key].astype(str).str.lower().str.contains(search_q.lower(), na=False)]
+            df = df[
+                df[title_key]
+                .astype(str)
+                .str.lower()
+                .str.contains(search_q.lower(), na=False)
+            ]
 
         st.dataframe(df, use_container_width=True)
 
@@ -161,7 +189,3 @@ def render_distribution_tab(search_q):
             use_container_width=True,
             type="primary",
         )
-
-
-
-

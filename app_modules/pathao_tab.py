@@ -12,7 +12,6 @@ from app_modules.ui_components import (
     to_excel_bytes,
 )
 
-
 REQUIRED_COLUMNS = ["Phone (Billing)"]
 
 
@@ -34,15 +33,26 @@ def render_pathao_tab():
     # section_card("Pathao Order Processor", "")
 
     up_pathao = st.file_uploader("", type=["xlsx", "csv"], key="pathao_up")
-    
-    fetch_live_clicked = st.button("Pull from Live Dash Data & Auto-Process", type="secondary", use_container_width=True, key="pathao_live")
+
+    fetch_live_clicked = st.button(
+        "Pull from Live Dash Data & Auto-Process",
+        type="secondary",
+        use_container_width=True,
+        key="pathao_live",
+    )
 
     preview_df = None
     valid_file = False
-    
+
     if fetch_live_clicked:
         try:
-            from app_modules.sales_dashboard import load_live_source, get_setting, DEFAULT_GSHEET_URL, get_gcp_service_account_info
+            from app_modules.sales_dashboard import (
+                load_live_source,
+                get_setting,
+                DEFAULT_GSHEET_URL,
+                get_gcp_service_account_info,
+            )
+
             source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
             default_idx = 0
             if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
@@ -51,19 +61,19 @@ def render_pathao_tab():
                 default_idx = 1
             elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
                 default_idx = 2
-            
+
             with st.spinner(f"Fetching from {source_options[default_idx]}..."):
                 df_live, source_name, _ = load_live_source(source_options[default_idx])
-                
+
             preview_df = df_live
             st.session_state.pathao_preview_df = preview_df
             st.session_state.pathao_uploaded_name = source_name
             st.session_state.pathao_auto_process = True
-            
+
             missing = [c for c in REQUIRED_COLUMNS if c not in preview_df.columns]
             valid_file = len(missing) == 0
             st.success("Fetched from Live Source perfectly. Processing...")
-            
+
         except Exception as exc:
             log_error(exc, context="Pathao Live Pull")
             st.error(f"Failed to fetch live source: {exc}")
@@ -87,7 +97,7 @@ def render_pathao_tab():
         secondary_label="Clear upload",
         secondary_key="pathao_clear_btn",
     )
-    
+
     if st.session_state.get("pathao_auto_process"):
         run_clicked = True
         st.session_state.pathao_auto_process = False
@@ -98,7 +108,9 @@ def render_pathao_tab():
 
     if run_clicked:
         if preview_df is None or not valid_file:
-            st.warning("Upload a valid file or pull from live source before processing.")
+            st.warning(
+                "Upload a valid file or pull from live source before processing."
+            )
         else:
             try:
                 with st.status("Processing orders...", expanded=True) as status:
@@ -106,7 +118,9 @@ def render_pathao_tab():
                     result_df = process_orders_dataframe(preview_df)
                     st.session_state.pathao_res_df = result_df
                     save_state()
-                    status.update(label="Processing complete", state="complete", expanded=False)
+                    status.update(
+                        label="Processing complete", state="complete", expanded=False
+                    )
                 st.success(f"Processed {len(result_df)} grouped orders.")
             except Exception as exc:
                 log_error(exc, context="Pathao Processor")
@@ -127,14 +141,19 @@ def render_pathao_tab():
                 type="primary",
                 use_container_width=True,
             )
-        
+
         with c2:
-            if st.button("Generate Verification Links", type="secondary", use_container_width=True):
+            if st.button(
+                "Generate Verification Links",
+                type="secondary",
+                use_container_width=True,
+            ):
                 st.session_state.show_vlink_gen = True
-        
+
         if st.session_state.get("show_vlink_gen"):
             with st.status("Generating links...", expanded=True):
                 import random
+
                 df_v = result_df.copy()
                 domain = "https://deencommerce.com/v"
                 # Use Phone or Order ID
@@ -146,7 +165,7 @@ def render_pathao_tab():
                 df_v["Verification Link"] = links
                 st.session_state.pathao_vlink_df = df_v
                 st.success("Verification links generated!")
-            
+
             vlink_df = st.session_state.get("pathao_vlink_df")
             if vlink_df is not None:
                 st.download_button(
@@ -156,5 +175,3 @@ def render_pathao_tab():
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True,
                 )
-
-
