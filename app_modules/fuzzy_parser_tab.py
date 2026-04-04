@@ -298,7 +298,7 @@ POD"""
 
     with tab1:
         raw_text = st.text_area(
-            "Paste raw text",
+            "",
             value="",
             height=150,
             placeholder="Paste copied courier detail blocks...",
@@ -330,7 +330,7 @@ POD"""
 
     with tab2:
         fuzzy_raw_text = st.text_area(
-            "Paste fuzzy text",
+            "",
             value="",
             height=150,
             placeholder="Paste loosely structured text here...",

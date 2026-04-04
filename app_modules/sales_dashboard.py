@@ -5,6 +5,7 @@ import plotly.express as px
 import os
 import json
 import streamlit.components.v1 as components
+import base64
 from datetime import datetime, timedelta, timezone
 from io import BytesIO
 from email.utils import parsedate_to_datetime
@@ -568,23 +569,24 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
         st.caption(f"Current time: {datetime.now(tz_bd).strftime('%B %d, %Y %I:%M %p')}")
         logo_src = "https://logo.clearbit.com/deencommerce.com"
         try:
-             import base64
-             import os
              logo_jpg = os.path.join("assets", "deen_logo.jpg")
              if os.path.exists(logo_jpg):
                  with open(logo_jpg, "rb") as f:
                      b64 = base64.b64encode(f.read()).decode()
-                 logo_src = f"data:image/jpeg;base64,{b64}"
+                 logo_src = f"data:image/png;base64,{b64}"
         except:
              pass
 
         st.markdown(
             f"""
-            <div style="font-size:0.65rem; color:#64748b; margin-top:-10px;">
-                Powered by <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">
-                    <img src="{logo_src}" width="14" style="vertical-align:middle; margin: 0 3px; border-radius:2px;" onerror="this.style.display='none'">
-                    DEEN Commerce
-                </a>
+            <div class="hub-welcome-banner">
+                <div style="font-weight: 700; font-size: 1.15rem; margin-bottom: 4px;">Welcome! Today's Actionable Insights</div>
+                <div style="font-size: 0.85rem; opacity: 0.85;">
+                    Powered by <a href="https://deencommerce.com/" target="_blank" style="text-decoration:none;">
+                        <img src="{logo_src}" width="16" style="vertical-align:middle; margin: 0 3px; border-radius:2px;" onerror="this.style.display='none'">
+                        <b>DEEN Commerce</b>
+                    </a>
+                </div>
             </div>
             """,
             unsafe_allow_html=True
@@ -904,27 +906,27 @@ def render_live_tab():
     current_t = datetime.now(tz_bd).strftime('%B %d, %Y %I:%M %p')
     logo_src = "https://logo.clearbit.com/deencommerce.com"
     try:
-         import base64
-         import os
          logo_jpg = os.path.join("assets", "deen_logo.jpg")
          if os.path.exists(logo_jpg):
              with open(logo_jpg, "rb") as f:
                  b64 = base64.b64encode(f.read()).decode()
-             logo_src = f"data:image/jpeg;base64,{b64}"
+             logo_src = f"data:image/png;base64,{b64}"
     except:
          pass
 
-    welcome_msg = f"""
-    <div style="font-weight:600; font-size:1rem; margin-bottom:4px;">Welcome! Today's Actionable Insights</div>
-    <div style="font-size:0.8rem; color:#64748b;">
-        Current time: {current_t} | 
-        Powered by <a href="https://deencommerce.com/" target="_blank" style="color:#1d4ed8; text-decoration:none;">
-            <img src="{logo_src}" width="14" style="vertical-align:middle; margin: 0 3px; border-radius:2px;" onerror="this.style.display='none'">
-            <b>DEEN commerce</b>
-        </a>
+    st.caption(f"Current time: {current_t}")
+    welcome_html = f"""
+    <div class="hub-welcome-banner">
+        <div style="font-weight: 700; font-size: 1.15rem; margin-bottom: 4px;">Welcome! Today's Actionable Insights</div>
+        <div style="font-size: 0.85rem; opacity: 0.9;">
+            Powered by <a href="https://deencommerce.com/" target="_blank" style="text-decoration:none;">
+                <img src="{logo_src}" width="16" style="vertical-align:middle; margin: 0 3px; border-radius:2px;" onerror="this.style.display='none'">
+                <b>DEEN commerce</b>
+            </a>
+        </div>
     </div>
     """
-    section_card("", welcome_msg)
+    st.markdown(welcome_html, unsafe_allow_html=True)
     
     source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
     default_idx = 0

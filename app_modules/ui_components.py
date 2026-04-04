@@ -71,14 +71,14 @@ def inject_base_styles():
             border-left: 4px solid #1d4ed8;
             border-bottom: 1px solid var(--border);
             padding: 2px 16px;
-            margin-bottom: 4px;
+            margin-bottom: 0px;
             border-radius: 0 4px 4px 0;
             text-align: center;
         }
         /* Remove the top gap without touching the sidebar toggle */
         .main .block-container {
             padding-top: 0 !important;
-            margin-top: -1.0rem !important;
+            margin-top: -1.75rem !important;
             padding-bottom: 80px !important;
         }
         .hub-title {
@@ -95,8 +95,56 @@ def inject_base_styles():
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 14px 16px;
-            margin-bottom: 12px;
-            box-shadow: 0 8px 24px var(--card-shadow);
+            margin-bottom: 4px;
+            box-shadow: 0 4px 12px var(--card-shadow);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .hub-welcome-banner {
+            background: #ffffff;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        @media (prefers-color-scheme: dark) {
+            .hub-welcome-banner {
+                background: #000000 !important;
+                color: #ffffff !important;
+                border-color: #334155 !important;
+            }
+            .hub-welcome-banner a, .hub-welcome-banner b {
+                color: #ffffff !important;
+            }
+        }
+        .hub-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px var(--card-shadow);
+            border-color: var(--primary);
+        }
+        
+        /* 3. Action Glow for success/primary steps */
+        @keyframes success-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        div[data-testid="stDownloadButton"] button {
+            animation: success-pulse 2s infinite;
+            border: 1px solid #10b981 !important;
+            transition: all 0.2s ease !important;
+        }
+        div[data-testid="stDownloadButton"] button:hover {
+            transform: scale(1.02);
+            background: #059669 !important;
+            color: white !important;
+        }
+        
+        /* Global button hover scaling */
+        button[kind="secondary"]:hover, button[kind="primary"]:hover {
+            transform: scale(1.01);
+            transition: all 0.2s ease !important;
         }
         
         /* Premium Tab Styling */
