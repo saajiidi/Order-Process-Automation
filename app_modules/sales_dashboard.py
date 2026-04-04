@@ -756,8 +756,8 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                     color_discrete_map=color_map,
                 )
                 fig_pie.update_layout(
-                    margin=dict(l=80, r=160, t=40, b=40),
-                    showlegend=True,
+                    margin=dict(l=10, r=10, t=30, b=10),
+                    showlegend=False,
                     legend=dict(
                         orientation="v",
                         yanchor="top",
@@ -766,9 +766,11 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                         x=1.05,
                         font=dict(size=11),
                     ),
+                    uniformtext_minsize=10,
+                    uniformtext_mode='hide',
                 )
                 fig_pie.update_traces(
-                    textposition="auto",
+                    textposition="inside",
                     textinfo="label+percent",
                     textfont_size=11,
                     pull=0.01,
@@ -795,7 +797,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                     margin=dict(l=12, r=12, t=50, b=12),
                     xaxis_title="",
                     yaxis_title="Quantity Sold",
-                    showlegend=True,
+                    showlegend=False,
                     legend=dict(
                         orientation="v",
                         yanchor="top",
