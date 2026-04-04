@@ -723,9 +723,9 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
             m2.metric(
                 "Number of Orders", f"{total_orders:,.0f}" if total_orders else "-"
             )
-            m3.metric("Revenue", f"TK {t_rev:,.2f}")
+            m3.metric("Revenue", f"TK {t_rev:,.0f}")
             if basket.get("avg_basket_value", 0) > 0:
-                m4.metric("Basket Value (TK)", f"TK {basket['avg_basket_value']:,.2f}")
+                m4.metric("Basket Value (TK)", f"TK {basket['avg_basket_value']:,.0f}")
             else:
                 m4.metric("Basket Value (TK)", "-")
 
@@ -769,8 +769,15 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                     uniformtext_minsize=10,
                     uniformtext_mode='hide',
                 )
+                if hasattr(fig_pie, "data") and len(fig_pie.data) > 0 and getattr(fig_pie.data[0], "values", None) is not None:
+                    t_val = sum(fig_pie.data[0].values)
+                    t_val = t_val if t_val > 0 else 1
+                    pos_array = ["inside" if (v / t_val) >= 0.02 else "none" for v in fig_pie.data[0].values]
+                else:
+                    pos_array = "inside"
+
                 fig_pie.update_traces(
-                    textposition="inside",
+                    textposition=pos_array,
                     textinfo="label+percent",
                     textfont_size=11,
                     pull=0.01,
