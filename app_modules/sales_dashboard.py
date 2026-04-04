@@ -694,7 +694,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                 with open(logo_jpg, "rb") as f:
                     b64 = base64.b64encode(f.read()).decode()
                 logo_src = f"data:image/png;base64,{b64}"
-        except:
+        except Exception:
             pass
 
         st.markdown(
@@ -1114,7 +1114,7 @@ def render_live_tab():
             with open(logo_jpg, "rb") as f:
                 b64 = base64.b64encode(f.read()).decode()
             logo_src = f"data:image/png;base64,{b64}"
-    except:
+    except Exception:
         pass
 
     st.markdown(
