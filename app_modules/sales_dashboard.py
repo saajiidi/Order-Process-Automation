@@ -756,8 +756,8 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                     color_discrete_map=color_map,
                 )
                 fig_pie.update_layout(
-                    margin=dict(l=10, r=10, t=30, b=10),
-                    showlegend=False,
+                    margin=dict(l=80, r=160, t=40, b=40),
+                    showlegend=True,
                     legend=dict(
                         orientation="v",
                         yanchor="top",
@@ -804,7 +804,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                     margin=dict(l=12, r=12, t=50, b=12),
                     xaxis_title="",
                     yaxis_title="Quantity Sold",
-                    showlegend=False,
+                    showlegend=True,
                     legend=dict(
                         orientation="v",
                         yanchor="top",
@@ -867,9 +867,9 @@ def render_dashboard_output(
         m1.metric(get_items_sold_label(last_updated), f"{t_qty:,.0f}")
         total_orders = basket.get("total_orders", 0)
         m2.metric("Number of Orders", f"{total_orders:,.0f}" if total_orders else "-")
-        m3.metric("Revenue", f"TK {t_rev:,.2f}")
+        m3.metric("Revenue", f"TK {t_rev:,.0f}")
         if basket.get("avg_basket_value", 0) > 0:
-            m4.metric("Basket Value (TK)", f"TK {basket['avg_basket_value']:,.2f}")
+            m4.metric("Basket Value (TK)", f"TK {basket['avg_basket_value']:,.0f}")
         else:
             m4.metric("Basket Value (TK)", "-")
 
@@ -900,6 +900,14 @@ def render_dashboard_output(
                 title="Revenue Share",
                 color_discrete_map=color_map,
             )
+            
+            if hasattr(fig_pie, "data") and len(fig_pie.data) > 0 and getattr(fig_pie.data[0], "values", None) is not None:
+                t_val = sum(fig_pie.data[0].values)
+                t_val = t_val if t_val > 0 else 1
+                pos_array = ["inside" if (v / t_val) >= 0.02 else "none" for v in fig_pie.data[0].values]
+            else:
+                pos_array = "inside"
+
             fig_pie.update_layout(
                 margin=dict(l=80, r=160, t=40, b=40),
                 showlegend=True,
@@ -911,9 +919,11 @@ def render_dashboard_output(
                     x=1.05,
                     font=dict(size=11),
                 ),
+                uniformtext_minsize=10,
+                uniformtext_mode='hide',
             )
             fig_pie.update_traces(
-                textposition="auto",
+                textposition=pos_array,
                 textinfo="label+percent",
                 textfont_size=11,
                 pull=0.01,
@@ -923,7 +933,7 @@ def render_dashboard_output(
             st.plotly_chart(
                 fig_pie,
                 use_container_width=True,
-                config={"scrollZoom": True, "displayModeBar": True},
+                config={"scrollZoom": True, "displayModeBar": False},
             )
 
         with v2:
@@ -953,7 +963,7 @@ def render_dashboard_output(
             st.plotly_chart(
                 fig_bar,
                 use_container_width=True,
-                config={"scrollZoom": True, "displayModeBar": True},
+                config={"scrollZoom": True, "displayModeBar": False},
             )
 
     render_snapshot_button("snapshot-target-main")
@@ -979,7 +989,7 @@ def render_dashboard_output(
     st.plotly_chart(
         fig_top,
         use_container_width=True,
-        config={"scrollZoom": True, "displayModeBar": True},
+        config={"scrollZoom": True, "displayModeBar": False},
     )
 
     st.subheader("Deep Dive Data")
@@ -987,13 +997,13 @@ def render_dashboard_output(
     tabs = st.tabs(["Summary", "Rankings", "Drilldown"])
     with tabs[0]:
         st.dataframe(
-            summ.sort_values("Total Amount", ascending=False), use_container_width=True
+            summ.sort_values("Total Amount", ascending=False), use_container_width=True, hide_index=True
         )
     with tabs[1]:
-        st.dataframe(top.head(20), use_container_width=True)
+        st.dataframe(top.head(20), use_container_width=True, hide_index=True)
     with tabs[2]:
         st.dataframe(
-            drill.sort_values(["Category", "Price (TK)"]), use_container_width=True
+            drill.sort_values(["Category", "Price (TK)"]), use_container_width=True, hide_index=True
         )
 
     buf = BytesIO()
