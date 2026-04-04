@@ -767,12 +767,19 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                         font=dict(size=11),
                     ),
                     uniformtext_minsize=10,
-                    uniformtext_mode='hide',
+                    uniformtext_mode="hide",
                 )
-                if hasattr(fig_pie, "data") and len(fig_pie.data) > 0 and getattr(fig_pie.data[0], "values", None) is not None:
+                if (
+                    hasattr(fig_pie, "data")
+                    and len(fig_pie.data) > 0
+                    and getattr(fig_pie.data[0], "values", None) is not None
+                ):
                     t_val = sum(fig_pie.data[0].values)
                     t_val = t_val if t_val > 0 else 1
-                    pos_array = ["inside" if (v / t_val) >= 0.02 else "none" for v in fig_pie.data[0].values]
+                    pos_array = [
+                        "inside" if (v / t_val) >= 0.02 else "none"
+                        for v in fig_pie.data[0].values
+                    ]
                 else:
                     pos_array = "inside"
 
@@ -900,11 +907,18 @@ def render_dashboard_output(
                 title="Revenue Share",
                 color_discrete_map=color_map,
             )
-            
-            if hasattr(fig_pie, "data") and len(fig_pie.data) > 0 and getattr(fig_pie.data[0], "values", None) is not None:
+
+            if (
+                hasattr(fig_pie, "data")
+                and len(fig_pie.data) > 0
+                and getattr(fig_pie.data[0], "values", None) is not None
+            ):
                 t_val = sum(fig_pie.data[0].values)
                 t_val = t_val if t_val > 0 else 1
-                pos_array = ["inside" if (v / t_val) >= 0.02 else "none" for v in fig_pie.data[0].values]
+                pos_array = [
+                    "inside" if (v / t_val) >= 0.02 else "none"
+                    for v in fig_pie.data[0].values
+                ]
             else:
                 pos_array = "inside"
 
@@ -920,7 +934,7 @@ def render_dashboard_output(
                     font=dict(size=11),
                 ),
                 uniformtext_minsize=10,
-                uniformtext_mode='hide',
+                uniformtext_mode="hide",
             )
             fig_pie.update_traces(
                 textposition=pos_array,
@@ -997,13 +1011,17 @@ def render_dashboard_output(
     tabs = st.tabs(["Summary", "Rankings", "Drilldown"])
     with tabs[0]:
         st.dataframe(
-            summ.sort_values("Total Amount", ascending=False), use_container_width=True, hide_index=True
+            summ.sort_values("Total Amount", ascending=False),
+            use_container_width=True,
+            hide_index=True,
         )
     with tabs[1]:
         st.dataframe(top.head(20), use_container_width=True, hide_index=True)
     with tabs[2]:
         st.dataframe(
-            drill.sort_values(["Category", "Price (TK)"]), use_container_width=True, hide_index=True
+            drill.sort_values(["Category", "Price (TK)"]),
+            use_container_width=True,
+            hide_index=True,
         )
 
     buf = BytesIO()
