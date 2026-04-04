@@ -31,10 +31,7 @@ def _reset_pathao_state():
 
 def render_pathao_tab():
     render_reset_confirm("Pathao Processor", "pathao", _reset_pathao_state)
-    section_card(
-        "Pathao Order Processor",
-        "Upload order file, validate required columns, generate repaired export.",
-    )
+    # section_card("Pathao Order Processor", "")
 
     up_pathao = st.file_uploader("Upload Orders (CSV/XLSX) OR pull from Live Source below", type=["xlsx", "csv"], key="pathao_up")
     
@@ -120,13 +117,44 @@ def render_pathao_tab():
         with st.expander("Preview output", expanded=True):
             st.dataframe(result_df, use_container_width=True)
 
-        st.download_button(
-            "Download repaired Pathao file",
-            to_excel_bytes(result_df, sheet_name="Pathao"),
-            "Pathao_Final.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            type="primary",
-            use_container_width=True,
-        )
+        c1, c2 = st.columns(2)
+        with c1:
+            st.download_button(
+                "Download repaired file",
+                to_excel_bytes(result_df, sheet_name="Pathao"),
+                "Pathao_Final.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                type="primary",
+                use_container_width=True,
+            )
+        
+        with c2:
+            if st.button("Generate Verification Links", type="secondary", use_container_width=True):
+                st.session_state.show_vlink_gen = True
+        
+        if st.session_state.get("show_vlink_gen"):
+            with st.status("Generating links...", expanded=True):
+                import random
+                df_v = result_df.copy()
+                domain = "https://deencommerce.com/v"
+                # Use Phone or Order ID
+                links = []
+                for _, row in df_v.iterrows():
+                    token = f"{random.getrandbits(32):08x}"
+                    order_id = str(row.get("Order ID", "VERIFY"))
+                    links.append(f"{domain}/verify?id={order_id}&token={token}")
+                df_v["Verification Link"] = links
+                st.session_state.pathao_vlink_df = df_v
+                st.success("Verification links generated!")
+            
+            vlink_df = st.session_state.get("pathao_vlink_df")
+            if vlink_df is not None:
+                st.download_button(
+                    "Download Verification Report",
+                    to_excel_bytes(vlink_df, sheet_name="Verification"),
+                    "Deliveries_Verification.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    use_container_width=True,
+                )
 
 

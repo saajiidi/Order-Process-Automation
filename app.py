@@ -124,15 +124,15 @@ def run_app():
         render_pathao_tab()
 
     with nav_tabs[3]:
-        render_fuzzy_parser_tab()
-
-    with nav_tabs[4]:
         render_distribution_tab(
             search_q=st.session_state.get("inv_matrix_search", "")
         )
 
-    with nav_tabs[5]:
+    with nav_tabs[4]:
         render_wp_tab()
+
+    with nav_tabs[5]:
+        render_fuzzy_parser_tab()
 
     render_footer()
 

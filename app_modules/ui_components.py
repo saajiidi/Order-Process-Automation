@@ -15,6 +15,7 @@ def inject_base_styles():
         :root {
             --primary: var(--primary-color, #1d4ed8);
             --surface: var(--background-color, #f8fafc);
+            --border: var(--secondary-background-color, #e2e8f0);
             --text-muted: var(--text-color, #64748b);
             --step-surface: var(--background-color, #ffffff);
             --step-text: var(--text-color, #0f172a);
@@ -27,15 +28,15 @@ def inject_base_styles():
             bottom: 0;
             left: 0;
             width: 100%;
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--surface);
             backdrop-filter: blur(8px);
             padding: 12px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            color: #64748b;
+            color: var(--text-muted);
             font-size: 0.8rem;
-            border-top: 1px solid rgba(226, 232, 240, 0.8);
+            border-top: 1px solid var(--border);
             z-index: 999;
         }
         .hub-footer a {
@@ -87,18 +88,6 @@ def inject_base_styles():
             margin-bottom: 12px;
             box-shadow: 0 8px 24px var(--card-shadow);
         }
-        .hub-action-wrap {
-            position: sticky;
-            bottom: 60px; /* Offset to stay above fixed footer */
-            padding: 16px;
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(16px);
-            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
-            z-index: 100;
-            margin-top: 20px;
-        }
         
         /* Premium Tab Styling */
         div[data-testid="stTab"] button {
@@ -136,12 +125,6 @@ def inject_base_styles():
             .hub-card {
                 padding: 10px;
                 border-radius: 8px;
-            }
-            .hub-action-wrap {
-                position: static;
-                margin-top: 8px;
-                box-shadow: none;
-                padding: 12px;
             }
             /* Metric Font Scaling for Small Screens */
             div[data-testid="stMetricValue"] {
@@ -284,7 +267,6 @@ def render_action_bar(
     secondary_label: str | None = None,
     secondary_key: str | None = None,
 ):
-    st.markdown('<div class="hub-action-wrap">', unsafe_allow_html=True)
     if secondary_label and secondary_key:
         c1, c2 = st.columns([2, 1])
         primary_clicked = c1.button(primary_label, type="primary", use_container_width=True, key=primary_key)
@@ -292,7 +274,6 @@ def render_action_bar(
     else:
         primary_clicked = st.button(primary_label, type="primary", use_container_width=True, key=primary_key)
         secondary_clicked = False
-    st.markdown("</div>", unsafe_allow_html=True)
     return primary_clicked, secondary_clicked
 
 

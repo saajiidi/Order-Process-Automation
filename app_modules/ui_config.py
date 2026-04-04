@@ -5,9 +5,9 @@ PRIMARY_NAV = [
     "Live Dashboard",
     "Sales Data Ingestion",
     "Bulk Order Processer",
-    "Delivery Data Parser",
     "Inventory Distribution",
     "WhatsApp Messaging",
+    "Delivery Data Parser",
 ]
 
 MORE_TOOLS = [

@@ -274,10 +274,7 @@ def _reset_parser_state():
 
 def render_fuzzy_parser_tab():
     render_reset_confirm("Delivery Data Parser", "parser", _reset_parser_state)
-    section_card(
-        "Delivery Text Parser",
-        "Convert copied delivery text into spreadsheet-ready records.",
-    )
+    # section_card("Delivery Text Parser", "")
 
     sample = """Cons. ID
 DD040326KR9NUU
@@ -307,11 +304,6 @@ POD"""
             placeholder="Paste copied courier detail blocks...",
             key="standard_raw_text",
         )
-        filename = st.text_input(
-            "Output filename",
-            value=f"deliveries_{datetime.now().strftime('%d-%m-%Y')}.xlsx",
-            key="standard_filename",
-        )
         parse_clicked, _ = render_action_bar(
             "Parse with standard rules",
             "standard_btn",
@@ -330,7 +322,7 @@ POD"""
             st.download_button(
                 "Download standard parser output",
                 df_to_excel_bytes(st.session_state.standard_parsed_df),
-                filename,
+                f"deliveries_{datetime.now().strftime('%d-%m-%Y')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
                 type="primary",
@@ -343,11 +335,6 @@ POD"""
             height=340,
             placeholder="Paste loosely structured text here...",
             key="fuzzy_raw_text",
-        )
-        fuzzy_filename = st.text_input(
-            "Output filename",
-            value=f"fuzzy_deliveries_{datetime.now().strftime('%d-%m-%Y')}.xlsx",
-            key="fuzzy_filename",
         )
         fuzzy_parse_clicked, _ = render_action_bar(
             "Parse with fuzzy fallback",
@@ -380,7 +367,7 @@ POD"""
             st.download_button(
                 "Download fuzzy parser output",
                 df_to_excel_bytes(st.session_state.fuzzy_parsed_df),
-                fuzzy_filename,
+                f"fuzzy_deliveries_{datetime.now().strftime('%d-%m-%Y')}.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
                 type="primary",
