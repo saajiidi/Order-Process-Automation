@@ -666,6 +666,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
     t_rev = summ["Total Amount"].sum()
     with st.container():
         st.markdown('<div id="snapshot-target-popup"></div>', unsafe_allow_html=True)
+        tz_bd = timezone(timedelta(hours=6))
         st.markdown(
             f"""
             <div>
@@ -1117,6 +1118,7 @@ def render_live_tab():
     except Exception:
         pass
 
+    tz_bd = timezone(timedelta(hours=6))
     st.markdown(
         f"""
         <div>
