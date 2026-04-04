@@ -41,7 +41,7 @@ def inject_base_styles():
         }
         @media (prefers-color-scheme: dark) {
             .hub-footer {
-                background: #000000 !important;
+                background: #1e293b !important;
                 color: #ffffff !important;
                 border-top-color: #334155 !important;
             }
@@ -110,7 +110,7 @@ def inject_base_styles():
         }
         @media (prefers-color-scheme: dark) {
             .hub-welcome-banner {
-                background: #000000 !important;
+                background: #1e293b !important;
                 color: #ffffff !important;
                 border-color: #334155 !important;
             }
