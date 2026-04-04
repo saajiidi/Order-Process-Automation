@@ -28,29 +28,18 @@ def inject_base_styles():
             bottom: 0;
             left: 0;
             width: 100%;
-            background: #ffffff;
-            color: #1e293b;
-            backdrop-filter: blur(8px);
+            background: var(--background-color);
+            color: var(--text-color);
             padding: 12px 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 0.8rem;
-            border-top: 1px solid #e2e8f0;
+            border-top: 1px solid rgba(128, 128, 128, 0.2);
             z-index: 999;
         }
-        @media (prefers-color-scheme: dark) {
-            .hub-footer {
-                background: #1e293b !important;
-                color: #ffffff !important;
-                border-top-color: #334155 !important;
-            }
-            .hub-footer a, .hub-footer span {
-                color: #ffffff !important;
-            }
-        }
         .hub-footer a {
-            color: #1d4ed8;
+            color: inherit;
             text-decoration: none;
             font-weight: 500;
         }
@@ -100,23 +89,15 @@ def inject_base_styles():
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .hub-welcome-banner {
-            background: #ffffff;
-            color: #0f172a;
-            border: 1px solid #e2e8f0;
+            background-color: transparent;
+            border: 1px solid rgba(128, 128, 128, 0.2);
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
-        @media (prefers-color-scheme: dark) {
-            .hub-welcome-banner {
-                background: #1e293b !important;
-                color: #ffffff !important;
-                border-color: #334155 !important;
-            }
-            .hub-welcome-banner a, .hub-welcome-banner b {
-                color: #ffffff !important;
-            }
+        .hub-welcome-banner a, .hub-welcome-banner b {
+            color: inherit !important;
         }
         .hub-card:hover {
             transform: translateY(-2px);
