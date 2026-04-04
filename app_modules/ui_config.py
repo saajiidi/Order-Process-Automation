@@ -2,12 +2,12 @@ APP_TITLE = "Automation Hub Pro"
 APP_VERSION = "v9.0"
 
 PRIMARY_NAV = [
-    "Live Dashboard",
-    "Sales Data Ingestion",
-    "Bulk Order Processer",
-    "Inventory Distribution",
-    "WhatsApp Messaging",
-    "Delivery Data Parser",
+    "📈 Live Dashboard",
+    "📥 Sales Data Ingestion",
+    "📦 Bulk Order Processer",
+    "📊 Inventory Distribution",
+    "💬 WhatsApp Messaging",
+    "🧩 Delivery Data Parser",
 ]
 
 MORE_TOOLS = [

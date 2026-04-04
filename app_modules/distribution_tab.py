@@ -37,7 +37,7 @@ def _render_upload_summary(master_df, title_col):
 def render_distribution_tab(search_q):
     render_reset_confirm("Inventory Distribution", "inventory", _reset_inventory_state)
     st.subheader("Upload and Analyze")
-    master_file = st.file_uploader("Master Stock List (required) OR pull from Live Source below", type=["xlsx", "csv"], key="inv_up")
+    master_file = st.file_uploader("", type=["xlsx", "csv"], key="inv_up")
         
     fetch_live_clicked = st.button("Pull from Live Dash Data & Auto-Analyze", type="secondary", use_container_width=True, key="dist_live")
 

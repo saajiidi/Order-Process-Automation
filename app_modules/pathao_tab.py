@@ -33,7 +33,7 @@ def render_pathao_tab():
     render_reset_confirm("Pathao Processor", "pathao", _reset_pathao_state)
     # section_card("Pathao Order Processor", "")
 
-    up_pathao = st.file_uploader("Upload Orders (CSV/XLSX) OR pull from Live Source below", type=["xlsx", "csv"], key="pathao_up")
+    up_pathao = st.file_uploader("", type=["xlsx", "csv"], key="pathao_up")
     
     fetch_live_clicked = st.button("Pull from Live Dash Data & Auto-Process", type="secondary", use_container_width=True, key="pathao_live")
 

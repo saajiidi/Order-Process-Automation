@@ -73,7 +73,7 @@ def render_wp_tab():
             placeholder="Please confirm the order and address details.",
         )
 
-    wp_file = st.file_uploader("Upload Verification List (CSV/XLSX) OR pull from Live Source below", key="wp_up_2", type=["xlsx", "csv"])
+    wp_file = st.file_uploader("", key="wp_up_2", type=["xlsx", "csv"])
     
     fetch_live_clicked = st.button("Pull from Live Dash Data & Auto-Process", type="secondary", use_container_width=True, key="wp_live")
 

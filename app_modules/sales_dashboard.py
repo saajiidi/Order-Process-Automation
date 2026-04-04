@@ -837,7 +837,7 @@ def render_manual_tab():
     
     render_reset_confirm("Sales Dashboard (Manual)", "manual", _reset_manual_state)
     # Header removed
-    uploaded_file = st.file_uploader("Upload Sales Data (Excel or CSV)", type=['xlsx', 'csv'])
+    uploaded_file = st.file_uploader("", type=['xlsx', 'csv'])
 
     if uploaded_file is None:
         return
