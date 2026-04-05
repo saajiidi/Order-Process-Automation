@@ -179,11 +179,11 @@ def inject_base_styles():
             }
         }
         
-        /* Ensure dialogs are scrollable and properly sized */
-        div[role="dialog"] {
-            max-width: 95vw !important;
-            max-height: 90vh !important;
-            overflow-y: auto !important;
+        /* Hide Plotly legends on mobile and small screens */
+        @media (max-width: 900px) {
+            .js-plotly-plot .legend, .js-plotly-plot .legendtoggle, .js-plotly-plot .legend-bg, .js-plotly-plot .legend-layer {
+                display: none !important;
+            }
         }
         </style>
         """,
