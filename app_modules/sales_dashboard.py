@@ -86,7 +86,7 @@ def render_snapshot_button(marker_id="snapshot-target"):
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 FEEDBACK_DIR = os.path.join(DATA_DIR, "feedback")
 INCOMING_DIR = os.path.join(DATA_DIR, "incoming")
-DEFAULT_GSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTOiRkybNzMNvEaLxSFsX0nGIiM07BbNVsBbsX1dG8AmGOmSu8baPrVYL0cOqoYN4tRWUj1UjUbH1Ij/pubhtml"
+DEFAULT_GSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTOiRkybNzMNvEaLxSFsX0nGIiM07BbNVsBbsX1dG8AmGOmSu8baPrVYL0cOqoYN4tRWUj1UjUbH1Ij/pub?gid=2118542421&single=true&output=csv"
 os.makedirs(FEEDBACK_DIR, exist_ok=True)
 os.makedirs(INCOMING_DIR, exist_ok=True)
 
