@@ -86,7 +86,7 @@ def render_snapshot_button(marker_id="snapshot-target"):
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 FEEDBACK_DIR = os.path.join(DATA_DIR, "feedback")
 INCOMING_DIR = os.path.join(DATA_DIR, "incoming")
-DEFAULT_GSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTOiRkybNzMNvEaLxSFsX0nGIiM07BbNVsBbsX1dG8AmGOmSu8baPrVYL0cOqoYN4tRWUj1UjUbH1Ij/pub?gid=2118542421&single=true&output=csv"
+DEFAULT_GSHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTOiRkybNzMNvEaLxSFsX0nGIiM07BbNVsBbsX1dG8AmGOmSu8baPrVYL0cOqoYN4tRWUj1UjUbH1Ij/pub?output=csv"
 os.makedirs(FEEDBACK_DIR, exist_ok=True)
 os.makedirs(INCOMING_DIR, exist_ok=True)
 
@@ -220,7 +220,6 @@ def get_category(name):
     return "Others"
 
 
-@st.cache_data(show_spinner=False)
 def find_columns(df):
     """Detects primary columns using exact and then partial matching."""
     mapping = {
@@ -284,7 +283,6 @@ def find_columns(df):
     return found
 
 
-@st.cache_data(show_spinner=False)
 def scrub_raw_dataframe(df):
     """Filters out dashboard analytics, empty rows, and summary tables from raw exports."""
     if df is None or df.empty:
@@ -433,6 +431,60 @@ def process_data(df, selected_cols):
         return None, None, None, "", {}
 
 
+def compute_day_metrics(df_raw, live_mapping):
+    """Split raw dataframe into today / yesterday slices and compute KPIs for each.
+    Returns (today_kpi, yesterday_kpi, yesterday_orders_df).
+    Each kpi dict has keys: qty, orders, revenue, avg_basket.
+    """
+    tz_bd = timezone(timedelta(hours=6))
+    today_dt = datetime.now(tz_bd).date()
+    yesterday_dt = today_dt - timedelta(days=1)
+
+    date_col = live_mapping.get("date")
+    order_col = live_mapping.get("order_id")
+    qty_col   = live_mapping.get("qty")
+    cost_col  = live_mapping.get("cost")
+    name_col  = live_mapping.get("name")
+
+    empty_kpi = {"qty": 0, "orders": 0, "revenue": 0, "avg_basket": 0}
+
+    if not date_col or date_col not in df_raw.columns:
+        return empty_kpi, empty_kpi, pd.DataFrame()
+
+    df = df_raw.copy()
+    df["_date_parsed"] = pd.to_datetime(df[date_col], errors="coerce")
+    df["_date_only"]   = df["_date_parsed"].dt.date
+    df["_qty"]  = pd.to_numeric(df.get(qty_col,  pd.Series([0]*len(df))), errors="coerce").fillna(0)
+    df["_cost"] = pd.to_numeric(df.get(cost_col, pd.Series([0]*len(df))), errors="coerce").fillna(0)
+    df["_revenue"] = df["_qty"] * df["_cost"]
+
+    def _kpi(slice_df):
+        if slice_df.empty:
+            return {"qty": 0, "orders": 0, "revenue": 0, "avg_basket": 0}
+        qty     = slice_df["_qty"].sum()
+        revenue = slice_df["_revenue"].sum()
+        if order_col and order_col in slice_df.columns:
+            orders  = slice_df[order_col].nunique()
+            basket  = revenue / orders if orders else 0
+        else:
+            orders, basket = len(slice_df), 0
+        return {"qty": qty, "orders": orders, "revenue": revenue, "avg_basket": basket}
+
+    today_kpi     = _kpi(df[df["_date_only"] == today_dt])
+    yesterday_kpi = _kpi(df[df["_date_only"] == yesterday_dt])
+
+    # Build yesterday's order-level table for the report section
+    yest_df = df[df["_date_only"] == yesterday_dt].copy()
+    display_cols = []
+    for c in [order_col, date_col, name_col, qty_col, cost_col]:
+        if c and c in yest_df.columns:
+            display_cols.append(c)
+    display_cols = list(dict.fromkeys(display_cols))  # dedupe preserving order
+    yesterday_orders_df = yest_df[display_cols] if display_cols else yest_df
+
+    return today_kpi, yesterday_kpi, yesterday_orders_df
+
+
 def get_latest_incoming_file(folder_path):
     """Returns the newest XLSX/CSV file path from incoming folder."""
     allowed_ext = (".xlsx", ".csv")
@@ -532,7 +584,7 @@ def load_latest_from_incoming():
     return df_live, os.path.basename(latest_file), modified_at
 
 
-@st.cache_data(ttl=45, show_spinner=False)
+@st.cache_data(ttl=30, show_spinner=False)
 def load_from_google_sheet():
     """Loads live data from a Google Sheet worksheet (CSV export)."""
     sheet_url = get_setting("GSHEET_URL", DEFAULT_GSHEET_URL)
@@ -852,8 +904,20 @@ else:
         _render_welcome_popup_content(summ, basket, last_updated, focus)
 
 
+def _delta_str(today_val, yesterday_val):
+    """Returns a readable delta string e.g. '+120 (↑15%)' or '-50 (↓8%)'."""
+    diff = today_val - yesterday_val
+    if yesterday_val == 0:
+        return f"+{today_val:,.0f} (new)" if diff > 0 else "—"
+    pct = diff / yesterday_val * 100
+    arrow = "↑" if diff >= 0 else "↓"
+    sign  = "+" if diff >= 0 else ""
+    return f"{sign}{diff:,.0f} ({arrow}{abs(pct):.1f}%)"
+
+
 def render_dashboard_output(
-    drill, summ, top, timeframe, basket, source_name, last_updated="N/A"
+    drill, summ, top, timeframe, basket, source_name, last_updated="N/A",
+    df_raw=None, live_mapping=None
 ):
     """Renders common dashboard widgets/charts/tables/export."""
     tz_bd = timezone(timedelta(hours=6))
@@ -867,18 +931,78 @@ def render_dashboard_output(
     t_qty = summ["Total Qty"].sum()
     t_rev = summ["Total Amount"].sum()
 
+    # ── Day-split metrics (today vs yesterday) ────────────────────────────
+    tz_bd = timezone(timedelta(hours=6))
+    today_kpi, yesterday_kpi, yesterday_orders_df = (
+        compute_day_metrics(df_raw, live_mapping)
+        if (df_raw is not None and live_mapping is not None)
+        else ({"qty": 0, "orders": 0, "revenue": 0, "avg_basket": 0},
+              {"qty": 0, "orders": 0, "revenue": 0, "avg_basket": 0},
+              pd.DataFrame())
+    )
+    has_day_data = today_kpi["orders"] > 0 or yesterday_kpi["orders"] > 0
+
     with st.container():
         st.markdown('<div id="snapshot-target-main"></div>', unsafe_allow_html=True)
         st.subheader("Core Metrics")
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric(get_items_sold_label(last_updated), f"{t_qty:,.0f}")
-        total_orders = basket.get("total_orders", 0)
-        m2.metric("Number of Orders", f"{total_orders:,.0f}" if total_orders else "-")
-        m3.metric("Revenue", f"TK {t_rev:,.0f}")
-        if basket.get("avg_basket_value", 0) > 0:
-            m4.metric("Basket Value (TK)", f"TK {basket['avg_basket_value']:,.0f}")
+
+        if has_day_data:
+            # ── Today vs Yesterday comparison row ─────────────────────────
+            tz_bd_local = timezone(timedelta(hours=6))
+            today_label = datetime.now(tz_bd_local).strftime("%d %b")
+            yesterday_label = (datetime.now(tz_bd_local) - timedelta(days=1)).strftime("%d %b")
+
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric(
+                f"Today's Items Sold ({today_label})",
+                f"{today_kpi['qty']:,.0f}",
+                delta=_delta_str(today_kpi['qty'], yesterday_kpi['qty']),
+                delta_color="normal",
+                help=f"Yesterday ({yesterday_label}): {yesterday_kpi['qty']:,.0f} items",
+            )
+            m2.metric(
+                f"Today's Orders ({today_label})",
+                f"{today_kpi['orders']:,.0f}",
+                delta=_delta_str(today_kpi['orders'], yesterday_kpi['orders']),
+                delta_color="normal",
+                help=f"Yesterday ({yesterday_label}): {yesterday_kpi['orders']:,.0f} orders",
+            )
+            m3.metric(
+                f"Today's Revenue ({today_label})",
+                f"TK {today_kpi['revenue']:,.0f}",
+                delta=_delta_str(today_kpi['revenue'], yesterday_kpi['revenue']),
+                delta_color="normal",
+                help=f"Yesterday ({yesterday_label}): TK {yesterday_kpi['revenue']:,.0f}",
+            )
+            m4.metric(
+                "Avg Basket Value",
+                f"TK {today_kpi['avg_basket']:,.0f}" if today_kpi['avg_basket'] else "-",
+                delta=_delta_str(today_kpi['avg_basket'], yesterday_kpi['avg_basket']) if today_kpi['avg_basket'] and yesterday_kpi['avg_basket'] else None,
+                delta_color="normal",
+                help=f"Yesterday ({yesterday_label}): TK {yesterday_kpi['avg_basket']:,.0f}",
+            )
+
+            # ── Yesterday summary row (compact) ───────────────────────────
+            st.markdown(
+                f"<div style='font-size:.8rem;color:#64748b;margin:4px 0 0 2px;'>"
+                f"📅 <b>Yesterday ({yesterday_label}):</b> "
+                f"{yesterday_kpi['qty']:,.0f} items &nbsp;·&nbsp; "
+                f"{yesterday_kpi['orders']:,.0f} orders &nbsp;·&nbsp; "
+                f"TK {yesterday_kpi['revenue']:,.0f} revenue"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
         else:
-            m4.metric("Basket Value (TK)", "-")
+            # Fallback: full-dataset metrics (no date data available)
+            total_orders = basket.get("total_orders", 0)
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric(get_items_sold_label(last_updated), f"{t_qty:,.0f}")
+            m2.metric("Number of Orders", f"{total_orders:,.0f}" if total_orders else "-")
+            m3.metric("Revenue", f"TK {t_rev:,.0f}")
+            if basket.get("avg_basket_value", 0) > 0:
+                m4.metric("Basket Value (TK)", f"TK {basket['avg_basket_value']:,.0f}")
+            else:
+                m4.metric("Basket Value (TK)", "-")
 
         st.divider()
 
@@ -1034,6 +1158,19 @@ def render_dashboard_output(
     file_suffix = f"_{timeframe}" if timeframe else ""
     final_filename = f"Report_{base_name}{file_suffix}.xlsx"
     st.download_button("Export Report", data=buf.getvalue(), file_name=final_filename)
+
+    # ── Last Day Processed Orders ──────────────────────────────────────────
+    if yesterday_orders_df is not None and not yesterday_orders_df.empty:
+        st.divider()
+        tz_bd_local = timezone(timedelta(hours=6))
+        yesterday_label = (datetime.now(tz_bd_local) - timedelta(days=1)).strftime("%A, %d %b %Y")
+        st.subheader(f"📋 Last Day Processed Orders ({yesterday_label})")
+        st.caption(
+            f"{yesterday_kpi['orders']:,.0f} orders · "
+            f"{yesterday_kpi['qty']:,.0f} items · "
+            f"TK {yesterday_kpi['revenue']:,.0f} revenue"
+        )
+        st.dataframe(yesterday_orders_df.reset_index(drop=True), use_container_width=True)
 
 
 def render_manual_tab():
@@ -1201,12 +1338,24 @@ def render_live_tab():
 
     source_mode = source_options[default_idx]
 
-    # Freshness Indicator
+    # ── Force Refresh + Freshness row ───────────────────────────────────
+    rc1, rc2 = st.columns([3, 1])
     if st.session_state.get("live_sync_time"):
         diff = datetime.now() - st.session_state.live_sync_time
-        mins = int(diff.total_seconds() / 60)
-        sync_label = "Just now" if mins < 1 else f"{mins}m ago"
-        st.caption(f"🔄 Last Synced: {sync_label}")
+        secs = int(diff.total_seconds())
+        if secs < 60:
+            sync_label = f"{secs}s ago"
+        else:
+            sync_label = f"{secs // 60}m {secs % 60}s ago"
+        next_in = max(0, 30 - secs)
+        rc1.caption(f"\U0001f504 Last synced: **{sync_label}** · next auto-refresh in ~{next_in}s")
+    else:
+        rc1.caption("\U0001f504 Auto-refreshes every 30 seconds")
+
+    if rc2.button("\u26a1 Force Refresh", use_container_width=True, type="primary", key="live_force_refresh"):
+        st.cache_data.clear()
+        st.session_state.live_sync_time = None
+        st.rerun()
 
     if hasattr(st, "autorefresh"):
         st.autorefresh(interval=30000, key="live_autorefresh")
@@ -1233,7 +1382,8 @@ def render_live_tab():
         drill, summ, top, timeframe, basket = process_data(df_live, live_mapping)
         if drill is not None:
             render_dashboard_output(
-                drill, summ, top, timeframe, basket, source_name, modified_at
+                drill, summ, top, timeframe, basket, source_name, modified_at,
+                df_raw=df_live, live_mapping=live_mapping,
             )
 
     except Exception as e:

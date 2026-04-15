@@ -47,6 +47,7 @@ def run_app():
     from app_modules.error_handler import ERROR_LOG_FILE
     import os
     from app_modules.wp_tab import render_wp_tab
+    from app_modules.customer_analytics import render_customer_analytics_tab
 
     init_state()
     inject_base_styles()
@@ -136,6 +137,9 @@ def run_app():
 
     with nav_tabs[5]:
         render_fuzzy_parser_tab()
+
+    with nav_tabs[6]:
+        render_customer_analytics_tab()
 
     render_footer()
 
