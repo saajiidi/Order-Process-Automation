@@ -268,14 +268,29 @@ def load_year_tabs_from_sheet(url_or_id: str, api_key: Optional[str] = None) -> 
             try:
                 df = download_from_gid(sheet_id, gid_from_url)
                 if not df.empty:
-                    detected_year = detect_year_from_data(df) or str(current_year)
-                    df["_source_tab"] = detected_year
+                    # Use tab name from data or default to the gid
+                    tab_name = detect_year_from_data(df) or f"Tab_{gid_from_url}"
+                    df["_source_tab"] = tab_name
                     df["_gid"] = gid_from_url
                     all_data.append(df)
-                    loaded_tabs.append(detected_year)
-                    st.success(f"✅ Loaded from URL gid: {detected_year}")
+                    loaded_tabs.append(tab_name)
+                    st.success(f"✅ Loaded from URL gid: {tab_name}")
             except Exception:
                 pass
+    
+    # If still no data, try loading gid 0 (default/first tab) as a last resort
+    if not all_data:
+        try:
+            st.info("🔍 Trying to load default tab (gid=0)...")
+            df = download_from_gid(sheet_id, "0")
+            if not df.empty:
+                df["_source_tab"] = "Default"
+                df["_gid"] = 0
+                all_data.append(df)
+                loaded_tabs.append("Default")
+                st.success(f"✅ Loaded default tab with {len(df):,} rows")
+        except Exception:
+            pass
     
     if not all_data:
         raise ValueError(
@@ -933,6 +948,70 @@ def extract_customers_from_year_urls(year_urls: Dict[str, str],
     return merged_customers, metadata, raw_df
 
 
+def extract_customers_from_single_tab(url: str,
+                                      save_registry_path: str = "customer_registry.xlsx") -> Tuple[pd.DataFrame, Dict, pd.DataFrame]:
+    """
+    Extract customers from a single tab (non-year based tabs like 'Todays Sales', 'Last Day Sales').
+    Does NOT try to discover year tabs - just loads the specified URL directly.
+    """
+    st.info(f"📥 Loading single tab from URL...")
+    
+    try:
+        raw_df = load_from_url_simple(url)
+        tab_name = "SingleTab"
+        
+        # Try to detect tab name from URL gid if present
+        url_match = re.search(r'[?&]gid=(\d+)', url)
+        if url_match:
+            tab_name = f"Tab_{url_match.group(1)}"
+        
+        if not raw_df.empty:
+            raw_df["_source_tab"] = tab_name
+            st.success(f"✅ Loaded tab '{tab_name}' with {len(raw_df):,} rows")
+        else:
+            raise ValueError("Loaded data is empty")
+    except Exception as e:
+        st.error(f"Failed to load from URL: {e}")
+        raise
+    
+    # Detect columns
+    st.info("🔍 Detecting columns...")
+    cols = detect_columns(raw_df)
+    st.write("Detected columns:", {k: v for k, v in cols.items() if v})
+    
+    # Clean data
+    cleaned_df = clean_dataframe(raw_df, cols)
+    st.success(f"✅ Cleaned {len(cleaned_df):,} rows with contact info.")
+    
+    # Group customers
+    st.info("👥 Grouping unique customers...")
+    unique_customers = group_customers(cleaned_df, cols)
+    st.success(f"✅ Found {len(unique_customers):,} unique customers.")
+    
+    # Load existing registry
+    old_registry = load_registry(save_registry_path)
+    
+    # Merge registries
+    st.info("🔄 Merging with existing registry...")
+    merged_customers = merge_registries(unique_customers, old_registry)
+    new_count = len(merged_customers) - (len(old_registry) if old_registry is not None else 0)
+    st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {max(0, new_count):,})")
+    
+    # Save registry
+    if save_registry(merged_customers, save_registry_path):
+        st.success(f"💾 Registry saved to `{save_registry_path}`")
+    
+    metadata = {
+        "total_unique_customers": len(merged_customers),
+        "new_customers_added": max(0, new_count),
+        "last_run": datetime.now().isoformat(),
+        "source_url": url,
+        "loaded_tabs": [tab_name]
+    }
+    
+    return merged_customers, metadata, raw_df
+
+
 def extract_customers_from_uploaded_files(uploaded_files: Dict[str, any],
                                           save_registry_path: str = "customer_registry.xlsx") -> Tuple[pd.DataFrame, Dict, pd.DataFrame]:
     """
@@ -1081,7 +1160,7 @@ def render_customer_extractor_tab():
     # Input mode: Single URL vs Multiple Year URLs vs File Upload
     input_mode = st.radio(
         "Input Mode",
-        ["Single URL (Auto-discover year tabs)", "Multiple URLs (One per year)", "Upload File(s)"],
+        ["Single URL (Auto-discover year tabs)", "Single URL (One specific tab)", "Multiple URLs (One per year)", "Upload File(s)"],
         horizontal=True,
         key="ce_input_mode"
     )
@@ -1089,6 +1168,7 @@ def render_customer_extractor_tab():
     year_urls = {}
     uploaded_files = {}
     url_input = None
+    single_tab_mode = False
     
     if input_mode == "Single URL (Auto-discover year tabs)":
         url_input = st.text_input(
@@ -1097,6 +1177,15 @@ def render_customer_extractor_tab():
             placeholder="Paste Google Sheet publish link (supports ?output=csv or ?output=tsv)...",
             label_visibility="collapsed"
         )
+    elif input_mode == "Single URL (One specific tab)":
+        st.caption("Loads only the tab specified in the URL (e.g., 'Todays Sales', 'Last Day Sales')")
+        url_input = st.text_input(
+            "Tab URL (with ?gid=XXX if needed)",
+            value="https://docs.google.com/spreadsheets/d/e/2PACX-1vTOiRkybNzMNvEaLxSFsX0nGIiM07BbNVsBbsX1dG8AmGOmSu8baPrVYL0cOqoYN4tRWUj1UjUbH1Ij/pub?output=csv",
+            placeholder="Paste specific tab URL...",
+            label_visibility="collapsed"
+        )
+        single_tab_mode = True
     elif input_mode == "Multiple URLs (One per year)":
         # Manual URL input for each year
         st.caption("Enter individual URLs for each year tab (leave blank to skip):")
@@ -1149,8 +1238,14 @@ def render_customer_extractor_tab():
                             uploaded_files=uploaded_files,
                             save_registry_path=registry_file
                         )
+                    elif single_tab_mode:
+                        # Use single tab mode - loads just one tab without year discovery
+                        customers_df, metadata, raw_df = extract_customers_from_single_tab(
+                            url=url_input.strip(),
+                            save_registry_path=registry_file
+                        )
                     else:
-                        # Use single URL auto-discovery
+                        # Use single URL auto-discovery (year tabs)
                         customers_df, metadata, raw_df = extract_customers_from_google_sheet(
                             url=url_input.strip(),
                             save_registry_path=registry_file
@@ -1286,12 +1381,16 @@ def render_customer_extractor_tab():
         report_view[date_min_col] = pd.to_datetime(report_view[date_min_col], errors='coerce')
         report_view[date_max_col] = pd.to_datetime(report_view[date_max_col], errors='coerce')
         
+        # Convert Python date objects to pandas Timestamp for comparison
+        start_ts = pd.Timestamp(start_d)
+        end_ts = pd.Timestamp(end_d)
+        
         date_mask = (
-            (report_view[date_min_col].dt.date >= start_d) & (report_view[date_min_col].dt.date <= end_d)
+            (report_view[date_min_col] >= start_ts) & (report_view[date_min_col] <= end_ts)
         ) | (
-            (report_view[date_max_col].dt.date >= start_d) & (report_view[date_max_col].dt.date <= end_d)
+            (report_view[date_max_col] >= start_ts) & (report_view[date_max_col] <= end_ts)
         ) | (
-            (report_view[date_min_col].dt.date <= start_d) & (report_view[date_max_col].dt.date >= end_d)
+            (report_view[date_min_col] <= start_ts) & (report_view[date_max_col] >= end_ts)
         )  # Active throughout period
         report_view = report_view[date_mask]
     

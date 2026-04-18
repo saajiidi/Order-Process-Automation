@@ -219,7 +219,37 @@ _SESSION_KEY = "ca_df"
 _SESSION_COLS = "ca_cols"
 
 
-def _metric_card(col, label: str, value: str, icon: str = ""):
+def _metric_card(col, label: str, value: str, icon: str = "", 
+                 prev_value: float = None, show_comparison: bool = False):
+    """Render a styled metric card with optional comparison indicator."""
+    comparison_html = ""
+    if show_comparison and prev_value is not None:
+        try:
+            curr = float(str(value).replace(",", "").replace("৳", "").replace("$", ""))
+            change = curr - prev_value
+            change_pct = (change / prev_value * 100) if prev_value != 0 else 0
+            
+            if change > 0:
+                arrow = "▲"
+                color = "#22c55e"  # Green
+                sign = "+"
+            elif change < 0:
+                arrow = "▼"
+                color = "#ef4444"  # Red
+                sign = ""
+            else:
+                arrow = "—"
+                color = "#94a3b8"  # Gray
+                sign = ""
+            
+            comparison_html = f'''
+                <div style="font-size:0.75rem;color:{color};margin-top:6px;">
+                    {arrow} {sign}{abs(change):,.0f} ({sign}{abs(change_pct):.1f}%) vs yesterday
+                </div>
+            '''
+        except:
+            pass  # Skip comparison if parsing fails
+    
     col.markdown(
         f"""
         <div style="
@@ -232,6 +262,7 @@ def _metric_card(col, label: str, value: str, icon: str = ""):
             <div style="font-size:1.8rem;">{icon}</div>
             <div style="font-size:1.9rem;font-weight:700;color:#38bdf8;">{value}</div>
             <div style="font-size:0.82rem;color:#94a3b8;margin-top:4px;">{label}</div>
+            {comparison_html}
         </div>
         """,
         unsafe_allow_html=True,
@@ -348,9 +379,14 @@ def render_customer_analytics_tab():
         start_d = fc1.date_input("From date", value=d_min, min_value=d_min, max_value=d_max, key="ca_start")
         end_d   = fc2.date_input("To date",   value=d_max, min_value=d_min, max_value=d_max, key="ca_end")
 
-        quick = fc3.selectbox("Quick range", ["Custom", "Last 7 days", "Last 30 days", "Last 90 days", "All time"], key="ca_quick")
+        quick = fc3.selectbox("Quick range", ["Custom", "Today", "Yesterday", "Last 7 days", "Last 30 days", "Last 90 days", "All time"], key="ca_quick")
         today = date.today()
-        if quick == "Last 7 days":
+        yesterday = today - timedelta(days=1)
+        if quick == "Today":
+            start_d, end_d = today, today
+        elif quick == "Yesterday":
+            start_d, end_d = yesterday, yesterday
+        elif quick == "Last 7 days":
             start_d, end_d = today - timedelta(days=7), today
         elif quick == "Last 30 days":
             start_d, end_d = today - timedelta(days=30), today
@@ -361,8 +397,14 @@ def render_customer_analytics_tab():
 
         mask = (prepared["_date"].dt.date >= start_d) & (prepared["_date"].dt.date <= end_d)
         filtered = prepared[mask]
+        
+        # Compute yesterday's metrics for comparison (if viewing today or other ranges)
+        yesterday_mask = (prepared["_date"].dt.date >= yesterday) & (prepared["_date"].dt.date <= yesterday)
+        yesterday_data = prepared[yesterday_mask]
+        yesterday_summary = compute_summary(yesterday_data, cols) if not yesterday_data.empty else None
     else:
         filtered = prepared
+        yesterday_summary = None
         st.info("ℹ️ No date column detected — showing all data.")
 
     if filtered.empty:
@@ -373,10 +415,18 @@ def render_customer_analytics_tab():
     summary = compute_summary(filtered, cols)
     st.markdown("#### 📊 Summary")
     k1, k2, k3, k4 = st.columns(4)
-    _metric_card(k1, "Unique Customers", f"{summary['unique_customers']:,}", "👥")
-    _metric_card(k2, "Total Orders",     f"{summary['total_orders']:,}",    "🛒")
-    _metric_card(k3, "Total Revenue",    f"৳{summary['total_revenue']:,.0f}", "💰")
-    _metric_card(k4, "Avg Order Value",  f"৳{summary['avg_order_value']:,.0f}", "📈")
+    _metric_card(k1, "Unique Customers", f"{summary['unique_customers']:,}", "👥",
+                 prev_value=yesterday_summary['unique_customers'] if yesterday_summary else None,
+                 show_comparison=yesterday_summary is not None and quick == "Today")
+    _metric_card(k2, "Total Orders",     f"{summary['total_orders']:,}",    "🛒",
+                 prev_value=yesterday_summary['total_orders'] if yesterday_summary else None,
+                 show_comparison=yesterday_summary is not None and quick == "Today")
+    _metric_card(k3, "Total Revenue",    f"৳{summary['total_revenue']:,.0f}", "💰",
+                 prev_value=yesterday_summary['total_revenue'] if yesterday_summary else None,
+                 show_comparison=yesterday_summary is not None and quick == "Today")
+    _metric_card(k4, "Avg Order Value",  f"৳{summary['avg_order_value']:,.0f}", "📈",
+                 prev_value=yesterday_summary['avg_order_value'] if yesterday_summary else None,
+                 show_comparison=yesterday_summary is not None and quick == "Today")
 
     st.markdown("---")
 
