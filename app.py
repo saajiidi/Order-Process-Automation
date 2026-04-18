@@ -48,6 +48,7 @@ def run_app():
     import os
     from app_modules.wp_tab import render_wp_tab
     from app_modules.customer_analytics import render_customer_analytics_tab
+    from app_modules.customer_extractor import render_customer_extractor_tab
 
     init_state()
     inject_base_styles()
@@ -140,6 +141,9 @@ def run_app():
 
     with nav_tabs[6]:
         render_customer_analytics_tab()
+
+    with nav_tabs[7]:
+        render_customer_extractor_tab()
 
     render_footer()
 

@@ -9,6 +9,7 @@ PRIMARY_NAV = [
     "💬 WhatsApp Messaging",
     "🧩 Delivery Data Parser",
     "👥 Customer Analytics",
+    "📊 Customer Extractor",
 ]
 
 MORE_TOOLS = [
