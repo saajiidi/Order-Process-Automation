@@ -4,6 +4,8 @@ Customer Analytics Module
 Reads order CSVs (from Google Sheets URL or offline upload).
 Auto-detects key columns, counts unique customers (unique phone OR unique email),
 allows date-range selection, and renders a detailed purchase report.
+
+Includes fast Union-Find deduplication for large datasets (200k+ rows).
 """
 
 from __future__ import annotations
@@ -16,6 +18,17 @@ from typing import Optional
 import pandas as pd
 import requests
 import streamlit as st
+
+# Import fast deduplication module
+try:
+    from app_modules.customer_dedup import (
+        UnionFind, build_customer_mapping, 
+        get_customer_metrics, compute_cached_customer_map,
+        render_fast_customer_dashboard
+    )
+    FAST_DEDUP_AVAILABLE = True
+except ImportError:
+    FAST_DEDUP_AVAILABLE = False
 
 
 # ─── Column Detection ────────────────────────────────────────────────────────
@@ -340,6 +353,28 @@ def render_customer_analytics_tab():
 
     # ── Column Detection / Override ───────────────────────────────────────
     cols = st.session_state.get(_SESSION_COLS) or detect_columns(raw_df)
+
+    # ── Fast Union-Find Deduplication Mode (for large datasets) ─────────────
+    use_fast_mode = False
+    if FAST_DEDUP_AVAILABLE and len(raw_df) > 50000:  # Auto-suggest for large datasets
+        st.info(f"📊 Dataset has {len(raw_df):,} rows. Fast Union-Find mode is recommended.")
+        use_fast_mode = st.toggle("⚡ Use Fast Union-Find Deduplication", value=True, key="ca_fast_mode")
+    elif FAST_DEDUP_AVAILABLE:
+        use_fast_mode = st.toggle("⚡ Use Fast Union-Find Deduplication (faster for 200k+ rows)", value=False, key="ca_fast_mode")
+    
+    # If fast mode enabled, use the optimized deduplication dashboard
+    if use_fast_mode and FAST_DEDUP_AVAILABLE:
+        data_source = "Google Sheets" if url_input else "File Upload"
+        render_fast_customer_dashboard(
+            df=raw_df,
+            phone_col=cols.get("phone"),
+            email_col=cols.get("email"),
+            date_col=cols.get("date"),
+            data_source=data_source
+        )
+        # Add separator before the classic view
+        st.markdown("---")
+        st.markdown("#### 📊 Classic Analytics View (below)")
 
     with st.expander("🔎 Auto-detected Columns (click to override)", expanded=False):
         all_cols = ["(none)"] + list(raw_df.columns)
