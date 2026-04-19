@@ -862,8 +862,10 @@ def extract_customers_from_google_sheet(url: str,
     # Merge registries
     st.info("🔄 Merging with existing registry...")
     merged_customers = merge_registries(unique_customers, old_registry)
-    new_count = len(merged_customers) - (len(old_registry) if old_registry is not None else 0)
-    st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {max(0, new_count):,})")
+    # Count truly new customers (those in unique_customers not in old_registry)
+    old_count = len(old_registry) if old_registry is not None else 0
+    new_count = max(0, len(merged_customers) - old_count)
+    st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {new_count:,})")
     
     # Save registry
     if save_registry(merged_customers, save_registry_path):
@@ -930,8 +932,10 @@ def extract_customers_from_year_urls(year_urls: Dict[str, str],
     # Merge registries
     st.info("🔄 Merging with existing registry...")
     merged_customers = merge_registries(unique_customers, old_registry)
-    new_count = len(merged_customers) - (len(old_registry) if old_registry is not None else 0)
-    st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {max(0, new_count):,})")
+    # Count truly new customers (those in unique_customers not in old_registry)
+    old_count = len(old_registry) if old_registry is not None else 0
+    new_count = max(0, len(merged_customers) - old_count)
+    st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {new_count:,})")
     
     # Save registry
     if save_registry(merged_customers, save_registry_path):
@@ -994,8 +998,10 @@ def extract_customers_from_single_tab(url: str,
     # Merge registries
     st.info("🔄 Merging with existing registry...")
     merged_customers = merge_registries(unique_customers, old_registry)
-    new_count = len(merged_customers) - (len(old_registry) if old_registry is not None else 0)
-    st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {max(0, new_count):,})")
+    # Count truly new customers (those in unique_customers not in old_registry)
+    old_count = len(old_registry) if old_registry is not None else 0
+    new_count = max(0, len(merged_customers) - old_count)
+    st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {new_count:,})")
     
     # Save registry
     if save_registry(merged_customers, save_registry_path):
@@ -1084,8 +1090,10 @@ def extract_customers_from_uploaded_files(uploaded_files: Dict[str, any],
     # Merge registries
     st.info("🔄 Merging with existing registry...")
     merged_customers = merge_registries(unique_customers, old_registry)
-    new_count = len(merged_customers) - (len(old_registry) if old_registry is not None else 0)
-    st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {max(0, new_count):,})")
+    # Count truly new customers (those in unique_customers not in old_registry)
+    old_count = len(old_registry) if old_registry is not None else 0
+    new_count = max(0, len(merged_customers) - old_count)
+    st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {new_count:,})")
     
     # Save registry
     if save_registry(merged_customers, save_registry_path):

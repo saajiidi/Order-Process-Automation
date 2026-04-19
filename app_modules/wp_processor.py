@@ -25,14 +25,18 @@ class WhatsAppOrderProcessor:
         }
 
     def clean_phone_number(self, phone: str) -> str:
-        """Clean and format phone number for WhatsApp."""
+        """Clean and format phone number for WhatsApp (Bangladesh format)."""
         if pd.isna(phone):
             return ""
         phone = "".join(filter(str.isdigit, str(phone)))
-        if phone.startswith("0"):
-            return "0" + phone[1:]
-        elif not phone.startswith(("88", "+88")):
-            return "0" + phone
+        if not phone:
+            return ""
+        # Handle country code 88 prefix
+        if phone.startswith("88") and len(phone) > 10:
+            phone = phone[2:]  # Remove 88 country code
+        # Ensure local format with leading 0
+        if not phone.startswith("0"):
+            phone = "0" + phone
         return phone
 
     def format_text(self, text: str) -> str:
@@ -281,17 +285,18 @@ class WhatsAppOrderProcessor:
             )
 
             # Build Product List & Totals for template use
+            from itertools import zip_longest
             product_list = []
-            products = str(row[self.config["product_col"]]).split("\n- ")
-            quantities = str(row[self.config["quantity_col"]]).split("\n- ")
-            prices = str(row[self.config["price_col"]]).split("\n- ")
+            products = [p.strip() for p in str(row[self.config["product_col"]]).split("\n- ") if p.strip()]
+            quantities = [q.strip() for q in str(row[self.config["quantity_col"]]).split("\n- ") if q.strip()]
+            prices = [p.strip() for p in str(row[self.config["price_col"]]).split("\n- ") if p.strip()]
 
-            for i, prod in enumerate(products):
-                item_line = f"- {prod.strip()}"
-                if i < len(quantities):
-                    item_line += f" - Qty: {quantities[i].strip()}"
-                if i < len(prices):
-                    item_line += f" - Price: {prices[i].strip()} BDT"
+            for prod, qty, price in zip_longest(products, quantities, prices, fillvalue=""):
+                item_line = f"- {prod}"
+                if qty:
+                    item_line += f" - Qty: {qty}"
+                if price:
+                    item_line += f" - Price: {price} BDT"
                 product_list.append(item_line)
 
             products_str = "\n".join(product_list)

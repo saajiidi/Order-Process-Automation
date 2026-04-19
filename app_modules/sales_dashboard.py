@@ -296,27 +296,6 @@ def scrub_raw_dataframe(df):
     min_threshold = max(1, int(len(df.columns) * 0.3))
     df = df.dropna(thresh=min_threshold)
 
-    # 3. Filter out rows containing common summary keywords in any column
-    summary_keywords = [
-        "total",
-        "grand total",
-        "summary",
-        "analytics",
-        "chart",
-        "metric",
-    ]
-    mask = (
-        df.stack()
-        .astype(str)
-        .str.lower()
-        .str.contains("|".join(summary_keywords))
-        .unstack()
-        .any(axis=1)
-    )
-    # Only drop if the row is mostly text (summary rows) - be careful not to drop product names with "total"
-    # Actually, a better indicator of summary rows is that they are sparse.
-    # Let's stick to sparsity and dropping based on ID if we have it later.
-
     return df
 
 
@@ -625,7 +604,7 @@ def load_latest_from_gdrive_folder():
         from google.oauth2 import service_account
         from googleapiclient.discovery import build
         from googleapiclient.http import MediaIoBaseDownload
-    except Exception as e:
+    except (ImportError, ModuleNotFoundError) as e:
         raise ImportError(
             "Google Drive client libs are missing. Install google-api-python-client and google-auth."
         ) from e

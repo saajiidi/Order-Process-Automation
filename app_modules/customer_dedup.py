@@ -10,6 +10,7 @@ from typing import Dict, List, Set, Tuple, Optional
 from collections import defaultdict
 from datetime import datetime, date
 import re
+import hashlib
 
 
 class UnionFind:
@@ -290,8 +291,8 @@ def render_fast_customer_dashboard(df: pd.DataFrame,
     
     st.write(f"📋 Using columns: Phone='{phone_col}', Email='{email_col}', Date='{date_col}'")
     
-    # Create hash for cache invalidation
-    df_hash = hash(str(df.shape) + str(df.head(1).to_string()))
+    # Create hash for cache invalidation using DataFrame content
+    df_hash = hashlib.md5(df.to_json(orient='split', date_format='iso').encode()).hexdigest()
     df_json = df.to_json(orient='split', date_format='iso')
     
     # Button to force refresh

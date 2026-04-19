@@ -19,6 +19,12 @@ def save_state():
         "inv_t_col",
         "pathao_res_df",
         "low_stock_threshold",
+        # Customer Extractor keys
+        "ce_df",
+        "ce_cols",
+        "ce_registry",
+        "ce_metadata",
+        "ce_raw",
     ]
 
     for key in keys_to_persist:

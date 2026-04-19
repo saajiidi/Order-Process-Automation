@@ -160,7 +160,7 @@ def render_pathao_tab():
                 links = []
                 for _, row in df_v.iterrows():
                     token = f"{random.getrandbits(32):08x}"
-                    order_id = str(row.get("Order ID", "VERIFY"))
+                    order_id = str(row.get("MerchantOrderId", "VERIFY"))
                     links.append(f"{domain}/verify?id={order_id}&token={token}")
                 df_v["Verification Link"] = links
                 st.session_state.pathao_vlink_df = df_v
