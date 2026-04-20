@@ -10,6 +10,7 @@ Compatible with Streamlit apps.
 
 import re
 import io
+import gc
 from datetime import datetime
 from collections import Counter
 from typing import Dict, List, Optional, Tuple, Set
@@ -23,6 +24,419 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils.dataframe import dataframe_to_rows
 
 warnings.filterwarnings('ignore', category=UserWarning)
+
+# ==========================
+#  MEMORY MANAGEMENT
+# ==========================
+class MemoryErrorHandler:
+    """
+    Handles memory allocation errors gracefully.
+    Provides chunked processing, fallback modes, and ensures app continues running.
+    """
+    
+    @staticmethod
+    def check_memory_available(min_mb: int = 100) -> Tuple[bool, int]:
+        """
+        Check if minimum memory is available.
+        
+        Args:
+            min_mb: Minimum required memory in MB
+            
+        Returns:
+            Tuple of (has_enough_memory, available_mb)
+        """
+        try:
+            import psutil
+            memory = psutil.virtual_memory()
+            available_mb = memory.available // (1024 * 1024)
+            return available_mb >= min_mb, available_mb
+        except ImportError:
+            # psutil not available, assume memory is sufficient
+            return True, 0
+        except Exception:
+            return True, 0
+    
+    @staticmethod
+    def estimate_df_memory(df: pd.DataFrame) -> int:
+        """
+        Estimate DataFrame memory usage in MB.
+        
+        Args:
+            df: DataFrame to estimate
+            
+        Returns:
+            Estimated memory in MB
+        """
+        try:
+            return df.memory_usage(deep=True).sum() // (1024 * 1024)
+        except Exception:
+            # Fallback estimation: ~100 bytes per cell
+            return (len(df) * len(df.columns) * 100) // (1024 * 1024)
+    
+    @staticmethod
+    def warn_if_low_memory(df: pd.DataFrame, operation: str = "operation"):
+        """
+        Warn user if memory appears low for the operation.
+        """
+        has_memory, available_mb = MemoryErrorHandler.check_memory_available(0)
+        needed_mb = MemoryErrorHandler.estimate_df_memory(df) * 3  # 3x for processing overhead
+        
+        if has_memory and available_mb > 0 and available_mb < needed_mb:
+            st.warning(
+                f"⚠️ Low memory warning for {operation}: "
+                f"~{available_mb}MB available, ~{needed_mb}MB recommended. "
+                f"Processing may be slower or fail. Consider closing other applications."
+            )
+    
+    @staticmethod
+    def safe_concat(dfs: List[pd.DataFrame], chunk_size: int = 50000, 
+                     on_error: str = "partial") -> Tuple[pd.DataFrame, Dict]:
+        """
+        Safely concatenate dataframes with memory protection.
+        
+        Args:
+            dfs: List of dataframes to concatenate
+            chunk_size: Maximum rows to process at once
+            on_error: "partial" (return what we have), "empty" (return empty df), "raise" (re-raise)
+        
+        Returns:
+            Tuple of (concatenated_df, metadata_dict)
+        """
+        if not dfs:
+            return pd.DataFrame(), {"status": "empty", "rows": 0, "chunks": 0}
+        
+        metadata = {
+            "total_input_dfs": len(dfs),
+            "total_input_rows": sum(len(df) for df in dfs),
+            "chunks": 0,
+            "errors": [],
+            "status": "success"
+        }
+        
+        try:
+            # Try normal concat first for small datasets
+            total_rows = metadata["total_input_rows"]
+            if total_rows < chunk_size:
+                result = pd.concat(dfs, ignore_index=True)
+                metadata["rows"] = len(result)
+                return result, metadata
+        except MemoryError as e:
+            metadata["errors"].append(f"Initial concat failed: {str(e)}")
+            st.warning("⚠️ Memory limit reached. Switching to chunked processing...")
+        except Exception as e:
+            metadata["errors"].append(f"Unexpected error in concat: {str(e)}")
+        
+        # Chunked concatenation for large datasets
+        result_chunks = []
+        current_chunk = []
+        current_chunk_rows = 0
+        
+        for i, df in enumerate(dfs):
+            try:
+                df_rows = len(df)
+                
+                # If this single df exceeds chunk size, we need to process it in parts
+                if df_rows > chunk_size:
+                    st.info(f"📦 Processing large dataframe {i+1} in parts ({df_rows:,} rows)...")
+                    for start_idx in range(0, df_rows, chunk_size):
+                        try:
+                            end_idx = min(start_idx + chunk_size, df_rows)
+                            part = df.iloc[start_idx:end_idx].copy()
+                            result_chunks.append(part)
+                            metadata["chunks"] += 1
+                            
+                            # Force garbage collection between chunks
+                            gc.collect()
+                        except MemoryError as e:
+                            metadata["errors"].append(f"Chunk {start_idx}-{end_idx} failed: {str(e)}")
+                            st.warning(f"⚠️ Skipping rows {start_idx:,}-{end_idx:,} due to memory limit")
+                            if on_error == "raise":
+                                raise
+                else:
+                    # Check if adding this df would exceed chunk size
+                    if current_chunk_rows + df_rows > chunk_size and current_chunk:
+                        # Process current chunk
+                        try:
+                            combined_chunk = pd.concat(current_chunk, ignore_index=True)
+                            result_chunks.append(combined_chunk)
+                            metadata["chunks"] += 1
+                            
+                            # Reset chunk
+                            current_chunk = [df]
+                            current_chunk_rows = df_rows
+                            
+                            gc.collect()
+                        except MemoryError as e:
+                            metadata["errors"].append(f"Chunk concat failed: {str(e)}")
+                            if on_error == "raise":
+                                raise
+                            # Try to salvage individual dfs
+                            for single_df in current_chunk:
+                                result_chunks.append(single_df)
+                                metadata["chunks"] += 1
+                            current_chunk = [df]
+                            current_chunk_rows = df_rows
+                    else:
+                        current_chunk.append(df)
+                        current_chunk_rows += df_rows
+            except Exception as e:
+                metadata["errors"].append(f"DataFrame {i} failed: {str(e)}")
+                st.warning(f"⚠️ Could not process dataframe {i+1}, skipping...")
+                if on_error == "raise":
+                    raise
+        
+        # Process remaining chunk
+        if current_chunk:
+            try:
+                combined_chunk = pd.concat(current_chunk, ignore_index=True)
+                result_chunks.append(combined_chunk)
+                metadata["chunks"] += 1
+            except MemoryError as e:
+                metadata["errors"].append(f"Final chunk concat failed: {str(e)}")
+                # Add individually
+                for single_df in current_chunk:
+                    result_chunks.append(single_df)
+                    metadata["chunks"] += 1
+        
+        # Final combination
+        if not result_chunks:
+            metadata["status"] = "empty"
+            return pd.DataFrame(), metadata
+        
+        try:
+            if len(result_chunks) == 1:
+                final_result = result_chunks[0]
+            else:
+                final_result = pd.concat(result_chunks, ignore_index=True)
+            metadata["rows"] = len(final_result)
+            metadata["status"] = "partial" if metadata["errors"] else "success"
+            return final_result, metadata
+        except MemoryError as e:
+            metadata["errors"].append(f"Final concat failed: {str(e)}")
+            metadata["status"] = "failed"
+            
+            if on_error == "partial" and result_chunks:
+                # Return largest chunk we have
+                largest = max(result_chunks, key=len)
+                st.warning(f"⚠️ Returning largest available chunk ({len(largest):,} rows)")
+                metadata["rows"] = len(largest)
+                return largest, metadata
+            elif on_error == "empty":
+                return pd.DataFrame(), metadata
+            else:
+                raise
+    
+    @staticmethod
+    def safe_groupby(df: pd.DataFrame, group_col: str, agg_rules: Dict,
+                     on_error: str = "partial") -> Tuple[pd.DataFrame, Dict]:
+        """
+        Safely perform groupby aggregation with memory protection.
+        """
+        metadata = {"status": "success", "errors": []}
+        
+        if df.empty:
+            return df, metadata
+        
+        try:
+            result = df.groupby(group_col).agg(agg_rules)
+            metadata["rows"] = len(result)
+            return result, metadata
+        except MemoryError as e:
+            metadata["errors"].append(f"Groupby failed: {str(e)}")
+            st.warning("⚠️ Memory limit during grouping. Trying alternative approach...")
+            
+            if on_error == "partial":
+                # Try processing in chunks by splitting the dataframe
+                try:
+                    unique_keys = df[group_col].unique()
+                    chunk_size = max(1, len(unique_keys) // 4)  # Process 1/4 at a time
+                    
+                    result_parts = []
+                    for i in range(0, len(unique_keys), chunk_size):
+                        key_subset = unique_keys[i:i + chunk_size]
+                        subset_df = df[df[group_col].isin(key_subset)]
+                        try:
+                            part_result = subset_df.groupby(group_col).agg(agg_rules)
+                            result_parts.append(part_result)
+                            gc.collect()
+                        except MemoryError:
+                            st.warning(f"⚠️ Skipping key subset {i}-{i+chunk_size}")
+                            continue
+                    
+                    if result_parts:
+                        final_result = pd.concat(result_parts)
+                        metadata["rows"] = len(final_result)
+                        metadata["status"] = "partial"
+                        return final_result, metadata
+                except Exception as e2:
+                    metadata["errors"].append(f"Chunked groupby failed: {str(e2)}")
+            
+            if on_error == "empty":
+                return pd.DataFrame(), metadata
+            raise
+    
+    @staticmethod
+    def safe_merge_registries(new_customers: pd.DataFrame, 
+                              old_registry: Optional[pd.DataFrame],
+                              chunk_size: int = 1000) -> Tuple[pd.DataFrame, Dict]:
+        """
+        Memory-safe registry merging with chunked processing.
+        """
+        metadata = {"status": "success", "new_count": len(new_customers), 
+                   "old_count": len(old_registry) if old_registry is not None else 0,
+                   "errors": []}
+        
+        if old_registry is None or old_registry.empty:
+            new_customers = new_customers.copy()
+            new_customers['first_seen'] = datetime.now()
+            new_customers['last_updated'] = datetime.now()
+            metadata["final_count"] = len(new_customers)
+            return new_customers, metadata
+        
+        try:
+            # Try normal merge first for small datasets
+            if len(new_customers) < chunk_size and len(old_registry) < chunk_size * 2:
+                result = merge_registries(new_customers, old_registry)
+                metadata["final_count"] = len(result)
+                return result, metadata
+        except MemoryError:
+            st.warning("⚠️ Memory limit during merge. Using chunked processing...")
+        except Exception as e:
+            metadata["errors"].append(f"Initial merge failed: {str(e)}")
+        
+        # Chunked processing
+        # Prepare old registry lookup keys
+        old_registry = old_registry.copy()
+        old_registry['primary_email'] = old_registry['primary_email'].fillna('').astype(str)
+        old_registry['primary_phone'] = old_registry['primary_phone'].fillna('').astype(str)
+        old_registry['match_email'] = old_registry['primary_email'].str.lower()
+        old_registry['match_phone'] = old_registry['primary_phone'].apply(normalize_phone)
+        
+        new_customers = new_customers.copy()
+        new_customers['primary_email'] = new_customers['primary_email'].fillna('').astype(str)
+        new_customers['primary_phone'] = new_customers['primary_phone'].fillna('').astype(str)
+        new_customers['match_email'] = new_customers['primary_email'].str.lower()
+        new_customers['match_phone'] = new_customers['primary_phone'].apply(normalize_phone)
+        
+        updated_rows = []
+        total_rows = len(new_customers)
+        
+        # Create progress indicators
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        start_time = datetime.now()
+        
+        processed_emails = set()
+        processed_phones = set()
+        
+        for idx in range(0, total_rows, chunk_size):
+            chunk_end = min(idx + chunk_size, total_rows)
+            chunk = new_customers.iloc[idx:chunk_end].copy()
+            
+            try:
+                for _, new_row in chunk.iterrows():
+                    match_email = new_row['match_email']
+                    match_phone = new_row['match_phone']
+                    
+                    # Skip if already processed this contact
+                    if match_email and match_email in processed_emails:
+                        continue
+                    if match_phone and match_phone in processed_phones:
+                        continue
+                    
+                    # Find match in old registry
+                    old_match = old_registry[
+                        ((old_registry['match_email'] == match_email) & (match_email != "")) |
+                        ((old_registry['match_phone'] == match_phone) & (match_phone != ""))
+                    ]
+                    
+                    if not old_match.empty:
+                        # Update existing customer (simplified)
+                        old_row = old_match.iloc[0].copy()
+                        old_row['last_updated'] = datetime.now()
+                        updated_rows.append(old_row)
+                        
+                        if match_email:
+                            processed_emails.add(match_email)
+                        if match_phone:
+                            processed_phones.add(match_phone)
+                    else:
+                        # New customer
+                        new_row_copy = new_row.copy()
+                        new_row_copy['first_seen'] = datetime.now()
+                        new_row_copy['last_updated'] = datetime.now()
+                        updated_rows.append(new_row_copy)
+                        
+                        if match_email:
+                            processed_emails.add(match_email)
+                        if match_phone:
+                            processed_phones.add(match_phone)
+                
+                # Update progress
+                progress = chunk_end / total_rows
+                progress_bar.progress(min(progress, 0.99))
+                elapsed = (datetime.now() - start_time).total_seconds()
+                rate = chunk_end / elapsed if elapsed > 0 else 0
+                status_text.text(f"🔄 Merging: {chunk_end:,} / {total_rows:,} ({int(progress*100)}%) | {rate:.0f} rows/sec")
+                
+                # Force garbage collection
+                gc.collect()
+            except MemoryError as e:
+                metadata["errors"].append(f"Chunk {idx}-{chunk_end} failed: {str(e)}")
+                st.warning(f"⚠️ Memory issue at rows {idx:,}-{chunk_end:,}, some customers may be skipped")
+                gc.collect()
+                continue
+        
+        progress_bar.progress(1.0)
+        total_time = (datetime.now() - start_time).total_seconds()
+        status_text.text(f"✅ Merged {len(updated_rows):,} customers in {total_time:.1f}s")
+        
+        # Build final DataFrame
+        if updated_rows:
+            final_df = pd.DataFrame(updated_rows)
+            # Drop temporary columns
+            for col in ['match_email', 'match_phone']:
+                if col in final_df.columns:
+                    final_df.drop(columns=[col], inplace=True)
+            metadata["final_count"] = len(final_df)
+            metadata["status"] = "partial" if metadata["errors"] else "success"
+            return final_df, metadata
+        else:
+            metadata["status"] = "failed"
+            return old_registry, metadata
+
+
+def with_memory_protection(func, *args, fallback_value=None, **kwargs):
+    """
+    Wrapper to execute a function with memory error protection.
+    
+    Args:
+        func: Function to execute
+        fallback_value: Value to return if memory error occurs
+        *args, **kwargs: Arguments to pass to func
+    
+    Returns:
+        Tuple of (result, success_boolean, error_message)
+    """
+    gc.collect()  # Clear memory before operation
+    
+    try:
+        result = func(*args, **kwargs)
+        return result, True, None
+    except MemoryError as e:
+        gc.collect()
+        error_msg = f"Memory allocation failed: {str(e)}"
+        st.error(f"⚠️ {error_msg}")
+        st.info("💡 Try: 1) Closing other applications, 2) Processing smaller dataset, 3) Restarting the app")
+        if fallback_value is not None:
+            return fallback_value, False, error_msg
+        raise
+    except Exception as e:
+        error_msg = f"Error: {str(e)}"
+        st.error(error_msg)
+        if fallback_value is not None:
+            return fallback_value, False, error_msg
+        raise
 
 
 # ==========================
@@ -301,8 +715,20 @@ def load_year_tabs_from_sheet(url_or_id: str, api_key: Optional[str] = None) -> 
             "3. The URL is a public share link".format(current_year)
         )
     
-    combined = pd.concat(all_data, ignore_index=True)
-    st.success(f"✅ Combined {len(loaded_tabs)} year tabs with {len(combined):,} total rows")
+    # Use memory-safe concatenation
+    combined, concat_meta = MemoryErrorHandler.safe_concat(all_data, chunk_size=50000, on_error="partial")
+    
+    if concat_meta["status"] == "failed":
+        st.error("❌ Could not combine data due to memory limitations")
+        raise MemoryError("Failed to concatenate data: " + "; ".join(concat_meta.get("errors", [])))
+    elif concat_meta["status"] == "partial":
+        st.warning(f"⚠️ Partial data loaded due to memory constraints. Using {len(combined):,} rows.")
+    else:
+        st.success(f"✅ Combined {len(loaded_tabs)} year tabs with {len(combined):,} total rows")
+    
+    if concat_meta.get("errors"):
+        st.caption(f"Processing notes: {len(concat_meta['errors'])} chunks had issues")
+    
     return combined, loaded_tabs
 
 
@@ -451,7 +877,16 @@ def group_customers(df: pd.DataFrame, cols: Dict[str, Optional[str]]) -> pd.Data
     if order_col and order_col in df.columns:
         agg_rules[order_col] = combine_order_ids
     
-    grouped = df.groupby("_group_key").agg(agg_rules)
+    # Use memory-safe groupby
+    grouped, groupby_meta = MemoryErrorHandler.safe_groupby(
+        df, "_group_key", agg_rules, on_error="partial"
+    )
+    
+    if groupby_meta["status"] == "failed":
+        st.error("❌ Could not group customers due to memory limitations")
+        raise MemoryError("Failed to group customers: " + "; ".join(groupby_meta.get("errors", [])))
+    elif groupby_meta["status"] == "partial":
+        st.warning(f"⚠️ Partial customer grouping due to memory constraints. Processed {len(grouped):,} groups.")
     
     # Debug: show columns
     st.write("📊 Grouped columns:", list(grouped.columns))
@@ -832,6 +1267,11 @@ def extract_customers_from_google_sheet(url: str,
         raw_df, loaded_tabs = load_year_tabs_from_sheet(url)
         st.success(f"✅ Loaded {len(loaded_tabs)} year tabs: {', '.join(loaded_tabs)}")
         st.success(f"✅ Total {len(raw_df):,} rows from all years.")
+        
+        # Memory warning for large datasets
+        if len(raw_df) > 50000:
+            MemoryErrorHandler.warn_if_low_memory(raw_df, "customer processing")
+            st.info(f"💾 Loaded data size: ~{MemoryErrorHandler.estimate_df_memory(raw_df)}MB. Using chunked processing if needed.")
     except Exception as e:
         st.warning(f"Year tab loading failed: {e}. Falling back to single tab...")
         try:
@@ -859,12 +1299,23 @@ def extract_customers_from_google_sheet(url: str,
     # Load existing registry
     old_registry = load_registry(save_registry_path)
     
-    # Merge registries
+    # Merge registries with memory protection
     st.info("🔄 Merging with existing registry...")
-    merged_customers = merge_registries(unique_customers, old_registry)
+    merged_customers, merge_meta = MemoryErrorHandler.safe_merge_registries(
+        unique_customers, old_registry, chunk_size=1000
+    )
+    
+    if merge_meta["status"] == "failed":
+        st.error("❌ Could not merge registries due to memory limitations")
+        st.warning("⚠️ Using new customers only, without merging with existing registry")
+        merged_customers = unique_customers.copy()
+        merged_customers['first_seen'] = datetime.now()
+        merged_customers['last_updated'] = datetime.now()
+    
     # Count truly new customers (those in unique_customers not in old_registry)
-    old_count = len(old_registry) if old_registry is not None else 0
-    new_count = max(0, len(merged_customers) - old_count)
+    old_count = merge_meta.get("old_count", 0)
+    final_count = merge_meta.get("final_count", len(merged_customers))
+    new_count = max(0, final_count - old_count)
     st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {new_count:,})")
     
     # Save registry
@@ -875,8 +1326,9 @@ def extract_customers_from_google_sheet(url: str,
         "total_unique_customers": len(merged_customers),
         "new_customers_added": max(0, new_count),
         "last_run": datetime.now().isoformat(),
-        "source_url": url,
-        "loaded_tabs": loaded_tabs
+        "source_urls": year_urls,
+        "loaded_tabs": loaded_tabs,
+        "memory_status": merge_meta.get("status", "unknown")
     }
     
     return merged_customers, metadata, raw_df
@@ -909,8 +1361,16 @@ def extract_customers_from_year_urls(year_urls: Dict[str, str],
     if not all_data:
         raise ValueError("No year data could be loaded from any of the provided URLs")
     
-    raw_df = pd.concat(all_data, ignore_index=True)
-    st.success(f"✅ Combined {len(loaded_tabs)} years with {len(raw_df):,} total rows")
+    # Use memory-safe concatenation
+    raw_df, concat_meta = MemoryErrorHandler.safe_concat(all_data, chunk_size=50000, on_error="partial")
+    
+    if concat_meta["status"] == "failed":
+        st.error("❌ Could not combine year data due to memory limitations")
+        raise MemoryError("Failed to concatenate year data: " + "; ".join(concat_meta.get("errors", [])))
+    elif concat_meta["status"] == "partial":
+        st.warning(f"⚠️ Partial year data loaded due to memory constraints. Using {len(raw_df):,} rows.")
+    else:
+        st.success(f"✅ Combined {len(loaded_tabs)} years with {len(raw_df):,} total rows")
     
     # Detect columns
     st.info("🔍 Detecting columns...")
@@ -995,12 +1455,23 @@ def extract_customers_from_single_tab(url: str,
     # Load existing registry
     old_registry = load_registry(save_registry_path)
     
-    # Merge registries
+    # Merge registries with memory protection
     st.info("🔄 Merging with existing registry...")
-    merged_customers = merge_registries(unique_customers, old_registry)
+    merged_customers, merge_meta = MemoryErrorHandler.safe_merge_registries(
+        unique_customers, old_registry, chunk_size=1000
+    )
+    
+    if merge_meta["status"] == "failed":
+        st.error("❌ Could not merge registries due to memory limitations")
+        st.warning("⚠️ Using new customers only, without merging with existing registry")
+        merged_customers = unique_customers.copy()
+        merged_customers['first_seen'] = datetime.now()
+        merged_customers['last_updated'] = datetime.now()
+    
     # Count truly new customers (those in unique_customers not in old_registry)
-    old_count = len(old_registry) if old_registry is not None else 0
-    new_count = max(0, len(merged_customers) - old_count)
+    old_count = merge_meta.get("old_count", 0)
+    final_count = merge_meta.get("final_count", len(merged_customers))
+    new_count = max(0, final_count - old_count)
     st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {new_count:,})")
     
     # Save registry
@@ -1012,7 +1483,8 @@ def extract_customers_from_single_tab(url: str,
         "new_customers_added": max(0, new_count),
         "last_run": datetime.now().isoformat(),
         "source_url": url,
-        "loaded_tabs": [tab_name]
+        "loaded_tabs": [tab_name],
+        "memory_status": merge_meta.get("status", "unknown")
     }
     
     return merged_customers, metadata, raw_df
@@ -1067,8 +1539,16 @@ def extract_customers_from_uploaded_files(uploaded_files: Dict[str, any],
     if not all_data:
         raise ValueError("No data could be loaded from any of the uploaded files")
     
-    raw_df = pd.concat(all_data, ignore_index=True)
-    st.success(f"✅ Combined {len(loaded_tabs)} files with {len(raw_df):,} total rows")
+    # Use memory-safe concatenation
+    raw_df, concat_meta = MemoryErrorHandler.safe_concat(all_data, chunk_size=50000, on_error="partial")
+    
+    if concat_meta["status"] == "failed":
+        st.error("❌ Could not combine file data due to memory limitations")
+        raise MemoryError("Failed to concatenate file data: " + "; ".join(concat_meta.get("errors", [])))
+    elif concat_meta["status"] == "partial":
+        st.warning(f"⚠️ Partial file data loaded due to memory constraints. Using {len(raw_df):,} rows.")
+    else:
+        st.success(f"✅ Combined {len(loaded_tabs)} files with {len(raw_df):,} total rows")
     
     # Detect columns
     st.info("🔍 Detecting columns...")
@@ -1087,12 +1567,23 @@ def extract_customers_from_uploaded_files(uploaded_files: Dict[str, any],
     # Load existing registry
     old_registry = load_registry(save_registry_path)
     
-    # Merge registries
+    # Merge registries with memory protection
     st.info("🔄 Merging with existing registry...")
-    merged_customers = merge_registries(unique_customers, old_registry)
+    merged_customers, merge_meta = MemoryErrorHandler.safe_merge_registries(
+        unique_customers, old_registry, chunk_size=1000
+    )
+    
+    if merge_meta["status"] == "failed":
+        st.error("❌ Could not merge registries due to memory limitations")
+        st.warning("⚠️ Using new customers only, without merging with existing registry")
+        merged_customers = unique_customers.copy()
+        merged_customers['first_seen'] = datetime.now()
+        merged_customers['last_updated'] = datetime.now()
+    
     # Count truly new customers (those in unique_customers not in old_registry)
-    old_count = len(old_registry) if old_registry is not None else 0
-    new_count = max(0, len(merged_customers) - old_count)
+    old_count = merge_meta.get("old_count", 0)
+    final_count = merge_meta.get("final_count", len(merged_customers))
+    new_count = max(0, final_count - old_count)
     st.success(f"✅ Total unique customers: {len(merged_customers):,} (new: {new_count:,})")
     
     # Save registry
@@ -1104,7 +1595,8 @@ def extract_customers_from_uploaded_files(uploaded_files: Dict[str, any],
         "new_customers_added": max(0, new_count),
         "last_run": datetime.now().isoformat(),
         "source_files": {y: f.name for y, f in uploaded_files.items()},
-        "loaded_tabs": loaded_tabs
+        "loaded_tabs": loaded_tabs,
+        "memory_status": merge_meta.get("status", "unknown")
     }
     
     return merged_customers, metadata, raw_df
@@ -1262,6 +1754,20 @@ def render_customer_extractor_tab():
                     st.session_state["ce_metadata"] = metadata
                     st.session_state["ce_raw"] = raw_df
                     st.rerun()
+                except MemoryError as e:
+                    gc.collect()
+                    st.error("⚠️ Memory Error: The system ran out of memory while processing.")
+                    st.warning(f"Details: {str(e)}")
+                    st.info("""
+                    💡 **Recovery Options:**
+                    1. **Close other applications** to free up RAM
+                    2. **Process fewer years** - try loading one year at a time
+                    3. **Restart the Streamlit app** to clear memory
+                    4. **Use the 'Single URL (One specific tab)' mode** for smaller datasets
+                    5. **Split your data** - divide the Google Sheet into smaller chunks
+                    
+                    The app is still running. You can try again with a different approach.
+                    """)
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
     
