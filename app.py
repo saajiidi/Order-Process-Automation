@@ -47,14 +47,37 @@ def run_app():
     from app_modules.error_handler import ERROR_LOG_FILE
     import os
     from app_modules.wp_tab import render_wp_tab
-    from app_modules.customer_analytics import render_customer_analytics_tab
-    from app_modules.customer_extractor import render_customer_extractor_tab
+    from app_modules.unified_customer import render_unified_customer_tab
+    from app_modules.sheet_insights import render_sheet_insights_tab
 
     init_state()
     inject_base_styles()
 
+    # Define navigation options
+    NAV_OPTIONS = [
+        "📈 Live Dashboard",
+        "📦 Bulk Order Processer", 
+        "📊 Inventory Distribution",
+        "💬 WhatsApp Messaging",
+        "🧩 Delivery Data Parser",
+        "👥 Customer Analytics",
+        "📊 Sheet Insights",
+    ]
+    
     with st.sidebar:
         render_sidebar_branding()
+        
+        # Main Navigation
+        st.subheader("🧭 Navigation")
+        selected_nav = st.radio(
+            "Select Module",
+            NAV_OPTIONS,
+            index=st.session_state.get("nav_index", 0),
+            label_visibility="collapsed"
+        )
+        st.session_state.nav_index = NAV_OPTIONS.index(selected_nav)
+        
+        st.divider()
         st.subheader("Global Settings")
 
         st.session_state.show_animation = st.toggle(
@@ -119,31 +142,23 @@ def run_app():
     if st.session_state.get("show_animation"):
         render_bike_animation()
 
-    nav_tabs = st.tabs(PRIMARY_NAV)
-
-    with nav_tabs[0]:
+    # Render selected module based on sidebar radio selection
+    selected_module = NAV_OPTIONS[st.session_state.get("nav_index", 0)]
+    
+    if selected_module == "📈 Live Dashboard":
         render_live_tab()
-
-    with nav_tabs[1]:
-        render_manual_tab()
-
-    with nav_tabs[2]:
+    elif selected_module == "📦 Bulk Order Processer":
         render_pathao_tab()
-
-    with nav_tabs[3]:
+    elif selected_module == "📊 Inventory Distribution":
         render_distribution_tab(search_q=st.session_state.get("inv_matrix_search", ""))
-
-    with nav_tabs[4]:
+    elif selected_module == "💬 WhatsApp Messaging":
         render_wp_tab()
-
-    with nav_tabs[5]:
+    elif selected_module == "🧩 Delivery Data Parser":
         render_fuzzy_parser_tab()
-
-    with nav_tabs[6]:
-        render_customer_analytics_tab()
-
-    with nav_tabs[7]:
-        render_customer_extractor_tab()
+    elif selected_module == "👥 Customer Analytics":
+        render_unified_customer_tab()
+    elif selected_module == "📊 Sheet Insights":
+        render_sheet_insights_tab()
 
     render_footer()
 

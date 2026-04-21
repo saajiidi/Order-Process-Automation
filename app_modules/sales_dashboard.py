@@ -1256,9 +1256,10 @@ def render_live_tab():
     def _reset_live_state():
         st.session_state.live_sync_time = None
         st.session_state.live_res = None
+        st.session_state.live_uploaded_file = None
 
     render_reset_confirm("Live Dashboard", "live", _reset_live_state)
-    """Always running dashboard from selected source."""
+    """Always running dashboard from selected source or upload."""
     tz_bd = timezone(timedelta(hours=6))
     current_t = datetime.now(tz_bd).strftime("%B %d, %Y %I:%M %p")
     logo_src = "https://logo.clearbit.com/deencommerce.com"
@@ -1306,7 +1307,8 @@ def render_live_tab():
     """
     st.markdown(welcome_html, unsafe_allow_html=True)
 
-    source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
+    # Source selection with Upload option added
+    source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder", "📁 File Upload"]
     default_idx = 0
     if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
         default_idx = 1
@@ -1315,7 +1317,30 @@ def render_live_tab():
     elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
         default_idx = 2
 
-    source_mode = source_options[default_idx]
+    source_mode = st.radio(
+        "Select Data Source",
+        source_options,
+        index=default_idx,
+        horizontal=True,
+        key="live_source_mode"
+    )
+    
+    # Handle File Upload option
+    uploaded_file = None
+    if source_mode == "📁 File Upload":
+        st.markdown("---")
+        st.subheader("📁 Upload Sales Data")
+        uploaded_file = st.file_uploader(
+            "Upload CSV or Excel file",
+            type=["csv", "xlsx", "xls"],
+            key="live_file_upload"
+        )
+        if uploaded_file:
+            st.session_state.live_uploaded_file = uploaded_file
+            st.success(f"✅ File ready: {uploaded_file.name}")
+        elif st.session_state.get("live_uploaded_file"):
+            uploaded_file = st.session_state.live_uploaded_file
+            st.info(f"📎 Using cached file: {uploaded_file.name}")
 
     # ── Force Refresh + Freshness row ───────────────────────────────────
     rc1, rc2 = st.columns([3, 1])
@@ -1336,11 +1361,21 @@ def render_live_tab():
         st.session_state.live_sync_time = None
         st.rerun()
 
-    if hasattr(st, "autorefresh"):
+    if hasattr(st, "autorefresh") and source_mode != "📁 File Upload":
         st.autorefresh(interval=30000, key="live_autorefresh")
 
     try:
-        df_live, source_name, modified_at = load_live_source(source_mode)
+        # Handle uploaded file case
+        if source_mode == "📁 File Upload":
+            if uploaded_file is None:
+                st.info("👆 Please upload a file to see the dashboard.")
+                return
+            df_live = read_sales_file(uploaded_file, uploaded_file.name)
+            df_live = scrub_raw_dataframe(df_live)
+            source_name = uploaded_file.name
+            modified_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            df_live, source_name, modified_at = load_live_source(source_mode)
 
         auto_cols = find_columns(df_live)
         missing_required = [k for k in ["name", "cost", "qty"] if k not in auto_cols]
