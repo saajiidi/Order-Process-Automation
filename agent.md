@@ -23,7 +23,7 @@ Order-Process-Automation/
 │
 ├── app_modules/                    # Core application modules
 │   ├── unified_customer.py         # 👥 Merged Customer Analytics + Extractor
-│   ├── sheet_insights.py           # 📊 Insights from specific Google Sheet
+│   ├── return_insight.py           # 🔄 Return Insight - Return/refund analysis with fuzzy matching
 │   ├── sales_dashboard.py          # 📈 Live Dashboard with upload option
 │   ├── customer_extractor.py       # 📊 Customer extraction with memory management
 │   ├── customer_analytics.py       # (legacy - merged into unified_customer)
@@ -60,7 +60,7 @@ The application uses a **sidebar radio button navigation** with 7 main modules:
 4. **💬 WhatsApp Messaging** - Customer communication interface
 5. **🧩 Delivery Data Parser** - Parse and normalize delivery data
 6. **👥 Customer Analytics** - Unified customer analysis (merged module)
-7. **📊 Sheet Insights** - Insights from connected Google Sheets
+7. **� Return Insight** - Return/refund analysis with fuzzy product matching
 
 ---
 
@@ -109,28 +109,63 @@ The application uses a **sidebar radio button navigation** with 7 main modules:
 - `build_customer_report()` - Generate per-customer aggregations
 - `render_card_metrics()` - Modern card-based KPI display
 
-### 3. 📊 Sheet Insights (sheet_insights.py) ⭐ NEW
+### 3. 🔄 Return Insight (return_insight.py) ⭐ NEW
 
-**Purpose**: Dedicated insights module for specific Google Sheet data
+**Purpose**: Return/refund analysis with fuzzy matching for messy product data
 
 **Default URL**: `https://docs.google.com/spreadsheets/d/e/2PACX-1vQ4j3i94IWVlVYI5gErxzfmmaYNiirGqnrncRKrDCbHvmLYpzH9l4_etjYmfCoDj_Gv-_mps2gnufXE/pub?gid=0&single=true&output=csv`
 
 **Features**:
-- Load from default or custom Google Sheet URL
-- 5-card metric row (Rows, Revenue, Items, Customers, Avg Order)
-- Daily trend line and bar charts
-- Hourly pattern analysis
-- Top products by revenue with pie chart
-- Status breakdown visualization
-- Raw data explorer with search filters
-- CSV export
+- **Smart Incremental Loading** - Load once, then only add new rows on updates
+- Load return data from Google Sheet URL
+- **Delivery Issue Categorization** - Classifies returns into 4 types:
+  - **Non Paid Return**: Customer didn't pay anything
+  - **Paid Return/Reverse**: Customer paid delivery fee only (50tk inside Dhaka / 90tk outside)
+  - **Partial**: Customer took some items, paid for those, returned rest
+  - **Exchange**: Size/variant change - no revenue deducted
+  - **Others**: Uncategorized (excluded from system analysis)
+- **Product Details Parsing** - Parses "Issue Or Product Details" column:
+  - Format: `Product name – size (xCount) – SKU`
+  - Multiple items separated by `;`
+  - Extracts name, size, count, SKU
+- **Fuzzy Product Matching** - Groups similar product names (SequenceMatcher)
+- Return reason extraction and categorization
+- 6-card metric row (Returns, Items, Refunds, Avg Value, Customers, Products)
+- Daily return trends and velocity tracking
+- Hourly return pattern analysis
+- Most returned products analysis
+- Top returning customers identification
+- Raw data explorer with reason filtering
+- CSV export with cleaned data
 
 **Key Functions**:
 - `render_sheet_insights_tab()` - Main entry point
-- `load_sheet_data()` - Fetch from URL
-- `compute_insights()` - Comprehensive analytics
-- `render_trend_charts()` - Time-series visualizations
-- `render_product_analysis()` - Product-focused insights
+- `load_incremental_data()` - Smart incremental loading with row hashing
+- `_compute_row_hashes()` - Hash-based duplicate detection
+- `categorize_delivery_issue()` - Classifies return by Delivery Issue type
+- `parse_product_details()` - Parses Issue/Product Details column
+- `fuzzy_match_score()` - Calculate string similarity
+- `find_similar_products()` - Group similar product names
+- `standardize_product_name()` - Clean product names
+- `extract_return_reason()` - Categorize return reasons
+- `compute_insights()` - Return-focused analytics with fuzzy grouping
+- `render_return_trend_charts()` - Time-series visualizations
+- `render_return_product_analysis()` - Fuzzy-grouped + parsed product insights
+- `render_reason_analysis()` - Return reasons breakdown
+- `render_return_type_breakdown()` - Delivery Issue breakdown
+
+**Incremental Loading System**:
+- **Initial Load**: Loads all data from sheet, stores row hashes in session state
+- **Check for New Rows**: Only fetches and appends rows not seen before
+- Uses MD5 hashing of row content to detect duplicates
+- Preserves all previously loaded data
+- Shows count of new rows added vs existing rows
+
+**Fuzzy Matching**:
+- Threshold: 0.75 (configurable via slider)
+- Uses Python's `difflib.SequenceMatcher`
+- Removes noise words (the, a, an, etc.) before matching
+- Groups similar variants under canonical names
 
 ### 4. 📦 Bulk Order Processer (pathao_tab.py)
 
@@ -366,11 +401,12 @@ _DATE_PATTERNS = ["date", "order date", "created", "timestamp"]
 
 ### Major Updates
 1. **Merged Customer Modules**: Combined Customer Analytics + Customer Extractor into `unified_customer.py`
-2. **Added Sheet Insights**: New module `sheet_insights.py` for dedicated Google Sheet analysis
+2. **Added Return Insight**: New module `return_insight.py` for return/refund analysis with **fuzzy product matching**
 3. **Sidebar Navigation**: Converted from tabs to sidebar radio buttons
 4. **Card UI Upgrade**: Modern gradient card components for core metrics
 5. **Live Dashboard Upload**: Added file upload option to Live Dashboard (moved from Sales Data Ingestion)
 6. **Memory Management**: Enhanced memory error handling in customer operations
+7. **Return Analytics**: Comprehensive return analysis with fuzzy grouping, reason categorization, and trend analysis
 
 ### Removed/Deprecated
 - Sales Data Ingestion tab (functionality merged into Live Dashboard)
