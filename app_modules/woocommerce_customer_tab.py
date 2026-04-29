@@ -14,6 +14,11 @@ import urllib.parse
 from app_modules.error_handler import log_error
 from app_modules.persistence import clear_state_keys
 from app_modules.ui_components import section_card, to_excel_bytes
+from app_modules.unified_reporting import (
+    render_unified_export_section,
+    create_report_section,
+    ReportMetadata
+)
 
 
 def _reset_wc_state():
@@ -264,7 +269,7 @@ def filter_whatsapp_numbers(df: pd.DataFrame, start_date: datetime, end_date: da
 
 def to_csv_bytes(df: pd.DataFrame) -> bytes:
     """Convert DataFrame to CSV bytes for download."""
-    return df.to_csv(index=False).encode("utf-8")
+    return df.to_csv(index=False).encode("utf-8-sig")
 
 
 def render_woocommerce_customer_tab():
@@ -608,6 +613,55 @@ def render_woocommerce_customer_tab():
             else:
                 st.info("No WhatsApp numbers found for the selected date range.")
         
+        # Unified Export Section
+        sections = []
+        
+        if phone_df is not None and not phone_df.empty:
+            sections.append(create_report_section(
+                title="Phone Numbers",
+                df=phone_df,
+                description=f"Customers with phone numbers from {phone_start} to {phone_end}",
+                chart_type='bar',
+                chart_column='billing_phone'
+            ))
+        
+        if email_df is not None and not email_df.empty:
+            sections.append(create_report_section(
+                title="Email Addresses",
+                df=email_df,
+                description="All customers with email addresses (no date filter)"
+            ))
+        
+        if wa_df is not None and not wa_df.empty:
+            sections.append(create_report_section(
+                title="WhatsApp Numbers",
+                df=wa_df,
+                description=f"WhatsApp-enabled customers from {wa_start} to {wa_end}",
+                chart_type='pie',
+                chart_column='whatsapp_number'
+            ))
+        
+        full_df = st.session_state.get("wc_customers_data")
+        if full_df is not None and not full_df.empty:
+            sections.append(create_report_section(
+                title="Complete Customer Data",
+                df=full_df,
+                description="All customer records with complete information"
+            ))
+        
+        metadata = ReportMetadata(
+            title="WooCommerce Customer Extraction Report",
+            generated_by="Automation Hub Pro",
+            date_range=(phone_start, phone_end),
+            filters_applied=["Phone Date Range", "WhatsApp Date Range"]
+        )
+        
+        render_unified_export_section(
+            sections=sections,
+            metadata=metadata,
+            filename_prefix="woocommerce_customers"
+        )
+        
         # Summary Statistics
         st.divider()
         with st.expander("📈 Summary Statistics", expanded=False):
@@ -625,7 +679,6 @@ def render_woocommerce_customer_tab():
             
             # Show full data summary
             st.caption("Full Customer Data Preview (First 10 rows)")
-            full_df = st.session_state.get("wc_customers_data")
             if full_df is not None:
                 st.dataframe(full_df.head(10), use_container_width=True, hide_index=True)
     

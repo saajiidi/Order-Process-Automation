@@ -654,7 +654,7 @@ def load_latest_from_gdrive_folder():
     return df_live, file_name, modified_at
 
 
-def load_live_source(source_mode):
+def load_live_source(source_mode, wc_credentials=None):
     """Routes loading by selected source mode."""
     res = None
     if source_mode == "Incoming Folder":
@@ -663,6 +663,18 @@ def load_live_source(source_mode):
         res = load_from_google_sheet()
     elif source_mode == "Google Drive Folder":
         res = load_latest_from_gdrive_folder()
+    elif source_mode == "WooCommerce Store":
+        if wc_credentials is None:
+            raise ValueError("WooCommerce credentials not provided")
+        from app_modules.wc_live_source import load_from_woocommerce
+        res = load_from_woocommerce(
+            store_url=wc_credentials["store_url"],
+            consumer_key=wc_credentials["consumer_key"],
+            consumer_secret=wc_credentials["consumer_secret"],
+            api_version=wc_credentials.get("api_version", "wc/v3"),
+            days_back=wc_credentials.get("days_back", 30),
+            status=wc_credentials.get("status", "completed")
+        )
 
     if res:
         st.session_state.live_sync_time = datetime.now()
@@ -1307,8 +1319,8 @@ def render_live_tab():
     """
     st.markdown(welcome_html, unsafe_allow_html=True)
 
-    # Source selection with Upload option added
-    source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder", "📁 File Upload"]
+    # Source selection with Upload and WooCommerce options added
+    source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder", "📁 File Upload", "🛒 WooCommerce Store"]
     default_idx = 0
     if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
         default_idx = 1
@@ -1316,6 +1328,8 @@ def render_live_tab():
         default_idx = 1
     elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
         default_idx = 2
+    elif get_setting("WC_STORE_URL") and get_setting("WC_CONSUMER_KEY"):
+        default_idx = 4
 
     source_mode = st.radio(
         "Select Data Source",
@@ -1342,6 +1356,100 @@ def render_live_tab():
             uploaded_file = st.session_state.live_uploaded_file
             st.info(f"📎 Using cached file: {uploaded_file.name}")
 
+    # Handle WooCommerce Store option
+    wc_credentials = None
+    if source_mode == "🛒 WooCommerce Store":
+        st.markdown("---")
+        st.subheader("🛒 WooCommerce API Configuration")
+        
+        wc_col1, wc_col2 = st.columns(2)
+        with wc_col1:
+            wc_store_url = st.text_input(
+                "Store URL",
+                value=get_setting("WC_STORE_URL", st.session_state.get("wc_live_store_url", "")).replace("https://", "").replace("http://", ""),
+                placeholder="yourstore.com",
+                help="Your WooCommerce store URL (without https://)"
+            )
+            wc_consumer_key = st.text_input(
+                "Consumer Key",
+                value=get_setting("WC_CONSUMER_KEY", st.session_state.get("wc_live_consumer_key", "")),
+                type="password",
+                placeholder="ck_xxxxxxxxxxxxxxxx",
+                help="WooCommerce REST API Consumer Key"
+            )
+        with wc_col2:
+            wc_api_version = st.selectbox(
+                "API Version",
+                options=["wc/v3", "wc/v2"],
+                index=0,
+                key="wc_live_api_version"
+            )
+            wc_consumer_secret = st.text_input(
+                "Consumer Secret",
+                value=get_setting("WC_CONSUMER_SECRET", st.session_state.get("wc_live_consumer_secret", "")),
+                type="password",
+                placeholder="cs_xxxxxxxxxxxxxxxx",
+                help="WooCommerce REST API Consumer Secret"
+            )
+        
+        # Advanced options
+        with st.expander("Advanced Options"):
+            wc_days_back = st.slider(
+                "Fetch orders from last N days",
+                min_value=7,
+                max_value=90,
+                value=30,
+                step=7,
+                key="wc_live_days_back"
+            )
+            wc_status = st.selectbox(
+                "Order Status",
+                options=["completed", "processing", "on-hold", "any"],
+                index=0,
+                key="wc_live_status",
+                help="Filter orders by status. 'completed' recommended for sales dashboard."
+            )
+        
+        # Store in session state
+        if wc_store_url:
+            st.session_state["wc_live_store_url"] = wc_store_url
+        if wc_consumer_key:
+            st.session_state["wc_live_consumer_key"] = wc_consumer_key
+        if wc_consumer_secret:
+            st.session_state["wc_live_consumer_secret"] = wc_consumer_secret
+        
+        # Test connection button
+        test_wc_col, _ = st.columns([1, 2])
+        with test_wc_col:
+            if st.button("Test Connection", use_container_width=True, key="test_wc_connection"):
+                if not all([wc_store_url, wc_consumer_key, wc_consumer_secret]):
+                    st.error("Please fill in all API credentials.")
+                else:
+                    with st.spinner("Testing..."):
+                        from app_modules.wc_live_source import test_wc_connection, _validate_url
+                        try:
+                            validated_url = _validate_url(wc_store_url)
+                            if test_wc_connection(validated_url, wc_consumer_key, wc_consumer_secret, wc_api_version):
+                                st.success("✅ Connection successful!")
+                            else:
+                                st.error("❌ Connection failed. Check credentials.")
+                        except Exception as e:
+                            st.error(f"❌ Error: {str(e)}")
+        
+        # Build credentials dict
+        if all([wc_store_url, wc_consumer_key, wc_consumer_secret]):
+            from app_modules.wc_live_source import _validate_url
+            wc_credentials = {
+                "store_url": _validate_url(wc_store_url),
+                "consumer_key": wc_consumer_key,
+                "consumer_secret": wc_consumer_secret,
+                "api_version": wc_api_version,
+                "days_back": wc_days_back if 'wc_days_back' in locals() else 30,
+                "status": wc_status if 'wc_status' in locals() else "completed"
+            }
+        else:
+            st.info("👆 Enter WooCommerce API credentials to load data.")
+
     # ── Force Refresh + Freshness row ───────────────────────────────────
     rc1, rc2 = st.columns([3, 1])
     if st.session_state.get("live_sync_time"):
@@ -1361,7 +1469,7 @@ def render_live_tab():
         st.session_state.live_sync_time = None
         st.rerun()
 
-    if hasattr(st, "autorefresh") and source_mode != "📁 File Upload":
+    if hasattr(st, "autorefresh") and source_mode not in ["📁 File Upload", "🛒 WooCommerce Store"]:
         st.autorefresh(interval=30000, key="live_autorefresh")
 
     try:
@@ -1374,6 +1482,14 @@ def render_live_tab():
             df_live = scrub_raw_dataframe(df_live)
             source_name = uploaded_file.name
             modified_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        elif source_mode == "🛒 WooCommerce Store":
+            if wc_credentials is None:
+                st.info("👆 Please configure WooCommerce API credentials above to load data.")
+                return
+            progress_wc = st.empty()
+            with st.spinner("Fetching orders from WooCommerce..."):
+                df_live, source_name, modified_at = load_live_source(source_mode, wc_credentials=wc_credentials)
+                progress_wc.empty()
         else:
             df_live, source_name, modified_at = load_live_source(source_mode)
 

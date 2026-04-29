@@ -21,6 +21,12 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils.dataframe import dataframe_to_rows
 
+from app_modules.unified_reporting import (
+    render_unified_export_section,
+    create_report_section,
+    ReportMetadata
+)
+
 # Import fast deduplication module
 try:
     from app_modules.customer_dedup import (
@@ -593,14 +599,53 @@ def render_unified_customer_tab():
     )
     st.dataframe(report_view, use_container_width=True, height=500)
 
-    # Download
-    csv_bytes = report_view.to_csv(index=False).encode("utf-8-sig")
-    st.download_button(
-        "⬇️ Download Report as CSV",
-        data=csv_bytes,
-        file_name="customer_report.csv",
-        mime="text/csv",
-        use_container_width=True,
+    # Unified Export Section
+    sections = []
+    
+    if not report_view.empty:
+        sections.append(create_report_section(
+            title="Customer Purchase Report",
+            df=report_view,
+            description=f"Filtered customer report with {len(report_view)} records",
+            chart_type='bar',
+            chart_column='Total Spent (৳)'
+        ))
+    
+    if not filtered.empty:
+        # Create detailed transactions section
+        detail_df = filtered[[
+            '_customer_id', '_phone', '_email', 
+            cols.get('name', '_customer_id'), 
+            cols.get('order_id', '_customer_id'),
+            '_date', '_price', '_qty'
+        ]].copy()
+        detail_df.columns = ['Customer ID', 'Phone', 'Email', 'Name', 'Order ID', 'Date', 'Price', 'Qty']
+        
+        sections.append(create_report_section(
+            title="Transaction Details",
+            df=detail_df,
+            description="Detailed transaction records"
+        ))
+    
+    # Generate date range for metadata
+    date_range = None
+    if has_dates:
+        date_range = (start_d, end_d)
+    
+    metadata = ReportMetadata(
+        title="Customer Analytics Report",
+        generated_by="Automation Hub Pro",
+        date_range=date_range,
+        filters_applied=[
+            f"Search: {search}" if search else "No search filter",
+            f"Spend Range: ৳{lo_spend:,.0f} - ৳{hi_spend:,.0f}"
+        ]
+    )
+    
+    render_unified_export_section(
+        sections=sections,
+        metadata=metadata,
+        filename_prefix="customer_analytics"
     )
 
     # Per-customer Drill-down

@@ -340,11 +340,30 @@ def render_reset_confirm(label: str, state_key: str, reset_fn):
 
 
 def to_excel_bytes(df: pd.DataFrame, sheet_name: str = "Sheet1") -> bytes:
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine="openpyxl") as writer:
-        df.to_excel(writer, index=False, sheet_name=sheet_name)
-    output.seek(0)
-    return output.read()
+    """
+    Enhanced Excel export using unified reporting system.
+    Provides formatted output with professional styling.
+    """
+    from app_modules.unified_reporting import (
+        UnifiedReportGenerator, ReportSection, ReportMetadata
+    )
+    
+    section = ReportSection(
+        title=sheet_name,
+        dataframe=df,
+        description=f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    )
+    
+    metadata = ReportMetadata(
+        title=f"{sheet_name} Report",
+        generated_by="Automation Hub Pro",
+        total_records=len(df)
+    )
+    
+    generator = UnifiedReportGenerator(metadata=metadata)
+    generator.add_section(section)
+    
+    return generator.generate_excel()
 
 
 def show_last_updated(path: str):
