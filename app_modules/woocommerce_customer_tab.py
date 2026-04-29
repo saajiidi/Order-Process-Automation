@@ -21,6 +21,17 @@ from app_modules.unified_reporting import (
 )
 
 
+def get_setting(key: str, default=None):
+    """Read setting from Streamlit secrets first, then env var, then default."""
+    try:
+        if key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+    import os
+    return os.getenv(key, default)
+
+
 def _reset_wc_state():
     """Clear WooCommerce session state keys."""
     clear_state_keys([
@@ -284,23 +295,44 @@ def render_woocommerce_customer_tab():
         from app_modules.persistence import register_reset
         register_reset("WooCommerce Extraction", _reset_wc_state)
     
+    # Load secrets from .streamlit/secrets.toml with fallback
+    try:
+        wc_secrets = st.secrets.get("woocommerce", {})
+    except Exception:
+        wc_secrets = {}
+    
+    # Default values: secrets.toml > session_state > empty
+    default_store_url = st.session_state.get("wc_store_url") or wc_secrets.get("store_url", "")
+    default_consumer_key = st.session_state.get("wc_consumer_key") or wc_secrets.get("consumer_key", "")
+    default_consumer_secret = st.session_state.get("wc_consumer_secret") or wc_secrets.get("consumer_secret", "")
+    
+    # Show secrets status
+    secrets_available = all([default_store_url, default_consumer_key, default_consumer_secret])
+    
     # Sidebar-like API credentials section at top
     with st.expander("API Configuration", expanded=not st.session_state.get("wc_api_connected", False)):
+        
+        # Secrets status indicator
+        if secrets_available:
+            st.success("🔐 API credentials loaded from secrets.toml")
+        else:
+            st.info("ℹ️ Enter API credentials manually or configure secrets.toml")
+        
         col1, col2 = st.columns(2)
         
         with col1:
             store_url = st.text_input(
                 "Store URL",
-                value=st.session_state.get("wc_store_url", ""),
+                value=default_store_url,
                 placeholder="https://yourstore.com",
                 help="Your WooCommerce store URL (e.g., https://example.com)"
             )
             consumer_key = st.text_input(
                 "Consumer Key",
-                value=st.session_state.get("wc_consumer_key", ""),
+                value=default_consumer_key,
                 type="password",
                 placeholder="ck_xxxxxxxxxxxxxxxx",
-                help="WooCommerce REST API Consumer Key"
+                help="WooCommerce REST API Consumer Key (pre-filled from secrets if available)"
             )
         
         with col2:
@@ -312,10 +344,10 @@ def render_woocommerce_customer_tab():
             )
             consumer_secret = st.text_input(
                 "Consumer Secret",
-                value=st.session_state.get("wc_consumer_secret", ""),
+                value=default_consumer_secret,
                 type="password",
                 placeholder="cs_xxxxxxxxxxxxxxxx",
-                help="WooCommerce REST API Consumer Secret"
+                help="WooCommerce REST API Consumer Secret (pre-filled from secrets if available)"
             )
         
         # Meta field configuration

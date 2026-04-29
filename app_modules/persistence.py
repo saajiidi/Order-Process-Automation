@@ -91,3 +91,17 @@ def clear_state_keys(keys):
         if key in st.session_state:
             del st.session_state[key]
     save_state()
+
+
+def register_reset(label: str, reset_fn):
+    """
+    Register a tool's reset function for the unified sidebar.
+    
+    Args:
+        label: Display name for the tool
+        reset_fn: Function to call when resetting this tool's data
+    """
+    if "registered_resets" not in st.session_state:
+        st.session_state.registered_resets = {}
+    
+    st.session_state.registered_resets[label] = {"fn": reset_fn, "key": label}
