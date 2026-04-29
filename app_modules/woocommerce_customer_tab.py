@@ -301,80 +301,91 @@ def render_woocommerce_customer_tab():
     except Exception:
         wc_secrets = {}
     
-    # Default values: secrets.toml > session_state > empty
-    default_store_url = st.session_state.get("wc_store_url") or wc_secrets.get("store_url", "")
-    default_consumer_key = st.session_state.get("wc_consumer_key") or wc_secrets.get("consumer_key", "")
-    default_consumer_secret = st.session_state.get("wc_consumer_secret") or wc_secrets.get("consumer_secret", "")
+    # Check top-level secrets too
+    secret_store_url = get_setting("WC_STORE_URL") or wc_secrets.get("store_url", "")
+    secret_consumer_key = get_setting("WC_CONSUMER_KEY") or wc_secrets.get("consumer_key", "")
+    secret_consumer_secret = get_setting("WC_CONSUMER_SECRET") or wc_secrets.get("consumer_secret", "")
     
-    # Show secrets status
-    secrets_available = all([default_store_url, default_consumer_key, default_consumer_secret])
+    # Auto-load from secrets if available (background)
+    if secret_store_url and not st.session_state.get("wc_store_url"):
+        st.session_state["wc_store_url"] = secret_store_url
+    if secret_consumer_key and not st.session_state.get("wc_consumer_key"):
+        st.session_state["wc_consumer_key"] = secret_consumer_key
+    if secret_consumer_secret and not st.session_state.get("wc_consumer_secret"):
+        st.session_state["wc_consumer_secret"] = secret_consumer_secret
     
-    # Sidebar-like API credentials section at top
-    with st.expander("API Configuration", expanded=not st.session_state.get("wc_api_connected", False)):
+    # Get current values (secrets > session_state > empty)
+    store_url = st.session_state.get("wc_store_url", "")
+    consumer_key = st.session_state.get("wc_consumer_key", "")
+    consumer_secret = st.session_state.get("wc_consumer_secret", "")
+    api_version = st.session_state.get("wc_api_version", "wc/v3")
+    whatsapp_meta_key = st.session_state.get("wc_whatsapp_meta_key", "whatsapp_number")
+    whatsapp_enabled_key = st.session_state.get("wc_whatsapp_enabled_key", "whatsapp_enabled")
+    
+    # Show clean status message
+    secrets_available = all([secret_store_url, secret_consumer_key, secret_consumer_secret])
+    if secrets_available:
+        st.success("✅ Connected to WooCommerce (via secrets.toml)")
+    
+    # Hidden configuration expander (collapsed by default when secrets loaded)
+    with st.expander("⚙️ Configuration" if secrets_available else "⚙️ Manual Configuration", 
+                     expanded=not secrets_available and not all([store_url, consumer_key, consumer_secret])):
         
-        # Secrets status indicator
         if secrets_available:
-            st.success("🔐 API credentials loaded from secrets.toml")
-        else:
-            st.info("ℹ️ Enter API credentials manually or configure secrets.toml")
+            st.caption("Credentials loaded from secrets.toml. Edit below to override.")
         
         col1, col2 = st.columns(2)
-        
         with col1:
-            store_url = st.text_input(
+            new_store_url = st.text_input(
                 "Store URL",
-                value=default_store_url,
-                placeholder="https://yourstore.com",
-                help="Your WooCommerce store URL (e.g., https://example.com)"
+                value=store_url,
+                placeholder="https://yourstore.com"
             )
-            consumer_key = st.text_input(
+            new_consumer_key = st.text_input(
                 "Consumer Key",
-                value=default_consumer_key,
+                value=consumer_key,
                 type="password",
-                placeholder="ck_xxxxxxxxxxxxxxxx",
-                help="WooCommerce REST API Consumer Key (pre-filled from secrets if available)"
+                placeholder="ck_xxxxxxxxxxxxxxxx"
             )
-        
         with col2:
-            api_version = st.selectbox(
+            new_api_version = st.selectbox(
                 "API Version",
                 options=["wc/v3", "wc/v2", "wc/v1"],
-                index=0,
-                help="WooCommerce REST API version"
+                index=0 if api_version == "wc/v3" else (1 if api_version == "wc/v2" else 2)
             )
-            consumer_secret = st.text_input(
+            new_consumer_secret = st.text_input(
                 "Consumer Secret",
-                value=default_consumer_secret,
+                value=consumer_secret,
                 type="password",
-                placeholder="cs_xxxxxxxxxxxxxxxx",
-                help="WooCommerce REST API Consumer Secret (pre-filled from secrets if available)"
+                placeholder="cs_xxxxxxxxxxxxxxxx"
             )
         
-        # Meta field configuration
+        # Save updates
+        st.session_state["wc_store_url"] = new_store_url
+        st.session_state["wc_consumer_key"] = new_consumer_key
+        st.session_state["wc_consumer_secret"] = new_consumer_secret
+        st.session_state["wc_api_version"] = new_api_version
+        
+        # Meta fields (minimal)
         st.divider()
-        st.caption("Custom Meta Field Configuration")
         meta_col1, meta_col2 = st.columns(2)
         with meta_col1:
             whatsapp_meta_key = st.text_input(
-                "WhatsApp Number Meta Key",
-                value=st.session_state.get("wc_whatsapp_meta_key", "whatsapp_number"),
-                placeholder="whatsapp_number",
-                help="Custom meta key for WhatsApp number (default: whatsapp_number)"
+                "WhatsApp Meta Key",
+                value=whatsapp_meta_key,
+                placeholder="whatsapp_number"
             )
         with meta_col2:
             whatsapp_enabled_key = st.text_input(
-                "WhatsApp Enabled Meta Key",
-                value=st.session_state.get("wc_whatsapp_enabled_key", "whatsapp_enabled"),
-                placeholder="whatsapp_enabled",
-                help="Custom meta key for WhatsApp enabled flag (default: whatsapp_enabled)"
+                "WhatsApp Enabled Key",
+                value=whatsapp_enabled_key,
+                placeholder="whatsapp_enabled"
             )
-        
-        # Save credentials to session state
-        st.session_state["wc_store_url"] = store_url
-        st.session_state["wc_consumer_key"] = consumer_key
-        st.session_state["wc_consumer_secret"] = consumer_secret
         st.session_state["wc_whatsapp_meta_key"] = whatsapp_meta_key
         st.session_state["wc_whatsapp_enabled_key"] = whatsapp_enabled_key
+        
+        # Update local variables
+        store_url, consumer_key, consumer_secret, api_version = new_store_url, new_consumer_key, new_consumer_secret, new_api_version
         
         # Test connection button
         test_col, _ = st.columns([1, 2])
