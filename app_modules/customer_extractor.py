@@ -385,8 +385,12 @@ class MemoryErrorHandler:
                 metadata["errors"].append(f"Chunk {idx}-{chunk_end} failed: {str(e)}")
                 st.warning(f"⚠️ Memory issue at rows {idx:,}-{chunk_end:,}, some customers may be skipped")
                 gc.collect()
-                continue
-        
+
+        # Add remaining old customers who weren't updated
+        for idx, row in old_reg_proc.iterrows():
+            if idx not in processed_old_indices:
+                updated_rows.append(row)
+
         progress_bar.progress(1.0)
         total_time = (datetime.now() - start_time).total_seconds()
         status_text.text(f"✅ Merged {len(updated_rows):,} customers in {total_time:.1f}s")
@@ -1326,7 +1330,7 @@ def extract_customers_from_google_sheet(url: str,
         "total_unique_customers": len(merged_customers),
         "new_customers_added": max(0, new_count),
         "last_run": datetime.now().isoformat(),
-        "source_urls": year_urls,
+        "source_urls": [url], # Fix: reference correct variable
         "loaded_tabs": loaded_tabs,
         "memory_status": merge_meta.get("status", "unknown")
     }

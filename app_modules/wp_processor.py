@@ -301,7 +301,11 @@ class WhatsAppOrderProcessor:
 
             products_str = "\n".join(product_list)
 
-            total_amount = float(row[self.config["order_total_col"]])
+            # Robust float conversion for amounts with potential currency/formatting
+            raw_total = str(row[self.config["order_total_col"]])
+            clean_total = re.sub(r'[^\d.]', '', raw_total)
+            total_amount = float(clean_total) if clean_total else 0.0
+            
             collectable_amount = total_amount
             payment_col = self.config.get("payment_method_col")
             is_paid = False

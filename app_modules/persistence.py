@@ -9,6 +9,13 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 STATE_FILE = os.path.join(DATA_DIR, "session_state.json")
 
+class CustomEncoder(json.JSONEncoder):
+    """Handle set and other non-serializable objects."""
+    def default(self, obj):
+        if isinstance(obj, set):
+            return list(obj)
+        return super().default(obj)
+
 
 def save_state():
     """Saves relevant session state keys to a local file."""
@@ -38,7 +45,7 @@ def save_state():
     try:
         fd, temp_path = tempfile.mkstemp(dir=DATA_DIR)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(state_to_save, f, indent=4)
+            json.dump(state_to_save, f, indent=4, cls=CustomEncoder)
         os.replace(temp_path, STATE_FILE)
     except Exception as e:
         default_logger = logging.getLogger(__name__)

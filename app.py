@@ -49,6 +49,7 @@ def run_app():
     from app_modules.wp_tab import render_wp_tab
     from app_modules.unified_customer import render_unified_customer_tab
     from app_modules.return_insight import render_sheet_insights_tab
+    from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab
 
     init_state()
     inject_base_styles()
@@ -61,7 +62,8 @@ def run_app():
         "💬 WhatsApp Messaging",
         "🧩 Delivery Data Parser",
         "👥 Customer Analytics",
-        "� Return Insight",
+        "🛒 WooCommerce Extraction",
+        "🔄 Return Insight",
     ]
     
     with st.sidebar:
@@ -157,7 +159,9 @@ def run_app():
         render_fuzzy_parser_tab()
     elif selected_module == "👥 Customer Analytics":
         render_unified_customer_tab()
-    elif selected_module == "� Return Insight":
+    elif selected_module == "🛒 WooCommerce Extraction":
+        render_woocommerce_customer_tab()
+    elif selected_module == "🔄 Return Insight":
         render_sheet_insights_tab()
 
     render_footer()

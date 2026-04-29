@@ -46,9 +46,8 @@ def _compute_row_hash(row: pd.Series) -> str:
 def _compute_row_hashes(df: pd.DataFrame) -> Set[str]:
     """Compute hashes for all rows in dataframe."""
     hashes = set()
-    for idx, row in df.iterrows():
-        row_hash = "|".join([str(row[col]) for col in df.columns if pd.notna(row[col])])
-        hashes.add(hashlib.md5(row_hash.encode()).hexdigest())
+    for _, row in df.iterrows():
+        hashes.add(_compute_row_hash(row))
     return hashes
 
 
