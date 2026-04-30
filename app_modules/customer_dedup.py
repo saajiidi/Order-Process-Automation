@@ -85,7 +85,11 @@ def normalize_email(email) -> str:
 def build_customer_mapping(df: pd.DataFrame, 
                           phone_col: str = "phone",
                           email_col: str = "email", 
-                          date_col: str = "date") -> pd.DataFrame:
+                          date_col: str = "date",
+                          amount_col: str = "amount",
+                          name_col: str = "name",
+                          items_col: str = "items"
+                          ) -> pd.DataFrame:
     """
     Build customer → first_order_date mapping using union-find.
     
@@ -113,6 +117,9 @@ def build_customer_mapping(df: pd.DataFrame,
     df['_norm_phone'] = df[phone_col].apply(normalize_phone) if phone_col in df.columns else ""
     df['_norm_email'] = df[email_col].apply(normalize_email) if email_col in df.columns else ""
     df['_norm_date'] = pd.to_datetime(df[date_col], errors='coerce') if date_col in df.columns else pd.NaT
+    df['_norm_amount'] = pd.to_numeric(df.get(amount_col), errors='coerce').fillna(0) if amount_col in df.columns else 0
+    df['_norm_name'] = df[name_col].astype(str).str.strip() if name_col in df.columns else ""
+    df['_norm_item'] = df[items_col].astype(str).str.strip() if items_col and items_col in df.columns else ""
     
     # Build reverse index: phone/email -> row indices
     valid_rows = []
@@ -172,23 +179,39 @@ def build_customer_mapping(df: pd.DataFrame,
         # Collect all phones and emails
         phones = set(group_df['_norm_phone'].dropna())
         emails = set(group_df['_norm_email'].dropna())
+        names = list(group_df['_norm_name'].dropna().unique())
+        items = list(group_df['_norm_item'].dropna())
         phones.discard('')
         emails.discard('')
         
         # Get first order date
         first_date = group_df['_norm_date'].min()
         
+        # Get total spent
+        total_spent = group_df['_norm_amount'].sum()
+        
         # Count orders (non-null dates)
         order_count = group_df['_norm_date'].notna().sum()
+        
+        # Source years
+        source_years = ""
+        if '_source' in group_df.columns:
+            source_years = ", ".join(sorted(set(group_df['_source'].dropna())))
         
         customer_data.append({
             'customer_id': root,
             'first_order_date': first_date,
+            'last_order_date': group_df['_norm_date'].max(),
             'phones': list(phones),
             'emails': list(emails),
+            'names': names,
             'primary_phone': list(phones)[0] if phones else '',
             'primary_email': list(emails)[0] if emails else '',
+            'primary_name': names[0] if names else '',
             'order_count': order_count,
+            'total_spent': total_spent,
+            'purchased_items': ", ".join(sorted(set([i for i in items if i]))),
+            'source_years': source_years,
             'row_count': len(row_indices)
         })
     

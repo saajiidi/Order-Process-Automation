@@ -7,7 +7,9 @@ import streamlit as st
 import pandas as pd
 import requests
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+import asyncio
+import aiohttp
+from typing import Optional, List, Dict, Any, Tuple
 import time
 import urllib.parse
 
@@ -57,6 +59,71 @@ def _make_auth(consumer_key: str, consumer_secret: str) -> tuple:
     return (consumer_key, consumer_secret)
 
 
+async def _fetch_page_async(session: aiohttp.ClientSession, url: str, auth: aiohttp.BasicAuth, params: dict, page: int) -> List[Dict]:
+    """Helper to fetch a single page of customers asynchronously."""
+    params["page"] = page
+    async with session.get(url, auth=auth, params=params) as response:
+        response.raise_for_status()
+        return await response.json()
+
+
+async def _fetch_wc_customers_async(
+    store_url: str,
+    consumer_key: str,
+    consumer_secret: str,
+    api_version: str = "wc/v3",
+    per_page: int = 100,
+    after: Optional[str] = None,
+    before: Optional[str] = None,
+    progress_bar: Optional[Any] = None
+) -> List[Dict]:
+    """Asynchronously fetch all customers from WooCommerce API with pagination."""
+    base_url = f"{store_url}/wp-json/{api_version}/customers"
+    auth = aiohttp.BasicAuth(consumer_key, consumer_secret)
+    all_customers = []
+
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as session:
+        # First request to get total pages
+        params = {"per_page": per_page, "page": 1}
+        if after:
+            params["after"] = after
+        if before:
+            params["before"] = before
+
+        try:
+            async with session.get(base_url, auth=auth, params=params) as response:
+                response.raise_for_status()
+                total_pages = int(response.headers.get("X-WP-TotalPages", 1))
+                total_items = int(response.headers.get("X-WP-Total", 0))
+                if progress_bar:
+                    progress_bar.text(f"Fetching {total_items} customers...")
+
+                first_page_customers = await response.json()
+                if not first_page_customers:
+                    return []
+                all_customers.extend(first_page_customers)
+
+                if progress_bar:
+                    progress_bar.progress(1 / total_pages, text=f"Fetched page 1/{total_pages}")
+        except aiohttp.ClientResponseError as e:
+            if e.status == 401:
+                raise Exception("Authentication failed. Please check your Consumer Key and Secret.")
+            raise Exception(f"API Error: {e.status} - {e.message}")
+        except asyncio.TimeoutError:
+            raise Exception("Request timed out. Please check your connection.")
+        except aiohttp.ClientConnectionError:
+            raise Exception("Could not connect to the store. Please verify the URL.")
+
+        if total_pages > 1:
+            tasks = [_fetch_page_async(session, base_url, auth, params.copy(), page) for page in range(2, total_pages + 1)]
+            for i, future in enumerate(asyncio.as_completed(tasks)):
+                page_customers = await future
+                all_customers.extend(page_customers)
+                if progress_bar:
+                    progress_bar.progress((i + 2) / total_pages, text=f"Fetched page {i + 2}/{total_pages} ({len(all_customers)} customers)")
+    return all_customers
+
+
 def fetch_wc_customers(
     store_url: str,
     consumer_key: str,
@@ -83,69 +150,19 @@ def fetch_wc_customers(
     Returns:
         List of customer dictionaries
     """
-    base_url = f"{store_url}/wp-json/{api_version}/customers"
-    auth = _make_auth(consumer_key, consumer_secret)
-    all_customers = []
-    page = 1
-    total_pages = 1
-    
-    while page <= total_pages:
-        params = {
-            "per_page": per_page,
-            "page": page,
-        }
-        if after:
-            params["after"] = after
-        if before:
-            params["before"] = before
-            
-        try:
-            response = requests.get(
-                base_url,
-                auth=auth,
-                params=params,
-                timeout=60
-            )
-            response.raise_for_status()
-            
-            # Get total pages from headers
-            if page == 1:
-                total_pages = int(response.headers.get("X-WP-TotalPages", 1))
-                total_items = int(response.headers.get("X-WP-Total", 0))
-                if progress_bar:
-                    progress_bar.text(f"Fetching {total_items} customers...")
-            
-            customers = response.json()
-            if not customers:
-                break
-                
-            all_customers.extend(customers)
-            
-            if progress_bar:
-                progress = min(page / total_pages, 1.0)
-                progress_bar.progress(progress, text=f"Fetched page {page}/{total_pages} ({len(all_customers)} customers)")
-            
-            page += 1
-            
-            # Small delay to be nice to the API
-            if page <= total_pages:
-                time.sleep(0.3)
-                
-        except requests.exceptions.Timeout:
-            raise Exception("Request timed out. Please check your connection and try again.")
-        except requests.exceptions.ConnectionError:
-            raise Exception("Could not connect to the store. Please verify the URL.")
-        except requests.exceptions.HTTPError as e:
-            if response.status_code == 401:
-                raise Exception("Authentication failed. Please check your Consumer Key and Secret.")
-            elif response.status_code == 404:
-                raise Exception("Store not found. Please verify the URL.")
-            else:
-                raise Exception(f"API Error: {response.status_code} - {response.text}")
-        except Exception as e:
-            raise Exception(f"Unexpected error: {str(e)}")
-    
-    return all_customers
+    try:
+        return asyncio.run(_fetch_wc_customers_async(
+            store_url=store_url,
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            api_version=api_version,
+            per_page=per_page,
+            after=after,
+            before=before,
+            progress_bar=progress_bar
+        ))
+    except Exception as e:
+        raise e
 
 
 def extract_customer_data(customers: List[Dict]) -> pd.DataFrame:
@@ -323,194 +340,45 @@ def render_woocommerce_customer_tab():
     whatsapp_enabled_key = st.session_state.get("wc_whatsapp_enabled_key", "whatsapp_enabled")
     
     # Show clean status message
-    secrets_available = all([secret_store_url, secret_consumer_key, secret_consumer_secret])
-    if secrets_available:
-        st.success("✅ Connected to WooCommerce (via secrets.toml)")
+    # Update connection status - use secrets.toml as default
+    credentials_available = bool(st.session_state.get("wc_store_url") and 
+                              st.session_state.get("wc_consumer_key") and 
+                              st.session_state.get("wc_consumer_secret"))
+    st.session_state["wc_api_connected"] = credentials_available
     
-    # Hidden configuration expander (collapsed by default when secrets loaded)
-    with st.expander("⚙️ Configuration" if secrets_available else "⚙️ Manual Configuration", 
-                     expanded=not secrets_available and not all([store_url, consumer_key, consumer_secret])):
-        
-        if secrets_available:
-            st.caption("Credentials loaded from secrets.toml. Edit below to override.")
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            new_store_url = st.text_input(
-                "Store URL",
-                value=store_url,
-                placeholder="https://yourstore.com"
-            )
-            new_consumer_key = st.text_input(
-                "Consumer Key",
-                value=consumer_key,
-                type="password",
-                placeholder="ck_xxxxxxxxxxxxxxxx"
-            )
-        with col2:
-            new_api_version = st.selectbox(
-                "API Version",
-                options=["wc/v3", "wc/v2", "wc/v1"],
-                index=0 if api_version == "wc/v3" else (1 if api_version == "wc/v2" else 2)
-            )
-            new_consumer_secret = st.text_input(
-                "Consumer Secret",
-                value=consumer_secret,
-                type="password",
-                placeholder="cs_xxxxxxxxxxxxxxxx"
-            )
-        
-        # Save updates
-        st.session_state["wc_store_url"] = new_store_url
-        st.session_state["wc_consumer_key"] = new_consumer_key
-        st.session_state["wc_consumer_secret"] = new_consumer_secret
-        st.session_state["wc_api_version"] = new_api_version
-        
-        # Meta fields (minimal)
-        st.divider()
-        meta_col1, meta_col2 = st.columns(2)
-        with meta_col1:
-            whatsapp_meta_key = st.text_input(
-                "WhatsApp Meta Key",
-                value=whatsapp_meta_key,
-                placeholder="whatsapp_number"
-            )
-        with meta_col2:
-            whatsapp_enabled_key = st.text_input(
-                "WhatsApp Enabled Key",
-                value=whatsapp_enabled_key,
-                placeholder="whatsapp_enabled"
-            )
-        st.session_state["wc_whatsapp_meta_key"] = whatsapp_meta_key
-        st.session_state["wc_whatsapp_enabled_key"] = whatsapp_enabled_key
-        
-        # Update local variables
-        store_url, consumer_key, consumer_secret, api_version = new_store_url, new_consumer_key, new_consumer_secret, new_api_version
-        
-        # Test connection button
-        test_col, _ = st.columns([1, 2])
-        with test_col:
-            if st.button("Test Connection", use_container_width=True, type="secondary"):
-                if not all([store_url, consumer_key, consumer_secret]):
-                    st.error("Please fill in all API credentials.")
-                else:
-                    with st.spinner("Testing connection..."):
-                        try:
-                            validated_url = _validate_url(store_url)
-                            auth = _make_auth(consumer_key, consumer_secret)
-                            test_url = f"{validated_url}/wp-json/{api_version}/customers"
-                            response = requests.get(
-                                test_url,
-                                auth=auth,
-                                params={"per_page": 1},
-                                timeout=30
-                            )
-                            response.raise_for_status()
-                            st.session_state["wc_api_connected"] = True
-                            st.success("Connection successful! ✓")
-                        except Exception as e:
-                            st.session_state["wc_api_connected"] = False
-                            st.error(f"Connection failed: {str(e)}")
+    # Show credentials source
+    if all([secret_store_url, secret_consumer_key, secret_consumer_secret]):
+        st.success("✅ Credentials loaded from secrets.toml")
+    elif all([env_store_url, env_consumer_key, env_consumer_secret]):
+        st.info("ℹ️ Credentials loaded from environment variables")
+    else:
+        st.error("WooCommerce secrets not found in secrets.toml. Please add them to use this module.")
+        st.code """
+# .streamlit/secrets.toml
+
+[woocommerce]
+store_url = "https://yourstore.com"
+consumer_key = "ck_xxxxxxxxxxxxxxxxxxxxxxxx"
+consumer_secret = "cs_xxxxxxxxxxxxxxxxxxxxxxxx"
+""")
     
-    # Date Range Filters
-    st.divider()
-    st.subheader("📅 Date Range Filters")
+    # Credential Input Section (only shown if no env/secrets config)
+    using_secrets = all([secret_store_url, secret_consumer_key, secret_consumer_secret])
+    using_env = all([env_store_url, env_consumer_key, env_consumer_secret])
     
-    today = datetime.now()
-    two_years_ago = today - timedelta(days=730)
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.markdown("**Phone Numbers (Custom Range)**")
-        phone_start = st.date_input(
-            "From",
-            value=st.session_state.get("wc_phone_start", two_years_ago),
-            max_value=today,
-            key="phone_start"
-        )
-        phone_end = st.date_input(
-            "To",
-            value=st.session_state.get("wc_phone_end", today),
-            max_value=today,
-            key="phone_end"
-        )
-        st.session_state["wc_phone_start"] = phone_start
-        st.session_state["wc_phone_end"] = phone_end
-        st.caption(f"📊 Last 2 years would be: {two_years_ago.strftime('%Y-%m-%d')} to {today.strftime('%Y-%m-%d')}")
-    
-    with col2:
-        st.markdown("**Emails**")
-        st.info("All customers from day one (no date filter applied)")
-        email_filter_all = st.checkbox("Include all historical customers", value=True, disabled=True)
-    
-    with col3:
-        st.markdown("**WhatsApp Numbers (Custom Range)**")
-        default_whatsapp_end = datetime(2023, 12, 31)
-        wa_start = st.date_input(
-            "From",
-            value=st.session_state.get("wc_wa_start", datetime(2000, 1, 1)),
-            max_value=today,
-            key="wa_start"
-        )
-        wa_end = st.date_input(
-            "To",
-            value=st.session_state.get("wc_wa_end", default_whatsapp_end),
-            max_value=today,
-            key="wa_end"
-        )
-        st.session_state["wc_wa_start"] = wa_start
-        st.session_state["wc_wa_end"] = wa_end
-        st.caption(f"📊 Up to Dec 31, 2023 would be: 2000-01-01 to 2023-12-31")
-    
-    # Fetch Data Button
-    st.divider()
-    fetch_col, reset_col = st.columns([1, 1])
-    
-    with fetch_col:
-        fetch_clicked = st.button(
-            "🚀 Fetch Customer Data",
-            type="primary",
-            use_container_width=True,
-            disabled=not st.session_state.get("wc_api_connected", False)
-        )
-    
-    with reset_col:
-        if st.button("🔄 Clear Data", use_container_width=True, type="secondary"):
-            _reset_wc_state()
-            st.rerun()
-    
-    if fetch_clicked:
-        if not all([store_url, consumer_key, consumer_secret]):
-            st.error("Please configure API credentials first.")
-        else:
-            progress_bar = st.empty()
-            with st.spinner("Fetching customers from WooCommerce..."):
-                try:
-                    validated_url = _validate_url(store_url)
-                    
-                    # Fetch all customers (no date filter to get complete dataset)
-                    customers = fetch_wc_customers(
-                        store_url=validated_url,
-                        consumer_key=consumer_key,
-                        consumer_secret=consumer_secret,
-                        api_version=api_version,
-                        per_page=100,
-                        progress_bar=progress_bar
-                    )
-                    
-                    if not customers:
-                        st.warning("No customers found in your store.")
-                    else:
-                        # Extract data into DataFrame
-                        df = extract_customer_data(customers)
-                        
-                        # Apply meta key configuration
-                        whatsapp_meta = st.session_state.get("wc_whatsapp_meta_key", "whatsapp_number")
-                        whatsapp_enabled_meta = st.session_state.get("wc_whatsapp_enabled_key", "whatsapp_enabled")
-                        
-                        # Re-extract with configured meta keys if different from defaults
-                        if whatsapp_meta != "whatsapp_number" or whatsapp_enabled_meta != "whatsapp_enabled":
+    if not using_secrets and not using_env:
+        with st.expander("🔐 API Configuration (Manual Input)", expanded=True):
+            st.markdown("**Enter your WooCommerce API credentials:**")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                store_url = st.text_input(
+                    "Store URL",
+                    value=st.session_state.get("wc_store_url", ""),
+                    placeholder="https://your-store.com",
+                    key="wc_store_url_input"
+                )
+                st.session_state["wc_store_url"] = store_url
                             for customer in customers:
                                 meta_data = {meta.get("key"): meta.get("value") for meta in customer.get("meta_data", [])}
                                 # Update the dataframe with custom meta keys

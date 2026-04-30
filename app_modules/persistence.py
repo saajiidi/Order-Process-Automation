@@ -32,6 +32,11 @@ def save_state():
         "ce_registry",
         "ce_metadata",
         "ce_raw",
+        # Dashboard filters
+        "wc_live_status",
+        "live_selected_categories",
+        "wc_compare_prev",
+        "live_auto_refresh_toggle",
     ]
 
     for key in keys_to_persist:

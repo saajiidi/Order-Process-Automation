@@ -17,6 +17,7 @@ from typing import Dict, List, Optional, Tuple, Set
 import warnings
 
 import pandas as pd
+import numpy as np
 import requests
 import streamlit as st
 from openpyxl import Workbook
@@ -796,8 +797,8 @@ def clean_dataframe(df: pd.DataFrame, cols: Dict[str, Optional[str]]) -> pd.Data
     
     # Create grouping key: email if exists, else phone, else None
     # Use .replace("", None) to convert empty strings to None/NaN
-    df["_email_norm"] = df["_email_norm"].replace("", None)
-    df["_phone_norm"] = df["_phone_norm"].replace("", None)
+    df["_email_norm"] = df["_email_norm"].replace("", np.nan)
+    df["_phone_norm"] = df["_phone_norm"].replace("", np.nan)
     
     # Debug: show counts
     email_count = df["_email_norm"].notna().sum()

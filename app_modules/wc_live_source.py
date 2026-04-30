@@ -7,7 +7,9 @@ import streamlit as st
 import pandas as pd
 import requests
 from datetime import datetime, timedelta, timezone
-from typing import Optional, List, Dict, Any
+import asyncio
+import aiohttp
+from typing import Optional, List, Dict, Any, Tuple
 import time
 from io import BytesIO
 
@@ -23,6 +25,71 @@ def _validate_url(url: str) -> str:
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
     return url.rstrip('/')
+
+
+async def _fetch_orders_page_async(session: aiohttp.ClientSession, url: str, auth: aiohttp.BasicAuth, params: dict, page: int) -> List[Dict]:
+    """Helper to fetch a single page of orders asynchronously."""
+    params["page"] = page
+    async with session.get(url, auth=auth, params=params) as response:
+        response.raise_for_status()
+        return await response.json()
+
+
+async def _fetch_wc_orders_async(
+    store_url: str,
+    consumer_key: str,
+    consumer_secret: str,
+    api_version: str = "wc/v3",
+    per_page: int = 100,
+    after: Optional[str] = None,
+    before: Optional[str] = None,
+    status: str = "completed",
+    progress_callback: Optional[Any] = None
+) -> List[Dict]:
+    """Asynchronously fetch all orders from WooCommerce API with pagination."""
+    base_url = f"{store_url}/wp-json/{api_version}/orders"
+    auth = aiohttp.BasicAuth(consumer_key, consumer_secret)
+    all_orders = []
+
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as session:
+        params = {"per_page": per_page, "page": 1, "status": status}
+        if after:
+            params["after"] = after
+        if before:
+            params["before"] = before
+
+        try:
+            async with session.get(base_url, auth=auth, params=params) as response:
+                response.raise_for_status()
+                total_pages = int(response.headers.get("X-WP-TotalPages", 1))
+                total_items = int(response.headers.get("X-WP-Total", 0))
+                if progress_callback:
+                    progress_callback.text(f"Fetching {total_items} orders...")
+
+                first_page_orders = await response.json()
+                if not first_page_orders:
+                    return []
+                all_orders.extend(first_page_orders)
+
+                if progress_callback:
+                    progress_callback.progress(1 / total_pages, text=f"Fetched page 1/{total_pages}")
+        except aiohttp.ClientResponseError as e:
+            if e.status == 401:
+                raise Exception("Authentication failed. Check Key/Secret.")
+            raise Exception(f"API Error: {e.status} - {e.message}")
+        except asyncio.TimeoutError:
+            raise Exception("Request timed out.")
+        except aiohttp.ClientConnectionError:
+            raise Exception("Could not connect to the store.")
+
+        if total_pages > 1:
+            tasks = [_fetch_orders_page_async(session, base_url, auth, params.copy(), page) for page in range(2, total_pages + 1)]
+            for i, future in enumerate(asyncio.as_completed(tasks)):
+                page_orders = await future
+                all_orders.extend(page_orders)
+                if progress_callback:
+                    progress_callback.progress((i + 2) / total_pages, text=f"Fetched page {i + 2}/{total_pages} ({len(all_orders)} orders)")
+    return all_orders
 
 
 def fetch_wc_orders(
@@ -53,70 +120,20 @@ def fetch_wc_orders(
     Returns:
         List of order dictionaries
     """
-    base_url = f"{store_url}/wp-json/{api_version}/orders"
-    auth = _make_auth(consumer_key, consumer_secret)
-    all_orders = []
-    page = 1
-    total_pages = 1
-    
-    while page <= total_pages:
-        params = {
-            "per_page": per_page,
-            "page": page,
-            "status": status,
-        }
-        if after:
-            params["after"] = after
-        if before:
-            params["before"] = before
-            
-        try:
-            response = requests.get(
-                base_url,
-                auth=auth,
-                params=params,
-                timeout=60
-            )
-            response.raise_for_status()
-            
-            # Get total pages from headers
-            if page == 1:
-                total_pages = int(response.headers.get("X-WP-TotalPages", 1))
-                total_items = int(response.headers.get("X-WP-Total", 0))
-                if progress_callback:
-                    progress_callback.text(f"Fetching {total_items} orders...")
-            
-            orders = response.json()
-            if not orders:
-                break
-                
-            all_orders.extend(orders)
-            
-            if progress_callback:
-                progress = min(page / total_pages, 1.0)
-                progress_callback.progress(progress, text=f"Fetched page {page}/{total_pages} ({len(all_orders)} orders)")
-            
-            page += 1
-            
-            # Small delay to be nice to the API
-            if page <= total_pages:
-                time.sleep(0.3)
-                
-        except requests.exceptions.Timeout:
-            raise Exception("Request timed out. Please check your connection and try again.")
-        except requests.exceptions.ConnectionError:
-            raise Exception("Could not connect to the store. Please verify the URL.")
-        except requests.exceptions.HTTPError as e:
-            if response.status_code == 401:
-                raise Exception("Authentication failed. Please check your Consumer Key and Secret.")
-            elif response.status_code == 404:
-                raise Exception("Store not found. Please verify the URL.")
-            else:
-                raise Exception(f"API Error: {response.status_code} - {response.text}")
-        except Exception as e:
-            raise Exception(f"Unexpected error: {str(e)}")
-    
-    return all_orders
+    try:
+        return asyncio.run(_fetch_wc_orders_async(
+            store_url=store_url,
+            consumer_key=consumer_key,
+            consumer_secret=consumer_secret,
+            api_version=api_version,
+            per_page=per_page,
+            after=after,
+            before=before,
+            status=status,
+            progress_callback=progress_callback
+        ))
+    except Exception as e:
+        raise e
 
 
 def transform_orders_to_dashboard_df(orders: List[Dict]) -> pd.DataFrame:
@@ -223,7 +240,9 @@ def load_from_woocommerce(
     consumer_secret: str,
     api_version: str = "wc/v3",
     days_back: int = 30,
-    status: str = "completed"
+    status: str = "completed",
+    after: Optional[str] = None,
+    before: Optional[str] = None
 ) -> tuple:
     """
     Load orders from WooCommerce and transform for dashboard.
@@ -233,14 +252,14 @@ def load_from_woocommerce(
     """
     validated_url = _validate_url(store_url)
     
-    # Calculate date range
-    tz_bd = timezone(timedelta(hours=6))
-    end_date = datetime.now(tz_bd)
-    start_date = end_date - timedelta(days=days_back)
-    
-    # Format dates for API (ISO8601)
-    after = start_date.strftime("%Y-%m-%dT%H:%M:%S")
-    before = end_date.strftime("%Y-%m-%dT%H:%M:%S")
+    # Calculate date range if after/before not provided
+    if not after or not before:
+        tz_bd = timezone(timedelta(hours=6))
+        end_date = datetime.now(tz_bd)
+        start_date = end_date - timedelta(days=days_back)
+        
+        after = start_date.strftime("%Y-%m-%dT%H:%M:%S")
+        before = end_date.strftime("%Y-%m-%dT%H:%M:%S")
     
     # Fetch orders
     orders = fetch_wc_orders(

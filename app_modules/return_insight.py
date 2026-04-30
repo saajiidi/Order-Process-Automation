@@ -12,11 +12,15 @@ import hashlib
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Set
 from collections import Counter, defaultdict
-from difflib import SequenceMatcher
+try:
+    from rapidfuzz.fuzz import ratio as fuzzy_ratio
+except ImportError:
+    from difflib import SequenceMatcher
 
 import pandas as pd
 import numpy as np
 import requests
+import concurrent.futures
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
@@ -158,32 +162,91 @@ def fuzzy_match_score(s1: str, s2: str) -> float:
     for word in noise:
         s1 = s1.replace(f' {word} ', ' ')
         s2 = s2.replace(f' {word} ', ' ')
-    return SequenceMatcher(None, s1, s2).ratio()
+    if 'fuzzy_ratio' in globals():
+        return fuzzy_ratio(s1, s2) / 100.0
+    else:
+        return SequenceMatcher(None, s1, s2).ratio()
+
+
+# Worker for parallel fuzzy matching. Must be a top-level function.
+def _worker_find_similar(args: Tuple[int, List[str], float]) -> List[Tuple[int, int]]:
+    """Compares one product against the rest of the list."""
+    i, products, threshold = args
+    prod_i = products[i]
+    edges = []
+    for j in range(i + 1, len(products)):
+        prod_j = products[j]
+        if fuzzy_match_score(prod_i, prod_j) >= threshold:
+            edges.append((i, j))
+    return edges
 
 
 def find_similar_products(products: List[str], threshold: float = FUZZY_THRESHOLD) -> Dict[str, List[str]]:
-    """Group similar product names using fuzzy matching."""
-    groups = defaultdict(list)
-    used = set()
-    
-    for i, prod1 in enumerate(products):
-        if prod1 in used:
-            continue
-        group = [prod1]
-        used.add(prod1)
-        
-        for prod2 in products[i+1:]:
-            if prod2 in used:
+    """Group similar product names using fuzzy matching, with parallel processing for large lists."""
+    if not products:
+        return {}
+
+    n = len(products)
+
+    # For small lists, the overhead of parallelization is not worth it.
+    if n < 500:
+        # Original sequential implementation
+        groups = defaultdict(list)
+        used = set()
+        for i, prod1 in enumerate(products):
+            if prod1 in used:
                 continue
-            if fuzzy_match_score(prod1, prod2) >= threshold:
-                group.append(prod2)
-                used.add(prod2)
-        
-        # Use the cleanest (shortest but meaningful) as key
-        key = min(group, key=lambda x: len(x) if len(x) > 3 else 999)
-        groups[key].extend(group)
-    
-    return dict(groups)
+            group = [prod1]
+            used.add(prod1)
+            for prod2 in products[i+1:]:
+                if prod2 in used:
+                    continue
+                if fuzzy_match_score(prod1, prod2) >= threshold:
+                    group.append(prod2)
+                    used.add(prod2)
+            key = min(group, key=lambda x: len(x) if len(x) > 3 else 999)
+            groups[key].extend(group)
+        return dict(groups)
+
+    # --- Parallel implementation for large lists ---
+    adj = defaultdict(set)
+
+    # 1. Build adjacency list in parallel
+    tasks = [(i, products, threshold) for i in range(n)]
+    with st.spinner(f"Performing parallel fuzzy matching on {n:,} products..."):
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            edge_lists = list(executor.map(_worker_find_similar, tasks))
+
+    for edge_list in edge_lists:
+        for i, j in edge_list:
+            adj[i].add(j)
+            adj[j].add(i)
+
+    # 2. Find connected components (DFS)
+    visited = set()
+    groups_of_indices = []
+    for i in range(n):
+        if i not in visited:
+            component = []
+            stack = [i]
+            visited.add(i)
+            while stack:
+                node = stack.pop()
+                component.append(node)
+                for neighbor in adj.get(node, []):
+                    if neighbor not in visited:
+                        visited.add(neighbor)
+                        stack.append(neighbor)
+            groups_of_indices.append(component)
+
+    # 3. Convert index groups to product name groups
+    final_groups = {}
+    for index_group in groups_of_indices:
+        product_group = [products[i] for i in index_group]
+        key = min(product_group, key=lambda x: len(x) if len(x) > 3 else 999)
+        final_groups[key] = sorted(list(set(product_group)))
+
+    return final_groups
 
 
 def standardize_product_name(name: str) -> str:

@@ -51,6 +51,7 @@ def run_app():
     from app_modules.return_insight import render_sheet_insights_tab
     from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab
     from app_modules.email_extractor import render_email_extractor_tab
+    from app_modules.dynamic_extractor import render_dynamic_extractor_tab
     from app_modules.phone_extractor import render_phone_extractor_tab
 
     init_state()
@@ -65,6 +66,7 @@ def run_app():
         "🧩 Delivery Data Parser",
         "👥 Customer Analytics",
         "🛒 WooCommerce Extraction",
+        "⚙️ Dynamic Extractor",
         "🔄 Return Insight",
         "📧 Email Extractor",
         "📱 Phone Extractor",
@@ -165,6 +167,8 @@ def run_app():
         render_unified_customer_tab()
     elif selected_module == "🛒 WooCommerce Extraction":
         render_woocommerce_customer_tab()
+    elif selected_module == "⚙️ Dynamic Extractor":
+        render_dynamic_extractor_tab()
     elif selected_module == "🔄 Return Insight":
         render_sheet_insights_tab()
     elif selected_module == "📧 Email Extractor":

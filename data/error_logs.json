@@ -1,0 +1,324 @@
+[
+    {
+        "timestamp": "2026-04-02 16:32:12",
+        "context": "App Bootstrap",
+        "error": "render_reset_confirm() missing 1 required positional argument: 'reset_fn'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 154, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 30, in run_app\n    from app_modules.distribution_tab import render_distribution_tab\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\distribution_tab.py\", line 168, in <module>\n    render_reset_confirm(\"inventory\", _reset_inventory_state)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: render_reset_confirm() missing 1 required positional argument: 'reset_fn'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:32:32",
+        "context": "App Bootstrap",
+        "error": "render_reset_confirm() missing 1 required positional argument: 'reset_fn'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 142, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 30, in run_app\n    from app_modules.distribution_tab import render_distribution_tab\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\distribution_tab.py\", line 168, in <module>\n    render_reset_confirm(\"inventory\", _reset_inventory_state)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: render_reset_confirm() missing 1 required positional argument: 'reset_fn'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:32:53",
+        "context": "App Bootstrap",
+        "error": "render_reset_confirm() missing 1 required positional argument: 'reset_fn'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 142, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 30, in run_app\n    from app_modules.distribution_tab import render_distribution_tab\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\distribution_tab.py\", line 168, in <module>\n    render_reset_confirm(\"inventory\", _reset_inventory_state)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: render_reset_confirm() missing 1 required positional argument: 'reset_fn'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:33:03",
+        "context": "App Bootstrap",
+        "error": "render_reset_confirm() missing 1 required positional argument: 'reset_fn'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 142, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 30, in run_app\n    from app_modules.distribution_tab import render_distribution_tab\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\distribution_tab.py\", line 168, in <module>\n    render_reset_confirm(\"inventory\", _reset_inventory_state)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: render_reset_confirm() missing 1 required positional argument: 'reset_fn'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:33:36",
+        "context": "App Bootstrap",
+        "error": "render_reset_confirm() missing 1 required positional argument: 'reset_fn'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 142, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 30, in run_app\n    from app_modules.distribution_tab import render_distribution_tab\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\distribution_tab.py\", line 168, in <module>\n    render_reset_confirm(\"inventory\", _reset_inventory_state)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: render_reset_confirm() missing 1 required positional argument: 'reset_fn'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:46:59",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 143, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 121, in run_app\n    render_manual_tab()\n    ~~~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 838, in render_manual_tab\n    render_reset_confirm(\"Sales Dashboard (Manual)\", \"manual\", _reset_manual_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:47:19",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 143, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 118, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"Live Dashboard\", \"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:47:52",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 143, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 118, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"Live Dashboard\", \"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:48:14",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 143, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 118, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"Live Dashboard\", \"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:48:57",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 127, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 102, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"Live Dashboard\", \"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:50:27",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 127, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 102, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:51:55",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 127, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 102, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:52:49",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 127, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 102, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:53:20",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 127, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 102, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:53:25",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 127, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 102, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:53:39",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 127, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 102, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:54:15",
+        "context": "App Bootstrap",
+        "error": "name 'render_reset_confirm' is not defined",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 127, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 102, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"live\", _reset_live_state)\n    ^^^^^^^^^^^^^^^^^^^^\nNameError: name 'render_reset_confirm' is not defined\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:58:43",
+        "context": "App Bootstrap",
+        "error": "render_reset_confirm() missing 1 required positional argument: 'reset_fn'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 143, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 118, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 901, in render_live_tab\n    render_reset_confirm(\"live\", _reset_live_state)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: render_reset_confirm() missing 1 required positional argument: 'reset_fn'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-02 16:59:03",
+        "context": "App Bootstrap",
+        "error": "render_reset_confirm() missing 1 required positional argument: 'reset_fn'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 143, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 127, in run_app\n    render_fuzzy_parser_tab()\n    ~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\fuzzy_parser_tab.py\", line 276, in render_fuzzy_parser_tab\n    render_reset_confirm(\"parser\", _reset_parser_state)\n    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nTypeError: render_reset_confirm() missing 1 required positional argument: 'reset_fn'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-04 10:07:50",
+        "context": "App Bootstrap",
+        "error": "tuple index out of range",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 143, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 129, in run_app\n    with nav_tabs[4]:\n         ~~~~~~~~^^^\nIndexError: tuple index out of range\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-04 10:43:29",
+        "context": "App Bootstrap",
+        "error": "'NoneType' object has no attribute 'iterrows'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 143, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 132, in run_app\n    render_wp_tab()\n    ~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\wp_tab.py\", line 170, in render_wp_tab\n    for _, row in links_df.iterrows():\n                  ^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'iterrows'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-04 11:01:44",
+        "context": "App Bootstrap",
+        "error": "'NoneType' object has no attribute 'iterrows'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 143, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 132, in run_app\n    render_wp_tab()\n    ~~~~~~~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\wp_tab.py\", line 170, in render_wp_tab\n    for _, row in links_df.iterrows():\n                  ^^^^^^^^^^^^^^^^^\nAttributeError: 'NoneType' object has no attribute 'iterrows'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-04 14:06:52",
+        "context": "App Bootstrap",
+        "error": "A non-empty `title` argument has to be provided for dialogs, for example `@st.dialog(\"Example Title\")`.",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 144, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Analysis\\Order-Process-Automation\\app.py\", line 38, in run_app\n    from app_modules.sales_dashboard import render_live_tab, render_manual_tab\n  File \"H:\\Analysis\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 808, in <module>\n    @st.dialog(\"\", width=\"large\")\n     ~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\streamlit\\elements\\dialog_decorator.py\", line 301, in wrapper\n    return _dialog_decorator(\n        non_optional_func=f,\n    ...<4 lines>...\n        on_dismiss=on_dismiss,\n    )\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\streamlit\\elements\\dialog_decorator.py\", line 72, in _dialog_decorator\n    raise StreamlitAPIException(\n    ...<2 lines>...\n    )\nstreamlit.errors.StreamlitAPIException: A non-empty `title` argument has to be provided for dialogs, for example `@st.dialog(\"Example Title\")`.\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-15 10:18:02",
+        "context": "Pathao Processor",
+        "error": "Index(['Order Number'], dtype='object')",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\pathao_tab.py\", line 118, in render_pathao_tab\n    result_df = process_orders_dataframe(preview_df)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 235, in process_orders_dataframe\n    record = process_single_order_group(phone, group, data_cols)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 75, in process_single_order_group\n    unique_orders = group.drop_duplicates(subset=[\"Order Number\"])\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6840, in drop_duplicates\n    result = self[-self.duplicated(subset, keep=keep)]\n                   ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6972, in duplicated\n    raise KeyError(Index(diff))\nKeyError: Index(['Order Number'], dtype='object')\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-15 10:19:18",
+        "context": "Pathao Processor",
+        "error": "Index(['Order Number'], dtype='object')",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\pathao_tab.py\", line 118, in render_pathao_tab\n    result_df = process_orders_dataframe(preview_df)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 235, in process_orders_dataframe\n    record = process_single_order_group(phone, group, data_cols)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 75, in process_single_order_group\n    unique_orders = group.drop_duplicates(subset=[\"Order Number\"])\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6840, in drop_duplicates\n    result = self[-self.duplicated(subset, keep=keep)]\n                   ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6972, in duplicated\n    raise KeyError(Index(diff))\nKeyError: Index(['Order Number'], dtype='object')\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-15 10:23:04",
+        "context": "Inventory Live Pull",
+        "error": "No columns to parse from file",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\distribution_tab.py\", line 83, in render_distribution_tab\n    df_live, source_name, _ = load_live_source(source_options[default_idx])\n                              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 632, in load_live_source\n    res = load_from_google_sheet()\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\streamlit\\runtime\\caching\\cache_utils.py\", line 281, in __call__\n    return self._get_or_create_cached_value(args, kwargs, spinner_message)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\streamlit\\runtime\\caching\\cache_utils.py\", line 326, in _get_or_create_cached_value\n    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\streamlit\\runtime\\caching\\cache_utils.py\", line 385, in _handle_cache_miss\n    computed_value = self._info.func(*func_args, **func_kwargs)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 541, in load_from_google_sheet\n    df_live, modified_at = _read_csv_with_last_modified(csv_url)\n                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 502, in _read_csv_with_last_modified\n    df = pd.read_csv(BytesIO(raw))\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\io\\parsers\\readers.py\", line 1026, in read_csv\n    return _read(filepath_or_buffer, kwds)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\io\\parsers\\readers.py\", line 620, in _read\n    parser = TextFileReader(filepath_or_buffer, **kwds)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\io\\parsers\\readers.py\", line 1620, in __init__\n    self._engine = self._make_engine(f, self.engine)\n                   ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\io\\parsers\\readers.py\", line 1898, in _make_engine\n    return mapping[engine](f, **self.options)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\io\\parsers\\c_parser_wrapper.py\", line 93, in __init__\n    self._reader = parsers.TextReader(src, **kwds)\n                   ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\n  File \"pandas/_libs/parsers.pyx\", line 581, in pandas._libs.parsers.TextReader.__cinit__\npandas.errors.EmptyDataError: No columns to parse from file\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-15 10:23:10",
+        "context": "Pathao Live Pull",
+        "error": "No columns to parse from file",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\pathao_tab.py\", line 66, in render_pathao_tab\n    df_live, source_name, _ = load_live_source(source_options[default_idx])\n                              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 632, in load_live_source\n    res = load_from_google_sheet()\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\streamlit\\runtime\\caching\\cache_utils.py\", line 281, in __call__\n    return self._get_or_create_cached_value(args, kwargs, spinner_message)\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\streamlit\\runtime\\caching\\cache_utils.py\", line 326, in _get_or_create_cached_value\n    return self._handle_cache_miss(cache, value_key, func_args, func_kwargs)\n           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\streamlit\\runtime\\caching\\cache_utils.py\", line 385, in _handle_cache_miss\n    computed_value = self._info.func(*func_args, **func_kwargs)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 541, in load_from_google_sheet\n    df_live, modified_at = _read_csv_with_last_modified(csv_url)\n                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 502, in _read_csv_with_last_modified\n    df = pd.read_csv(BytesIO(raw))\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\io\\parsers\\readers.py\", line 1026, in read_csv\n    return _read(filepath_or_buffer, kwds)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\io\\parsers\\readers.py\", line 620, in _read\n    parser = TextFileReader(filepath_or_buffer, **kwds)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\io\\parsers\\readers.py\", line 1620, in __init__\n    self._engine = self._make_engine(f, self.engine)\n                   ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\io\\parsers\\readers.py\", line 1898, in _make_engine\n    return mapping[engine](f, **self.options)\n           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\io\\parsers\\c_parser_wrapper.py\", line 93, in __init__\n    self._reader = parsers.TextReader(src, **kwds)\n                   ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^\n  File \"pandas/_libs/parsers.pyx\", line 581, in pandas._libs.parsers.TextReader.__cinit__\npandas.errors.EmptyDataError: No columns to parse from file\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-18 14:01:32",
+        "context": "Pathao Processor",
+        "error": "Index(['Order Number'], dtype='object')",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\pathao_tab.py\", line 118, in render_pathao_tab\n    result_df = process_orders_dataframe(preview_df)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 235, in process_orders_dataframe\n    record = process_single_order_group(phone, group, data_cols)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 75, in process_single_order_group\n    unique_orders = group.drop_duplicates(subset=[\"Order Number\"])\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6840, in drop_duplicates\n    result = self[-self.duplicated(subset, keep=keep)]\n                   ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6972, in duplicated\n    raise KeyError(Index(diff))\nKeyError: Index(['Order Number'], dtype='object')\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-18 14:01:46",
+        "context": "Pathao Processor",
+        "error": "Index(['Order Number'], dtype='object')",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\pathao_tab.py\", line 118, in render_pathao_tab\n    result_df = process_orders_dataframe(preview_df)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 235, in process_orders_dataframe\n    record = process_single_order_group(phone, group, data_cols)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 75, in process_single_order_group\n    unique_orders = group.drop_duplicates(subset=[\"Order Number\"])\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6840, in drop_duplicates\n    result = self[-self.duplicated(subset, keep=keep)]\n                   ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6972, in duplicated\n    raise KeyError(Index(diff))\nKeyError: Index(['Order Number'], dtype='object')\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-18 15:42:38",
+        "context": "App Bootstrap",
+        "error": "Invalid comparison between dtype=datetime64[ns] and date",
+        "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\arrays\\datetimelike.py\", line 1006, in _cmp_method\n    other = self._validate_comparison_value(other)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\arrays\\datetimelike.py\", line 565, in _validate_comparison_value\n    raise InvalidComparison(other)\npandas.errors.InvalidComparison: 2021-01-01\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 152, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 146, in run_app\n    render_customer_extractor_tab()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\customer_extractor.py\", line 1385, in render_customer_extractor_tab\n    (report_view[date_min_col].dt.date >= start_d) & (report_view[date_min_col].dt.date <= end_d)\n     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\ops\\common.py\", line 76, in new_method\n    return method(self, other)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\arraylike.py\", line 60, in __ge__\n    return self._cmp_method(other, operator.ge)\n           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\series.py\", line 6138, in _cmp_method\n    res_values = ops.comparison_op(lvalues, rvalues, op)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\ops\\array_ops.py\", line 330, in comparison_op\n    res_values = op(lvalues, rvalues)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\ops\\common.py\", line 76, in new_method\n    return method(self, other)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\arraylike.py\", line 60, in __ge__\n    return self._cmp_method(other, operator.ge)\n           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\arrays\\datetimelike.py\", line 1008, in _cmp_method\n    return invalid_comparison(self, other, op)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\ops\\invalid.py\", line 40, in invalid_comparison\n    raise TypeError(f\"Invalid comparison between dtype={left.dtype} and {typ}\")\nTypeError: Invalid comparison between dtype=datetime64[ns] and date\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-21 13:07:40",
+        "context": "App Bootstrap",
+        "error": "'product_details'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 167, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 161, in run_app\n    render_sheet_insights_tab()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\return_insight.py\", line 968, in render_sheet_insights_tab\n    cols[\"product_details\"] = c3.selectbox(\"Issue/Product Details\", all_cols, index=all_cols.index(cols[\"product_details\"]) if cols[\"product_details\"] in all_cols else 0, key=\"ri_col_details\")\n                                                                                                                               ~~~~^^^^^^^^^^^^^^^^^^^\nKeyError: 'product_details'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-21 13:33:49",
+        "context": "App Bootstrap",
+        "error": "'product_details'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 167, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 161, in run_app\n    render_sheet_insights_tab()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\return_insight.py\", line 994, in render_sheet_insights_tab\n    cols[\"product_details\"] = c3.selectbox(\"Issue/Product Details\", all_cols, index=all_cols.index(cols[\"product_details\"]) if cols[\"product_details\"] in all_cols else 0, key=\"ri_col_details\")\n                                                                                                                               ~~~~^^^^^^^^^^^^^^^^^^^\nKeyError: 'product_details'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-21 13:34:04",
+        "context": "App Bootstrap",
+        "error": "'product_details'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 167, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 161, in run_app\n    render_sheet_insights_tab()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\return_insight.py\", line 994, in render_sheet_insights_tab\n    cols[\"product_details\"] = c3.selectbox(\"Issue/Product Details\", all_cols, index=all_cols.index(cols[\"product_details\"]) if cols[\"product_details\"] in all_cols else 0, key=\"ri_col_details\")\n                                                                                                                               ~~~~^^^^^^^^^^^^^^^^^^^\nKeyError: 'product_details'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-21 13:34:11",
+        "context": "App Bootstrap",
+        "error": "'product_details'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 167, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 161, in run_app\n    render_sheet_insights_tab()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\return_insight.py\", line 994, in render_sheet_insights_tab\n    cols[\"product_details\"] = c3.selectbox(\"Issue/Product Details\", all_cols, index=all_cols.index(cols[\"product_details\"]) if cols[\"product_details\"] in all_cols else 0, key=\"ri_col_details\")\n                                                                                                                               ~~~~^^^^^^^^^^^^^^^^^^^\nKeyError: 'product_details'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 14:43:00",
+        "context": "App Bootstrap",
+        "error": "No module named 'app_modules.dynamic_extractor'",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 54, in run_app\n    from app_modules.dynamic_extractor import render_dynamic_extractor_tab\nModuleNotFoundError: No module named 'app_modules.dynamic_extractor'\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 14:52:34",
+        "context": "App Bootstrap",
+        "error": "No secrets found. Valid paths for a secrets.toml file or secret directories are: C:\\Users\\deenb\\.streamlit\\secrets.toml, H:\\Repo\\Order-Process-Automation\\.streamlit\\secrets.toml",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 171, in run_app\n    render_dynamic_extractor_tab()\n    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\dynamic_extractor.py\", line 229, in render_dynamic_extractor_tab\n    wc_store_url = st.text_input(\"WC Store URL\", st.secrets.get(\"WC_STORE_URL\", \"\"))\n                                                 ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen _collections_abc>\", line 795, in get\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\streamlit\\runtime\\secrets.py\", line 473, in __getitem__\n    value = self._parse()[key]\n            ~~~~~~~~~~~^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\streamlit\\runtime\\secrets.py\", line 375, in _parse\n    raise StreamlitSecretNotFoundError(error_msg)\nstreamlit.errors.StreamlitSecretNotFoundError: No secrets found. Valid paths for a secrets.toml file or secret directories are: C:\\Users\\deenb\\.streamlit\\secrets.toml, H:\\Repo\\Order-Process-Automation\\.streamlit\\secrets.toml\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:09:30",
+        "context": "App Bootstrap",
+        "error": "cannot access local variable 'wc_api_version' where it is not associated with a value",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 157, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1551, in render_live_tab\n    \"api_version\": wc_api_version,\n                   ^^^^^^^^^^^^^^\nUnboundLocalError: cannot access local variable 'wc_api_version' where it is not associated with a value\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:09:37",
+        "context": "App Bootstrap",
+        "error": "cannot access local variable 'wc_api_version' where it is not associated with a value",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 157, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1551, in render_live_tab\n    \"api_version\": wc_api_version,\n                   ^^^^^^^^^^^^^^\nUnboundLocalError: cannot access local variable 'wc_api_version' where it is not associated with a value\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:09:47",
+        "context": "App Bootstrap",
+        "error": "cannot access local variable 'wc_api_version' where it is not associated with a value",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 157, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1551, in render_live_tab\n    \"api_version\": wc_api_version,\n                   ^^^^^^^^^^^^^^\nUnboundLocalError: cannot access local variable 'wc_api_version' where it is not associated with a value\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:09:51",
+        "context": "App Bootstrap",
+        "error": "cannot access local variable 'wc_api_version' where it is not associated with a value",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 157, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1551, in render_live_tab\n    \"api_version\": wc_api_version,\n                   ^^^^^^^^^^^^^^\nUnboundLocalError: cannot access local variable 'wc_api_version' where it is not associated with a value\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:09:52",
+        "context": "App Bootstrap",
+        "error": "cannot access local variable 'wc_api_version' where it is not associated with a value",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 157, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1551, in render_live_tab\n    \"api_version\": wc_api_version,\n                   ^^^^^^^^^^^^^^\nUnboundLocalError: cannot access local variable 'wc_api_version' where it is not associated with a value\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:09:53",
+        "context": "App Bootstrap",
+        "error": "cannot access local variable 'wc_api_version' where it is not associated with a value",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 157, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1551, in render_live_tab\n    \"api_version\": wc_api_version,\n                   ^^^^^^^^^^^^^^\nUnboundLocalError: cannot access local variable 'wc_api_version' where it is not associated with a value\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:09:53",
+        "context": "App Bootstrap",
+        "error": "cannot access local variable 'wc_api_version' where it is not associated with a value",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 157, in run_app\n    render_live_tab()\n    ~~~~~~~~~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1551, in render_live_tab\n    \"api_version\": wc_api_version,\n                   ^^^^^^^^^^^^^^\nUnboundLocalError: cannot access local variable 'wc_api_version' where it is not associated with a value\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:39:44",
+        "context": "App Bootstrap",
+        "error": "invalid syntax. Perhaps you forgot a comma? (sales_dashboard.py, line 1188)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 38, in run_app\n    from app_modules.sales_dashboard import render_live_tab, render_manual_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1188\n    help=\"Select specific categories to update the charts and tables below.\"\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nSyntaxError: invalid syntax. Perhaps you forgot a comma?\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:41:50",
+        "context": "App Bootstrap",
+        "error": "invalid syntax. Perhaps you forgot a comma? (sales_dashboard.py, line 1188)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 38, in run_app\n    from app_modules.sales_dashboard import render_live_tab, render_manual_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1188\n    help=\"Select specific categories to update the charts and tables below.\"\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nSyntaxError: invalid syntax. Perhaps you forgot a comma?\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:41:57",
+        "context": "App Bootstrap",
+        "error": "invalid syntax. Perhaps you forgot a comma? (sales_dashboard.py, line 1188)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 38, in run_app\n    from app_modules.sales_dashboard import render_live_tab, render_manual_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1188\n    help=\"Select specific categories to update the charts and tables below.\"\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nSyntaxError: invalid syntax. Perhaps you forgot a comma?\n",
+        "details": {}
+    }
+]

@@ -299,6 +299,7 @@ def scrub_raw_dataframe(df):
     return df
 
 
+@st.cache_data(show_spinner=False)
 def process_data(df, selected_cols):
     """Processed data using validated user-selected or auto-detected columns."""
     try:
@@ -663,7 +664,7 @@ def load_live_source(source_mode, wc_credentials=None):
         res = load_from_google_sheet()
     elif source_mode == "Google Drive Folder":
         res = load_latest_from_gdrive_folder()
-    elif source_mode == "WooCommerce Store":
+    elif source_mode == "🛒 WooCommerce Store":
         if wc_credentials is None:
             raise ValueError("WooCommerce credentials not provided")
         from app_modules.wc_live_source import load_from_woocommerce
@@ -672,8 +673,9 @@ def load_live_source(source_mode, wc_credentials=None):
             consumer_key=wc_credentials["consumer_key"],
             consumer_secret=wc_credentials["consumer_secret"],
             api_version=wc_credentials.get("api_version", "wc/v3"),
-            days_back=wc_credentials.get("days_back", 30),
-            status=wc_credentials.get("status", "completed")
+            status=wc_credentials.get("status", "completed"),
+            after=wc_credentials.get("after"),
+            before=wc_credentials.get("before")
         )
 
     if res:
@@ -906,9 +908,131 @@ def _delta_str(today_val, yesterday_val):
     return f"{sign}{diff:,.0f} ({arrow}{abs(pct):.1f}%)"
 
 
+def _compute_order_status_metrics(df: pd.DataFrame) -> dict:
+    """
+    Compute order status metrics from raw dataframe.
+    Returns dict with: shipped_orders, processing_orders, total_items, total_revenue
+    """
+    metrics = {
+        "shipped_orders": 0,
+        "processing_orders": 0,
+        "pending_orders": 0,
+        "cancelled_orders": 0,
+        "total_items": 0,
+        "total_revenue": 0.0,
+        "latest_shipped": [],
+        "status_breakdown": {}
+    }
+    
+    if df is None or df.empty:
+        return metrics
+    
+    # Detect status column
+    status_col = None
+    for col in df.columns:
+        col_lower = col.lower()
+        if any(keyword in col_lower for keyword in ['status', 'order status', 'state']):
+            status_col = col
+            break
+    
+    # Detect quantity/items column
+    qty_col = None
+    for col in df.columns:
+        col_lower = col.lower()
+        if any(keyword in col_lower for keyword in ['qty', 'quantity', 'items', 'count', 'total items']):
+            qty_col = col
+            break
+    
+    # Detect revenue/total column
+    revenue_col = None
+    for col in df.columns:
+        col_lower = col.lower()
+        if any(keyword in col_lower for keyword in ['total', 'revenue', 'amount', 'price', 'subtotal']):
+            if 'id' not in col_lower and 'qty' not in col_lower:
+                revenue_col = col
+                break
+    
+    # Detect date column for latest shipped
+    date_col = None
+    for col in df.columns:
+        col_lower = col.lower()
+        if any(keyword in col_lower for keyword in ['date', 'created', 'order date', 'ship date']):
+            date_col = col
+            break
+    
+    # Compute status breakdown
+    if status_col:
+        status_counts = df[status_col].value_counts().to_dict()
+        metrics["status_breakdown"] = status_counts
+        
+        for status, count in status_counts.items():
+            status_str = str(status).lower()
+            if any(k in status_str for k in ['shipped', 'delivered', 'completed', 'done', 'finish']):
+                metrics["shipped_orders"] += count
+            elif any(k in status_str for k in ['processing', 'in progress', 'packed', 'ready']):
+                metrics["processing_orders"] += count
+            elif any(k in status_str for k in ['pending', 'new', 'received']):
+                metrics["pending_orders"] += count
+            elif any(k in status_str for k in ['cancel', 'refund', 'return']):
+                metrics["cancelled_orders"] += count
+    
+    # Compute total items
+    if qty_col:
+        try:
+            metrics["total_items"] = pd.to_numeric(df[qty_col], errors='coerce').sum()
+        except:
+            pass
+    else:
+        # Try to count rows as items if no qty column
+        metrics["total_items"] = len(df)
+    
+    # Compute total revenue
+    if revenue_col:
+        try:
+            # Clean and convert revenue column
+            revenue_series = df[revenue_col].astype(str).str.replace(r'[^\d.]', '', regex=True)
+            metrics["total_revenue"] = pd.to_numeric(revenue_series, errors='coerce').sum()
+        except:
+            pass
+    
+    # Get latest shipped orders
+    if status_col and date_col:
+        try:
+            shipped_mask = df[status_col].astype(str).str.lower().str.contains('shipped|delivered|completed', na=False)
+            shipped_df = df[shipped_mask].copy()
+            
+            if not shipped_df.empty:
+                # Parse date and sort
+                shipped_df['_date'] = pd.to_datetime(shipped_df[date_col], errors='coerce')
+                shipped_df = shipped_df.dropna(subset=['_date'])
+                shipped_df = shipped_df.sort_values('_date', ascending=False)
+                
+                # Get top 10 latest shipped
+                latest = shipped_df.head(10)
+                
+                # Find customer and order ID columns
+                customer_col = next((c for c in df.columns if any(k in c.lower() for k in ['customer', 'name', 'buyer'])), None)
+                order_col = next((c for c in df.columns if any(k in c.lower() for k in ['order', 'id', 'number'])), None)
+                
+                for _, row in latest.iterrows():
+                    order_info = {
+                        'date': row[date_col],
+                        'status': row.get(status_col, ''),
+                        'customer': row.get(customer_col, 'N/A') if customer_col else 'N/A',
+                        'order_id': row.get(order_col, '') if order_col else ''
+                    }
+                    if revenue_col:
+                        order_info['revenue'] = row.get(revenue_col, 0)
+                    metrics["latest_shipped"].append(order_info)
+        except Exception as e:
+            pass
+    
+    return metrics
+
+
 def render_dashboard_output(
     drill, summ, top, timeframe, basket, source_name, last_updated="N/A",
-    df_raw=None, live_mapping=None
+    df_raw=None, live_mapping=None, df_prev=None, period_labels=None
 ):
     """Renders common dashboard widgets/charts/tables/export."""
     tz_bd = timezone(timedelta(hours=6))
@@ -922,67 +1046,79 @@ def render_dashboard_output(
     t_qty = summ["Total Qty"].sum()
     t_rev = summ["Total Amount"].sum()
 
-    # ── Day-split metrics (today vs yesterday) ────────────────────────────
-    tz_bd = timezone(timedelta(hours=6))
-    today_kpi, yesterday_kpi, yesterday_orders_df = (
-        compute_day_metrics(df_raw, live_mapping)
+    # ── Period metrics comparison ────────────────────────────
+    curr_kpi, prev_kpi, recent_orders_df = (
+        compute_period_metrics(df_raw, df_prev, live_mapping)
         if (df_raw is not None and live_mapping is not None)
         else ({"qty": 0, "orders": 0, "revenue": 0, "avg_basket": 0},
               {"qty": 0, "orders": 0, "revenue": 0, "avg_basket": 0},
               pd.DataFrame())
     )
-    has_day_data = today_kpi["orders"] > 0 or yesterday_kpi["orders"] > 0
+    has_data = curr_kpi["orders"] > 0
 
     with st.container():
         st.markdown('<div id="snapshot-target-main"></div>', unsafe_allow_html=True)
         st.subheader("Core Metrics")
 
-        if has_day_data:
-            # ── Today vs Yesterday comparison row ─────────────────────────
-            tz_bd_local = timezone(timedelta(hours=6))
-            today_label = datetime.now(tz_bd_local).strftime("%d %b")
-            yesterday_label = (datetime.now(tz_bd_local) - timedelta(days=1)).strftime("%d %b")
+        if has_data:
+            if df_prev is not None and not df_prev.empty:
+                if period_labels:
+                    start_d, end_d = period_labels
+                    curr_label = f"{start_d.strftime('%b %d')} - {end_d.strftime('%b %d')}"
+                    delta_days = (end_d - start_d).days + 1
+                    prev_start = start_d - timedelta(days=delta_days)
+                    prev_end = start_d - timedelta(days=1)
+                    prev_label = f"{prev_start.strftime('%b %d')} - {prev_end.strftime('%b %d')}"
+                else:
+                    curr_label = "Selected Period"
+                    prev_label = "Previous Period"
 
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric(
-                f"Today's Items Sold ({today_label})",
-                f"{today_kpi['qty']:,.0f}",
-                delta=_delta_str(today_kpi['qty'], yesterday_kpi['qty']),
-                delta_color="normal",
-                help=f"Yesterday ({yesterday_label}): {yesterday_kpi['qty']:,.0f} items",
-            )
-            m2.metric(
-                f"Today's Orders ({today_label})",
-                f"{today_kpi['orders']:,.0f}",
-                delta=_delta_str(today_kpi['orders'], yesterday_kpi['orders']),
-                delta_color="normal",
-                help=f"Yesterday ({yesterday_label}): {yesterday_kpi['orders']:,.0f} orders",
-            )
-            m3.metric(
-                f"Today's Revenue ({today_label})",
-                f"TK {today_kpi['revenue']:,.0f}",
-                delta=_delta_str(today_kpi['revenue'], yesterday_kpi['revenue']),
-                delta_color="normal",
-                help=f"Yesterday ({yesterday_label}): TK {yesterday_kpi['revenue']:,.0f}",
-            )
-            m4.metric(
-                "Avg Basket Value",
-                f"TK {today_kpi['avg_basket']:,.0f}" if today_kpi['avg_basket'] else "-",
-                delta=_delta_str(today_kpi['avg_basket'], yesterday_kpi['avg_basket']) if today_kpi['avg_basket'] and yesterday_kpi['avg_basket'] else None,
-                delta_color="normal",
-                help=f"Yesterday ({yesterday_label}): TK {yesterday_kpi['avg_basket']:,.0f}",
-            )
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric(
+                    f"Items Sold ({curr_label})",
+                    f"{curr_kpi['qty']:,.0f}",
+                    delta=_delta_str(curr_kpi['qty'], prev_kpi['qty']),
+                    delta_color="normal",
+                    help=f"Previous ({prev_label}): {prev_kpi['qty']:,.0f} items",
+                )
+                m2.metric(
+                    f"Orders ({curr_label})",
+                    f"{curr_kpi['orders']:,.0f}",
+                    delta=_delta_str(curr_kpi['orders'], prev_kpi['orders']),
+                    delta_color="normal",
+                    help=f"Previous ({prev_label}): {prev_kpi['orders']:,.0f} orders",
+                )
+                m3.metric(
+                    f"Revenue ({curr_label})",
+                    f"TK {curr_kpi['revenue']:,.0f}",
+                    delta=_delta_str(curr_kpi['revenue'], prev_kpi['revenue']),
+                    delta_color="normal",
+                    help=f"Previous ({prev_label}): TK {prev_kpi['revenue']:,.0f}",
+                )
+                m4.metric(
+                    "Avg Basket Value",
+                    f"TK {curr_kpi['avg_basket']:,.0f}" if curr_kpi['avg_basket'] else "-",
+                    delta=_delta_str(curr_kpi['avg_basket'], prev_kpi['avg_basket']) if curr_kpi['avg_basket'] and prev_kpi['avg_basket'] else None,
+                    delta_color="normal",
+                    help=f"Previous ({prev_label}): TK {prev_kpi['avg_basket']:,.0f}",
+                )
 
-            # ── Yesterday summary row (compact) ───────────────────────────
-            st.markdown(
-                f"<div style='font-size:.8rem;color:#64748b;margin:4px 0 0 2px;'>"
-                f"📅 <b>Yesterday ({yesterday_label}):</b> "
-                f"{yesterday_kpi['qty']:,.0f} items &nbsp;·&nbsp; "
-                f"{yesterday_kpi['orders']:,.0f} orders &nbsp;·&nbsp; "
-                f"TK {yesterday_kpi['revenue']:,.0f} revenue"
-                f"</div>",
-                unsafe_allow_html=True,
-            )
+                st.markdown(
+                    f"<div style='font-size:.8rem;color:#64748b;margin:4px 0 0 2px;'>"
+                    f"📅 <b>Previous Period ({prev_label}):</b> "
+                    f"{prev_kpi['qty']:,.0f} items &nbsp;·&nbsp; "
+                    f"{prev_kpi['orders']:,.0f} orders &nbsp;·&nbsp; "
+                    f"TK {prev_kpi['revenue']:,.0f} revenue"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
+            else:
+                curr_label = f"{period_labels[0].strftime('%b %d')} - {period_labels[1].strftime('%b %d')}" if period_labels else "Selected Period"
+                m1, m2, m3, m4 = st.columns(4)
+                m1.metric(f"Items Sold ({curr_label})", f"{curr_kpi['qty']:,.0f}")
+                m2.metric(f"Orders ({curr_label})", f"{curr_kpi['orders']:,.0f}")
+                m3.metric(f"Revenue ({curr_label})", f"TK {curr_kpi['revenue']:,.0f}")
+                m4.metric("Avg Basket Value", f"TK {curr_kpi['avg_basket']:,.0f}" if curr_kpi['avg_basket'] else "-")
         else:
             # Fallback: full-dataset metrics (no date data available)
             total_orders = basket.get("total_orders", 0)
@@ -997,24 +1133,83 @@ def render_dashboard_output(
 
         st.divider()
 
+        # ── Order Status Metrics ─────────────────────────────────────────
+        if df_raw is not None and not df_raw.empty:
+            order_metrics = _compute_order_status_metrics(df_raw)
+            
+            if order_metrics["status_breakdown"]:
+                st.subheader("📦 Order Status")
+                
+                # Status breakdown cards
+                c1, c2, c3, c4, c5 = st.columns(5)
+                
+                chart_col, metrics_col = st.columns([2,3])
+                
+                with chart_col:
+                    status_df = pd.DataFrame(list(order_metrics['status_breakdown'].items()), columns=['Status', 'Count'])
+                    fig_status = px.pie(status_df, values='Count', names='Status', title="Order Status Breakdown", hole=0.4)
+                    fig_status.update_layout(
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#94a3b8"),
+                        legend=dict(orientation="h", yanchor="bottom", y=-0.4, xanchor="center", x=0.5)
+                    )
+                    st.plotly_chart(fig_status, use_container_width=True)
+
+                with metrics_col:
+                    m1, m2 = st.columns(2)
+                    m1.metric("✅ Shipped", f"{order_metrics['shipped_orders']:,}")
+                    m2.metric("🔄 Processing", f"{order_metrics['processing_orders']:,}")
+                    m1.metric("⏳ Pending", f"{order_metrics['pending_orders']:,}")
+                    m2.metric("❌ Cancelled", f"{order_metrics['cancelled_orders']:,}")
+                    st.metric(" Total Items", f"{order_metrics['total_items']:,.0f}")
+                    st.metric("💰 Total Revenue", f"TK {order_metrics['total_revenue']:,.0f}")
+
+                
+                # Latest shipped orders table
+                if order_metrics["latest_shipped"]:
+                    st.markdown("#### 🚚 Latest Shipped Orders (Top 10)")
+                    latest_df = pd.DataFrame(order_metrics["latest_shipped"])
+                    st.dataframe(latest_df, use_container_width=True, hide_index=True)
+                
+                st.divider()
+
         st.subheader("Visual Analytics")
 
-        sorted_cats = summ.sort_values("Total Amount", ascending=False)[
-            "Category"
-        ].tolist()
+        # Category Filter
+        all_categories = sorted(summ["Category"].unique().tolist())
+        saved_cats = st.session_state.get("live_selected_categories", all_categories)
+        valid_default_cats = [c for c in saved_cats if c in all_categories] if saved_cats else all_categories
+        
+        selected_categories = st.multiselect(
+            "Filter by Category",
+            options=all_categories,
+            default=valid_default_cats if valid_default_cats else all_categories,
+            help="Select specific categories to update the charts and tables below."
+            help="Select specific categories to update the charts and tables below.",
+            key="live_selected_categories"
+        )
+
+        filtered_summ = summ[summ["Category"].isin(selected_categories)].copy()
+        filtered_top = top[top["Category"].isin(selected_categories)].copy()
+        filtered_drill = drill[drill["Category"].isin(selected_categories)].copy()
+
+        # Brand Custom Colors (Blues, Teals, Oranges for a modern brand look)
+        brand_colors = [
+            "#1d4ed8", "#3b82f6", "#0ea5e9", "#06b6d4", "#14b8a6", 
+            "#10b981", "#84cc16", "#eab308", "#f59e0b", "#f97316",
+            "#ef4444", "#ec4899", "#d946ef", "#8b5cf6", "#6366f1"
+        ]
+
+        sorted_cats = filtered_summ.sort_values("Total Amount", ascending=False)["Category"].tolist()
         color_map = {}
         for i, cat in enumerate(sorted_cats):
-            val = (
-                (i / max(1, len(sorted_cats) - 1)) * 0.85
-                if len(sorted_cats) > 1
-                else 0.0
-            )
-            color_map[cat] = px.colors.sample_colorscale("Plasma", [val])[0]
+            color_map[cat] = brand_colors[i % len(brand_colors)]
 
         v1, v2 = st.columns(2)
         with v1:
             fig_pie = px.pie(
-                summ,
+                filtered_summ,
                 values="Total Amount",
                 names="Category",
                 color="Category",
@@ -1067,7 +1262,7 @@ def render_dashboard_output(
 
         with v2:
             fig_bar = px.bar(
-                summ.sort_values("Total Qty", ascending=False),
+                filtered_summ.sort_values("Total Qty", ascending=False),
                 x="Category",
                 y="Total Qty",
                 color="Category",
@@ -1098,8 +1293,73 @@ def render_dashboard_output(
     render_snapshot_button("snapshot-target-main")
     st.divider()
 
+        col_t1, col_t2 = st.columns([3, 1])
+        with col_t1:
+            st.subheader("Revenue Trend")
+        with col_t2:
+            trend_granularity = st.radio("Granularity", ["Daily", "Weekly"], horizontal=True, key="live_trend_granularity", label_visibility="collapsed")
+            
+        if live_mapping.get("date") and live_mapping["date"] in df_raw.columns:
+            trend_df = df_raw.copy()
+            trend_df["_date"] = pd.to_datetime(trend_df[live_mapping["date"]], errors="coerce")
+            trend_df = trend_df.dropna(subset=["_date"])
+            
+            if not trend_df.empty:
+                # Group by selected granularity
+                if trend_granularity == "Weekly":
+                    trend_df["_period"] = trend_df["_date"].dt.to_period("W").apply(lambda r: r.start_time)
+                else:
+                    trend_df["_period"] = trend_df["_date"].dt.date
+                
+                cost_col = live_mapping.get("cost")
+                qty_col = live_mapping.get("qty")
+                trend_df["_revenue"] = pd.to_numeric(trend_df[cost_col], errors="coerce").fillna(0) * pd.to_numeric(trend_df[qty_col], errors="coerce").fillna(0)
+                
+                # Filter by selected categories for consistency
+                if "Category" in trend_df.columns:
+                    trend_df = trend_df[trend_df["Category"].isin(selected_categories)]
+                else:
+                    trend_df["Category"] = trend_df[live_mapping.get("name", "")].apply(get_category)
+                    trend_df = trend_df[trend_df["Category"].isin(selected_categories)]
+                
+                trend_agg = trend_df.groupby("_period").agg({"_revenue": "sum"}).reset_index()
+                
+                if not trend_agg.empty:
+                    x_label = "Week Starting" if trend_granularity == "Weekly" else "Date"
+                    fig_trend = px.bar(
+                        trend_agg, x="_period", y="_revenue",
+                        text_auto=".2s",
+                        labels={"_period": x_label, "_revenue": "Revenue (TK)"}
+                    )
+                    fig_trend.update_layout(
+                        margin=dict(l=12, r=12, t=30, b=12),
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="#94a3b8")
+                    )
+                    st.plotly_chart(fig_trend, use_container_width=True, config={"displayModeBar": False})
+                    
+                    # Export option for trend data
+                    trend_export = trend_agg.copy()
+                    if trend_granularity == "Weekly":
+                        trend_export["_period"] = pd.to_datetime(trend_export["_period"]).dt.strftime("%Y-%m-%d")
+                    
+                    trend_export.rename(columns={"_period": x_label, "_revenue": "Revenue (TK)"}, inplace=True)
+                    st.download_button(
+                        label=f"📥 Download {trend_granularity} Trend Data (CSV)",
+                        data=trend_export.to_csv(index=False).encode("utf-8"),
+                        file_name=f"{trend_granularity.lower()}_revenue_trend_{datetime.now().strftime('%Y%m%d')}.csv",
+                        mime="text/csv"
+                    )
+                else:
+                    st.info("No data available for the trend chart with current filters.")
+        else:
+            st.info("Date column not available for trend analysis.")
+
+        st.divider()
+
     st.subheader("Top Products Spotlight")
-    spotlight = top.head(10).sort_values("Total Amount", ascending=True)
+    spotlight = filtered_top.head(10).sort_values("Total Amount", ascending=True)
     fig_top = px.bar(
         spotlight,
         x="Total Amount",
@@ -1126,42 +1386,40 @@ def render_dashboard_output(
     tabs = st.tabs(["Summary", "Rankings", "Drilldown"])
     with tabs[0]:
         st.dataframe(
-            summ.sort_values("Total Amount", ascending=False),
+            filtered_summ.sort_values("Total Amount", ascending=False),
             use_container_width=True,
             hide_index=True,
         )
     with tabs[1]:
-        st.dataframe(top.head(20), use_container_width=True, hide_index=True)
+        st.dataframe(filtered_top.head(20), use_container_width=True, hide_index=True)
     with tabs[2]:
         st.dataframe(
-            drill.sort_values(["Category", "Price (TK)"]),
+            filtered_drill.sort_values(["Category", "Price (TK)"]),
             use_container_width=True,
             hide_index=True,
         )
 
     buf = BytesIO()
     with pd.ExcelWriter(buf, engine="xlsxwriter") as wr:
-        summ.to_excel(wr, sheet_name="Summary", index=False)
-        top.to_excel(wr, sheet_name="Rankings", index=False)
-        drill.to_excel(wr, sheet_name="Details", index=False)
+        filtered_summ.to_excel(wr, sheet_name="Summary", index=False)
+        filtered_top.to_excel(wr, sheet_name="Rankings", index=False)
+        filtered_drill.to_excel(wr, sheet_name="Details", index=False)
 
     base_name = os.path.splitext(os.path.basename(source_name))[0]
     file_suffix = f"_{timeframe}" if timeframe else ""
     final_filename = f"Report_{base_name}{file_suffix}.xlsx"
     st.download_button("Export Report", data=buf.getvalue(), file_name=final_filename)
 
-    # ── Last Day Processed Orders ──────────────────────────────────────────
-    if yesterday_orders_df is not None and not yesterday_orders_df.empty:
+    # ── Recent Processed Orders ──────────────────────────────────────────
+    if recent_orders_df is not None and not recent_orders_df.empty:
         st.divider()
-        tz_bd_local = timezone(timedelta(hours=6))
-        yesterday_label = (datetime.now(tz_bd_local) - timedelta(days=1)).strftime("%A, %d %b %Y")
-        st.subheader(f"📋 Last Day Processed Orders ({yesterday_label})")
+        st.subheader("📋 Recent Processed Orders")
         st.caption(
-            f"{yesterday_kpi['orders']:,.0f} orders · "
-            f"{yesterday_kpi['qty']:,.0f} items · "
-            f"TK {yesterday_kpi['revenue']:,.0f} revenue"
+            f"{curr_kpi['orders']:,.0f} orders in current period · "
+            f"{curr_kpi['qty']:,.0f} items · "
+            f"TK {curr_kpi['revenue']:,.0f} revenue"
         )
-        st.dataframe(yesterday_orders_df.reset_index(drop=True), use_container_width=True)
+        st.dataframe(recent_orders_df.reset_index(drop=True), use_container_width=True)
 
 
 def render_manual_tab():
@@ -1257,6 +1515,8 @@ def render_manual_tab():
                     basket,
                     uploaded_file.name,
                     manual_updated,
+                    df_raw=df,
+                    live_mapping=final_mapping
                 )
 
     except Exception as e:
@@ -1319,179 +1579,88 @@ def render_live_tab():
     """
     st.markdown(welcome_html, unsafe_allow_html=True)
 
-    # Source selection with Upload and WooCommerce options added
-    source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder", "📁 File Upload", "🛒 WooCommerce Store"]
-    default_idx = 0
-    if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
-        default_idx = 1
-    elif get_setting("GSHEET_ID"):
-        default_idx = 1
-    elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
-        default_idx = 2
-    elif get_setting("WC_STORE_URL") and get_setting("WC_CONSUMER_KEY"):
-        default_idx = 4
-
-    source_mode = st.radio(
-        "Select Data Source",
-        source_options,
-        index=default_idx,
-        horizontal=True,
-        key="live_source_mode"
-    )
-    
-    # Handle File Upload option
-    uploaded_file = None
-    if source_mode == "📁 File Upload":
-        st.markdown("---")
-        st.subheader("📁 Upload Sales Data")
-        uploaded_file = st.file_uploader(
-            "Upload CSV or Excel file",
-            type=["csv", "xlsx", "xls"],
-            key="live_file_upload"
-        )
-        if uploaded_file:
-            st.session_state.live_uploaded_file = uploaded_file
-            st.success(f"✅ File ready: {uploaded_file.name}")
-        elif st.session_state.get("live_uploaded_file"):
-            uploaded_file = st.session_state.live_uploaded_file
-            st.info(f"📎 Using cached file: {uploaded_file.name}")
+    source_mode = "🛒 WooCommerce Store"
 
     # Handle WooCommerce Store option
     wc_credentials = None
     if source_mode == "🛒 WooCommerce Store":
-        st.markdown("---")
-        st.subheader("🛒 WooCommerce API Configuration")
-        
-        wc_col1, wc_col2 = st.columns(2)
-        with wc_col1:
-            wc_store_url = st.text_input(
-                "Store URL",
-                value=get_setting("WC_STORE_URL", st.session_state.get("wc_live_store_url", "")).replace("https://", "").replace("http://", ""),
-                placeholder="yourstore.com",
-                help="Your WooCommerce store URL (without https://)"
-            )
-            wc_consumer_key = st.text_input(
-                "Consumer Key",
-                value=get_setting("WC_CONSUMER_KEY", st.session_state.get("wc_live_consumer_key", "")),
-                type="password",
-                placeholder="ck_xxxxxxxxxxxxxxxx",
-                help="WooCommerce REST API Consumer Key"
-            )
-        with wc_col2:
-            wc_api_version = st.selectbox(
-                "API Version",
-                options=["wc/v3", "wc/v2"],
-                index=0,
-                key="wc_live_api_version"
-            )
-            wc_consumer_secret = st.text_input(
-                "Consumer Secret",
-                value=get_setting("WC_CONSUMER_SECRET", st.session_state.get("wc_live_consumer_secret", "")),
-                type="password",
-                placeholder="cs_xxxxxxxxxxxxxxxx",
-                help="WooCommerce REST API Consumer Secret"
-            )
-        
-        # Advanced options
-        with st.expander("Advanced Options"):
-            wc_days_back = st.slider(
-                "Fetch orders from last N days",
-                min_value=7,
-                max_value=90,
-                value=30,
-                step=7,
-                key="wc_live_days_back"
-            )
-            wc_status = st.selectbox(
-                "Order Status",
-                options=["completed", "processing", "on-hold", "any"],
-                index=0,
-                key="wc_live_status",
-                help="Filter orders by status. 'completed' recommended for sales dashboard."
-            )
-        
-        # Store in session state
-        if wc_store_url:
-            st.session_state["wc_live_store_url"] = wc_store_url
-        if wc_consumer_key:
-            st.session_state["wc_live_consumer_key"] = wc_consumer_key
-        if wc_consumer_secret:
-            st.session_state["wc_live_consumer_secret"] = wc_consumer_secret
-        
-        # Test connection button
-        test_wc_col, _ = st.columns([1, 2])
-        with test_wc_col:
-            if st.button("Test Connection", use_container_width=True, key="test_wc_connection"):
-                if not all([wc_store_url, wc_consumer_key, wc_consumer_secret]):
-                    st.error("Please fill in all API credentials.")
-                else:
-                    with st.spinner("Testing..."):
-                        from app_modules.wc_live_source import test_wc_connection, _validate_url
-                        try:
-                            validated_url = _validate_url(wc_store_url)
-                            if test_wc_connection(validated_url, wc_consumer_key, wc_consumer_secret, wc_api_version):
-                                st.success("✅ Connection successful!")
-                            else:
-                                st.error("❌ Connection failed. Check credentials.")
-                        except Exception as e:
-                            st.error(f"❌ Error: {str(e)}")
-        
-        # Build credentials dict
+        wc_store_url = get_setting("WC_STORE_URL")
+        wc_consumer_key = get_setting("WC_CONSUMER_KEY")
+        wc_consumer_secret = get_setting("WC_CONSUMER_SECRET")
+        wc_api_version = "wc/v3"
+
         if all([wc_store_url, wc_consumer_key, wc_consumer_secret]):
+            st.success("🛒 WooCommerce source configured via secrets.")
+            with st.expander("Advanced Options"):
+                col_d1, col_d2 = st.columns(2)
+                with col_d1:
+                    wc_start_date = st.date_input("From Date", value=datetime.now().date() - timedelta(days=30), key="wc_live_start")
+                with col_d2:
+                    wc_end_date = st.date_input("To Date", value=datetime.now().date(), key="wc_live_end")
+                
+                compare_prev = st.checkbox("Compare with previous period", value=True, key="wc_compare_prev")
+                
+                wc_status = st.multiselect(
+                    "Order Status",
+                    options=["completed", "processing", "shipped", "on-hold", "pending", "cancelled", "refunded", "failed"],
+                    default=["completed", "processing", "shipped"],
+                    key="wc_live_status",
+                    help="Filter orders by status. Select one or more."
+                )
+                
+            # Calculate actual fetch start date based on comparison toggle
+            delta_days = (wc_end_date - wc_start_date).days + 1
+            fetch_start_date = wc_start_date - timedelta(days=delta_days) if compare_prev else wc_start_date
+
             from app_modules.wc_live_source import _validate_url
             wc_credentials = {
                 "store_url": _validate_url(wc_store_url),
                 "consumer_key": wc_consumer_key,
                 "consumer_secret": wc_consumer_secret,
                 "api_version": wc_api_version,
-                "days_back": wc_days_back if 'wc_days_back' in locals() else 30,
-                "status": wc_status if 'wc_status' in locals() else "completed"
+                "status": ",".join(wc_status) if isinstance(wc_status, list) else wc_status,
+                "after": f"{fetch_start_date}T00:00:00",
+                "before": f"{wc_end_date}T23:59:59",
+                "current_start": wc_start_date,
+                "current_end": wc_end_date,
+                "compare_prev": compare_prev
             }
         else:
-            st.info("👆 Enter WooCommerce API credentials to load data.")
+            st.error("WooCommerce secrets (WC_STORE_URL, etc.) not found in secrets.toml. Please configure them.")
 
     # ── Force Refresh + Freshness row ───────────────────────────────────
-    rc1, rc2 = st.columns([3, 1])
-    if st.session_state.get("live_sync_time"):
-        diff = datetime.now() - st.session_state.live_sync_time
-        secs = int(diff.total_seconds())
-        if secs < 60:
-            sync_label = f"{secs}s ago"
+    rc1, rc2, rc3 = st.columns([2, 1, 1])
+    with rc1:
+        if st.session_state.get("live_sync_time"):
+            diff = datetime.now() - st.session_state.live_sync_time
+            secs = int(diff.total_seconds())
+            if secs < 60:
+                sync_label = f"{secs}s ago"
+            else:
+                sync_label = f"{secs // 60}m {secs % 60}s ago"
+            next_in = max(0, 30 - secs)
+            st.caption(f"🔄 Last synced: **{sync_label}** · next auto-refresh in ~{next_in}s")
         else:
-            sync_label = f"{secs // 60}m {secs % 60}s ago"
-        next_in = max(0, 30 - secs)
-        rc1.caption(f"\U0001f504 Last synced: **{sync_label}** · next auto-refresh in ~{next_in}s")
-    else:
-        rc1.caption("\U0001f504 Auto-refreshes every 30 seconds")
+            st.caption("🔄 Auto-refreshes every 30 seconds")
+    with rc2:
+        if st.button("⚡ Force Refresh", use_container_width=True, type="primary", key="live_force_refresh"):
+            st.cache_data.clear()
+            st.session_state.live_sync_time = None
+            st.rerun()
+    with rc3:
+        auto_refresh_enabled = st.toggle("Auto-refresh", value=True, key="live_auto_refresh_toggle")
 
-    if rc2.button("\u26a1 Force Refresh", use_container_width=True, type="primary", key="live_force_refresh"):
-        st.cache_data.clear()
-        st.session_state.live_sync_time = None
-        st.rerun()
-
-    if hasattr(st, "autorefresh") and source_mode not in ["📁 File Upload", "🛒 WooCommerce Store"]:
+    if hasattr(st, "autorefresh") and auto_refresh_enabled:
         st.autorefresh(interval=30000, key="live_autorefresh")
 
     try:
-        # Handle uploaded file case
-        if source_mode == "📁 File Upload":
-            if uploaded_file is None:
-                st.info("👆 Please upload a file to see the dashboard.")
-                return
-            df_live = read_sales_file(uploaded_file, uploaded_file.name)
-            df_live = scrub_raw_dataframe(df_live)
-            source_name = uploaded_file.name
-            modified_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        elif source_mode == "🛒 WooCommerce Store":
-            if wc_credentials is None:
-                st.info("👆 Please configure WooCommerce API credentials above to load data.")
-                return
-            progress_wc = st.empty()
-            with st.spinner("Fetching orders from WooCommerce..."):
-                df_live, source_name, modified_at = load_live_source(source_mode, wc_credentials=wc_credentials)
-                progress_wc.empty()
-        else:
-            df_live, source_name, modified_at = load_live_source(source_mode)
+        if wc_credentials is None:
+            st.info("👆 Please configure WooCommerce API credentials above to load data.")
+            return
+        progress_wc = st.empty()
+        with st.spinner("Fetching orders from WooCommerce..."):
+            df_live, source_name, modified_at = load_live_source(source_mode, wc_credentials=wc_credentials)
+            progress_wc.empty()
 
         auto_cols = find_columns(df_live)
         missing_required = [k for k in ["name", "cost", "qty"] if k not in auto_cols]
@@ -1509,11 +1678,27 @@ def render_live_tab():
             "phone": auto_cols.get("phone"),
         }
 
-        drill, summ, top, timeframe, basket = process_data(df_live, live_mapping)
+        # Split data into current and previous period
+        date_col = live_mapping.get("date")
+        df_current = df_live
+        df_prev = pd.DataFrame()
+        
+        if date_col and wc_credentials.get("compare_prev"):
+            df_live["_parsed_date"] = pd.to_datetime(df_live[date_col], errors="coerce").dt.date
+            curr_mask = (df_live["_parsed_date"] >= wc_credentials["current_start"]) & (df_live["_parsed_date"] <= wc_credentials["current_end"])
+            df_current = df_live[curr_mask].copy()
+            df_prev = df_live[~curr_mask].copy()
+        
+        if df_current.empty:
+            st.warning("No orders found for the selected current period.")
+            return
+
+        drill, summ, top, timeframe, basket = process_data(df_current, live_mapping)
         if drill is not None:
             render_dashboard_output(
                 drill, summ, top, timeframe, basket, source_name, modified_at,
-                df_raw=df_live, live_mapping=live_mapping,
+                df_raw=df_current, live_mapping=live_mapping,
+                df_prev=df_prev, period_labels=(wc_credentials["current_start"], wc_credentials["current_end"])
             )
 
     except Exception as e:

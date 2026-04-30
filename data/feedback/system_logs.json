@@ -1,0 +1,931 @@
+[
+    {
+        "timestamp": "2026-04-02 12:52:51",
+        "type": "LIVE_FILE_ERROR",
+        "details": "HTTP Error 400: Bad Request"
+    },
+    {
+        "timestamp": "2026-04-02 13:45:14",
+        "type": "LIVE_FILE_ERROR",
+        "details": "HTTP Error 401: Unauthorized"
+    },
+    {
+        "timestamp": "2026-04-02 13:47:06",
+        "type": "LIVE_FILE_ERROR",
+        "details": "HTTP Error 401: Unauthorized"
+    },
+    {
+        "timestamp": "2026-04-02 16:44:22",
+        "type": "LIVE_FILE_ERROR",
+        "details": "name 'render_reset_confirm' is not defined"
+    },
+    {
+        "timestamp": "2026-04-02 16:44:28",
+        "type": "LIVE_FILE_ERROR",
+        "details": "name 'render_reset_confirm' is not defined"
+    },
+    {
+        "timestamp": "2026-04-02 16:44:41",
+        "type": "LIVE_FILE_ERROR",
+        "details": "name 'render_reset_confirm' is not defined"
+    },
+    {
+        "timestamp": "2026-04-02 16:45:29",
+        "type": "LIVE_FILE_ERROR",
+        "details": "name 'render_reset_confirm' is not defined"
+    },
+    {
+        "timestamp": "2026-04-02 16:46:01",
+        "type": "LIVE_FILE_ERROR",
+        "details": "name 'render_reset_confirm' is not defined"
+    },
+    {
+        "timestamp": "2026-04-02 16:46:34",
+        "type": "LIVE_FILE_ERROR",
+        "details": "name 'render_reset_confirm' is not defined"
+    },
+    {
+        "timestamp": "2026-04-02 16:46:59",
+        "type": "LIVE_FILE_ERROR",
+        "details": "name 'render_reset_confirm' is not defined"
+    },
+    {
+        "timestamp": "2026-04-04 09:41:54",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Unknown Product"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-04 09:41:56",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Unknown Product"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-04 09:42:05",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Unknown Product"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-04 12:46:24",
+        "type": "LIVE_FILE_ERROR",
+        "details": "cannot access local variable 'os' where it is not associated with a value"
+    },
+    {
+        "timestamp": "2026-04-04 13:56:32",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 5,
+            "samples": [
+                "105-0401-008",
+                "105-0401-002",
+                "103-0100-119",
+                "105-0301-003",
+                "105-0301-006"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-04 14:29:42",
+        "type": "LIVE_FILE_ERROR",
+        "details": "name 'tz_bd' is not defined"
+    },
+    {
+        "timestamp": "2026-04-05 16:19:03",
+        "type": "LIVE_FILE_ERROR",
+        "details": "HTTP Error 400: Bad Request"
+    },
+    {
+        "timestamp": "2026-04-05 16:22:40",
+        "type": "LIVE_FILE_ERROR",
+        "details": "HTTP Error 400: Bad Request"
+    },
+    {
+        "timestamp": "2026-04-15 10:23:02",
+        "type": "LIVE_FILE_ERROR",
+        "details": "No columns to parse from file"
+    },
+    {
+        "timestamp": "2026-04-15 10:23:09",
+        "type": "LIVE_FILE_ERROR",
+        "details": "No columns to parse from file"
+    },
+    {
+        "timestamp": "2026-04-18 14:03:48",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:04:07",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:06:25",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:06:29",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:06:33",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:08:10",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:08:47",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:10:34",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:10:40",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:14:36",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:14:38",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:20:26",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:20:31",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:21:10",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:21:11",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:21:12",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:21:12",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:21:18",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:21:23",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:21:26",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:21:42",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:22:05",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:22:06",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:30:46",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:30:55",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:30:58",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:35:54",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:36:16",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:36:45",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:37:01",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:37:06",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:38:31",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:38:34",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:41:49",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:41:54",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:41:56",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:45:29",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:46:09",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:47:10",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:47:46",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:48:04",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:52:24",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:52:32",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:54:34",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:54:42",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 14:54:44",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:29:29",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:30:51",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:32:39",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:32:52",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:32:55",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:42:38",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:44:08",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:54:12",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:55:01",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:55:08",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 15:55:23",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 16:05:02",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 16:05:14",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 17:45:09",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 17:45:11",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-18 17:45:12",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 09:25:06",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 09:30:43",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 09:31:06",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 09:31:14",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 09:31:29",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 09:31:40",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 09:33:46",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 10:35:13",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 11:32:33",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 11:32:47",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 11:33:01",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-19 11:33:48",
+        "type": "OTHERS_LOG",
+        "details": {
+            "count": 1,
+            "samples": [
+                "Casual Essentials Combo"
+            ]
+        }
+    },
+    {
+        "timestamp": "2026-04-21 11:48:58",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Missing GDRIVE_FOLDER_ID in secrets or environment."
+    },
+    {
+        "timestamp": "2026-04-21 11:49:06",
+        "type": "LIVE_FILE_ERROR",
+        "details": "No XLSX/CSV found in incoming folder."
+    },
+    {
+        "timestamp": "2026-04-30 15:11:43",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Unsupported source mode: \ud83d\uded2 WooCommerce Store"
+    },
+    {
+        "timestamp": "2026-04-30 15:11:50",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Unsupported source mode: \ud83d\uded2 WooCommerce Store"
+    },
+    {
+        "timestamp": "2026-04-30 15:11:52",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Unsupported source mode: \ud83d\uded2 WooCommerce Store"
+    },
+    {
+        "timestamp": "2026-04-30 15:11:55",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Unsupported source mode: \ud83d\uded2 WooCommerce Store"
+    },
+    {
+        "timestamp": "2026-04-30 15:11:57",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Unsupported source mode: \ud83d\uded2 WooCommerce Store"
+    },
+    {
+        "timestamp": "2026-04-30 15:12:00",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Unsupported source mode: \ud83d\uded2 WooCommerce Store"
+    },
+    {
+        "timestamp": "2026-04-30 15:12:01",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Unsupported source mode: \ud83d\uded2 WooCommerce Store"
+    },
+    {
+        "timestamp": "2026-04-30 15:12:02",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Unsupported source mode: \ud83d\uded2 WooCommerce Store"
+    },
+    {
+        "timestamp": "2026-04-30 15:12:02",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Unsupported source mode: \ud83d\uded2 WooCommerce Store"
+    },
+    {
+        "timestamp": "2026-04-30 15:13:34",
+        "type": "LIVE_FILE_ERROR",
+        "details": "Unsupported source mode: \ud83d\uded2 WooCommerce Store"
+    },
+    {
+        "timestamp": "2026-04-30 15:16:10",
+        "type": "LIVE_FILE_ERROR",
+        "details": "load_from_woocommerce() got an unexpected keyword argument 'after'"
+    }
+]

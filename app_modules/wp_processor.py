@@ -261,124 +261,131 @@ class WhatsAppOrderProcessor:
 
         return grouped_df
 
+    def _generate_links_for_row(self, row: pd.Series, custom_template: str = None) -> pd.Series:
+        """Helper function to generate WhatsApp link and summary for a single row."""
+        phone_col = self.config["phone_col"]
+        phone = row.get(phone_col)
+        if not phone:
+            return pd.Series({"whatsapp_link": None, "order_summary": None})
+
+        # Determine Salutation
+        name = row.get(self.config["name_col"], "")
+        salutation = self.detect_gender_salutation(name)
+        order_id = str(row.get(self.config["order_id_col"], ""))
+
+        # Format Address
+        formatted_address = self.format_address(
+            row.get(self.config.get("address_col"), ""),
+            row.get(self.config.get("city_col"), ""),
+        )
+
+        # Build Product List & Totals for template use
+        from itertools import zip_longest
+        product_list = []
+        products = [p.strip() for p in str(row.get(self.config["product_col"], "")).split("\n- ") if p.strip()]
+        quantities = [q.strip() for q in str(row.get(self.config["quantity_col"], "")).split("\n- ") if q.strip()]
+        prices = [p.strip() for p in str(row.get(self.config["price_col"], "")).split("\n- ") if p.strip()]
+
+        for prod, qty, price in zip_longest(products, quantities, prices, fillvalue=""):
+            item_line = f"- {prod}"
+            if qty:
+                item_line += f" - Qty: {qty}"
+            if price:
+                item_line += f" - Price: {price} BDT"
+            product_list.append(item_line)
+
+        products_str = "\n".join(product_list)
+
+        # Robust float conversion for amounts with potential currency/formatting
+        raw_total = str(row.get(self.config["order_total_col"], "0"))
+        clean_total = re.sub(r'[^\d.]', '', raw_total)
+        total_amount = float(clean_total) if clean_total else 0.0
+        
+        collectable_amount = total_amount
+        payment_col = self.config.get("payment_method_col")
+        is_paid = False
+        if payment_col and payment_col in row and pd.notna(row[payment_col]):
+            method = str(row[payment_col]).lower()
+            if any(x in method for x in ["bkash", "online", "ssl", "paid"]):
+                collectable_amount = 0
+                is_paid = True
+
+        total_str = f"{total_amount:.2f} BDT"
+        if is_paid:
+            total_str += " (PAID)"
+        elif collectable_amount != total_amount:
+            total_str += f" (Collectable: {collectable_amount:.2f} BDT)"
+
+        if custom_template:
+            message = (
+                custom_template.replace("{name}", str(name))
+                .replace("{salutation}", salutation)
+                .replace("{order_id}", order_id)
+                .replace("{products_list}", products_str)
+                .replace("{total}", total_str)
+                .replace("{address}", formatted_address)
+            )
+        else:
+            lines = [
+                f"*Order Verification From DEEN Commerce*",
+                "",
+                f"Assalamu Alaikum, {salutation}!",
+                "",
+                f"Dear {name},",
+                "",
+                "Please verify your order details:",
+                "",
+                f"*Order ID:* {order_id}",
+                "",
+                "*Your Order:*",
+                products_str,
+                "",
+                f"*Total Amount:* {total_str}",
+                "",
+                "*Shipping Address:*",
+                formatted_address,
+                "",
+                "Please confirm the order and address.",
+                "If any correction is needed, please let us know the possible adjustment.",
+                "",
+                "*Delivery fees apply for returns.*",
+                "",
+                "Thank you for shopping with DEEN Commerce! Grab our latest collection on: https://deencommerce.com/",
+            ]
+            message = "\n".join(lines)
+        encoded_message = urllib.parse.quote(message)
+        whatsapp_link = f"https://wa.me/+88{phone}?text={encoded_message}"
+
+        # Simple Summary for copy-pasting
+        summary_parts = [p.strip() for p in str(row.get(self.config["product_col"], "")).split("\n- ") if p.strip()]
+        summary_text = f"Order {row.get(self.config['order_id_col'], '')}: " + ", ".join(summary_parts)
+        
+        total_val = row.get(self.config['order_total_col'], 0)
+        try:
+            total_val = float(total_val)
+        except (ValueError, TypeError):
+            total_val = 0
+        summary_text += f" | Total: {total_val:.0f} BDT"
+        
+        return pd.Series({"whatsapp_link": whatsapp_link, "order_summary": summary_text})
+
     def create_whatsapp_links(
         self, df: pd.DataFrame, custom_template: str = None
     ) -> pd.DataFrame:
-        """Generate formatted WhatsApp messages and links."""
-        df["whatsapp_link"] = None
-        phone_col = self.config["phone_col"]
+        """Generate formatted WhatsApp messages and links using an optimized .apply method."""
+        if df.empty:
+            df["whatsapp_link"] = None
+            df["order_summary"] = None
+            return df
 
-        for idx, row in df.iterrows():
-            phone = row[phone_col]
-            if not phone:
-                continue
+        # Use .apply for vectorized-like performance over .iterrows()
+        link_data = df.apply(
+            lambda row: self._generate_links_for_row(row, custom_template),
+            axis=1
+        )
 
-            # Determine Salutation
-            name = row[self.config["name_col"]]
-            salutation = self.detect_gender_salutation(name)
-            order_id = str(row[self.config["order_id_col"]])
-
-            # Format Address
-            formatted_address = self.format_address(
-                row.get(self.config["address_col"], ""),
-                row.get(self.config.get("city_col"), ""),
-            )
-
-            # Build Product List & Totals for template use
-            from itertools import zip_longest
-            product_list = []
-            products = [p.strip() for p in str(row[self.config["product_col"]]).split("\n- ") if p.strip()]
-            quantities = [q.strip() for q in str(row[self.config["quantity_col"]]).split("\n- ") if q.strip()]
-            prices = [p.strip() for p in str(row[self.config["price_col"]]).split("\n- ") if p.strip()]
-
-            for prod, qty, price in zip_longest(products, quantities, prices, fillvalue=""):
-                item_line = f"- {prod}"
-                if qty:
-                    item_line += f" - Qty: {qty}"
-                if price:
-                    item_line += f" - Price: {price} BDT"
-                product_list.append(item_line)
-
-            products_str = "\n".join(product_list)
-
-            # Robust float conversion for amounts with potential currency/formatting
-            raw_total = str(row[self.config["order_total_col"]])
-            clean_total = re.sub(r'[^\d.]', '', raw_total)
-            total_amount = float(clean_total) if clean_total else 0.0
-            
-            collectable_amount = total_amount
-            payment_col = self.config.get("payment_method_col")
-            is_paid = False
-            if payment_col and payment_col in row and pd.notna(row[payment_col]):
-                method = str(row[payment_col]).lower()
-                if any(x in method for x in ["bkash", "online", "ssl", "paid"]):
-                    collectable_amount = 0
-                    is_paid = True
-
-            total_str = f"{total_amount:.2f} BDT"
-            if is_paid:
-                total_str += " (PAID)"
-            elif collectable_amount != total_amount:
-                total_str += f" (Collectable: {collectable_amount:.2f} BDT)"
-
-            if custom_template:
-                message = (
-                    custom_template.replace("{name}", str(name))
-                    .replace("{salutation}", salutation)
-                    .replace("{order_id}", order_id)
-                    .replace("{products_list}", products_str)
-                    .replace("{total}", total_str)
-                    .replace("{address}", formatted_address)
-                )
-            else:
-                lines = [
-                    f"*Order Verification From DEEN Commerce*",
-                    "",
-                    f"Assalamu Alaikum, {salutation}!",
-                    "",
-                    f"Dear {name},",
-                    "",
-                    "Please verify your order details:",
-                    "",
-                    f"*Order ID:* {order_id}",
-                    "",
-                    "*Your Order:*",
-                    products_str,
-                    "",
-                    f"*Total Amount:* {total_str}",
-                    "",
-                    "*Shipping Address:*",
-                    formatted_address,
-                    "",
-                    "Please confirm the order and address.",
-                    "If any correction is needed, please let us know the possible adjustment.",
-                    "",
-                    "*Delivery fees apply for returns.*",
-                    "",
-                    "Thank you for shopping with DEEN Commerce! Grab our latest collection on: https://deencommerce.com/",
-                ]
-                message = "\n".join(lines)
-            encoded_message = urllib.parse.quote(message)
-            df.at[idx, "whatsapp_link"] = (
-                f"https://wa.me/+88{phone}?text={encoded_message}"
-            )
-
-            # Simple Summary for copy-pasting
-            summary_parts = []
-            products = str(row[self.config["product_col"]]).split("\n- ")
-            total_qty = 0
-            for prod in products:
-                summary_parts.append(prod.strip())
-
-            summary_text = f"Order {row[self.config['order_id_col']]}: " + ", ".join(
-                summary_parts
-            )
-            summary_text += (
-                f" | Total: {float(row[self.config['order_total_col']]):.0f} BDT"
-            )
-            df.at[idx, "order_summary"] = summary_text
-
-        return df
+        # Join the new columns back to the original dataframe
+        return df.join(link_data)
 
     def generate_excel_bytes(self, df: pd.DataFrame) -> bytes:
         """Create formatted Excel file in memory."""
