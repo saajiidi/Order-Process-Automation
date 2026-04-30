@@ -353,7 +353,7 @@ def render_woocommerce_customer_tab():
         st.info("ℹ️ Credentials loaded from environment variables")
     else:
         st.error("WooCommerce secrets not found in secrets.toml. Please add them to use this module.")
-        st.code """
+        st.code("""
 # .streamlit/secrets.toml
 
 [woocommerce]

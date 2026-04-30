@@ -320,5 +320,26 @@
         "error": "invalid syntax. Perhaps you forgot a comma? (sales_dashboard.py, line 1188)",
         "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 38, in run_app\n    from app_modules.sales_dashboard import render_live_tab, render_manual_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1188\n    help=\"Select specific categories to update the charts and tables below.\"\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nSyntaxError: invalid syntax. Perhaps you forgot a comma?\n",
         "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:43:10",
+        "context": "App Bootstrap",
+        "error": "invalid syntax. Perhaps you forgot a comma? (sales_dashboard.py, line 1188)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 38, in run_app\n    from app_modules.sales_dashboard import render_live_tab, render_manual_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1188\n    help=\"Select specific categories to update the charts and tables below.\"\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nSyntaxError: invalid syntax. Perhaps you forgot a comma?\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 15:51:45",
+        "context": "App Bootstrap",
+        "error": "unexpected indent (sales_dashboard.py, line 1295)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 38, in run_app\n    from app_modules.sales_dashboard import render_live_tab, render_manual_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 1295\n    col_t1, col_t2 = st.columns([3, 1])\nIndentationError: unexpected indent\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-04-30 16:07:55",
+        "context": "App Bootstrap",
+        "error": "unmatched ')' (woocommerce_customer_tab.py, line 363)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 52, in run_app\n    from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\woocommerce_customer_tab.py\", line 363\n    \"\"\")\n       ^\nSyntaxError: unmatched ')'\n",
+        "details": {}
     }
 ]

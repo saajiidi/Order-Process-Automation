@@ -1185,7 +1185,6 @@ def render_dashboard_output(
             "Filter by Category",
             options=all_categories,
             default=valid_default_cats if valid_default_cats else all_categories,
-            help="Select specific categories to update the charts and tables below."
             help="Select specific categories to update the charts and tables below.",
             key="live_selected_categories"
         )
@@ -1293,70 +1292,76 @@ def render_dashboard_output(
     render_snapshot_button("snapshot-target-main")
     st.divider()
 
-        col_t1, col_t2 = st.columns([3, 1])
-        with col_t1:
-            st.subheader("Revenue Trend")
-        with col_t2:
-            trend_granularity = st.radio("Granularity", ["Daily", "Weekly"], horizontal=True, key="live_trend_granularity", label_visibility="collapsed")
+    col_t1, col_t2 = st.columns([3, 1])
+    with col_t1:
+        st.subheader("Revenue Trend")
+    with col_t2:
+        trend_granularity = st.radio("Granularity", ["Daily", "Weekly"], horizontal=True, key="live_trend_granularity", label_visibility="collapsed")
+        
+    if live_mapping.get("date") and live_mapping["date"] in df_raw.columns:
+        trend_df = df_raw.copy()
+        trend_df["_date"] = pd.to_datetime(trend_df[live_mapping["date"]], errors="coerce")
+        trend_df = trend_df.dropna(subset=["_date"])
+        
+        if not trend_df.empty:
+            # Group by selected granularity
+            if trend_granularity == "Weekly":
+                trend_df["_period"] = trend_df["_date"].dt.to_period("W").apply(lambda r: r.start_time)
+            else:
+                trend_df["_period"] = trend_df["_date"].dt.date
             
-        if live_mapping.get("date") and live_mapping["date"] in df_raw.columns:
-            trend_df = df_raw.copy()
-            trend_df["_date"] = pd.to_datetime(trend_df[live_mapping["date"]], errors="coerce")
-            trend_df = trend_df.dropna(subset=["_date"])
+            cost_col = live_mapping.get("cost")
+            qty_col = live_mapping.get("qty")
+            trend_df["_revenue"] = pd.to_numeric(trend_df[cost_col], errors="coerce").fillna(0) * pd.to_numeric(trend_df[qty_col], errors="coerce").fillna(0)
             
-            if not trend_df.empty:
-                # Group by selected granularity
+            # Filter by selected categories for consistency
+            if "Category" in trend_df.columns:
+                trend_df = trend_df[trend_df["Category"].isin(selected_categories)]
+            else:
+                trend_df["Category"] = trend_df[live_mapping.get("name", "")].apply(get_category)
+                trend_df = trend_df[trend_df["Category"].isin(selected_categories)]
+            
+            trend_agg = trend_df.groupby("_period").agg({"_revenue": "sum"}).reset_index()
+            
+            if not trend_agg.empty:
+                x_label = "Week Starting" if trend_granularity == "Weekly" else "Date"
+                fig_trend = px.bar(
+                    trend_agg, x="_period", y="_revenue",
+                    text_auto=".2s",
+                    labels={"_period": x_label, "_revenue": "Revenue (TK)"},
+                    color_discrete_sequence=["#3b82f6"]
+                )
+                fig_trend.update_traces(
+                    marker_line_color="#1d4ed8",
+                    marker_line_width=1,
+                    opacity=0.9
+                )
+                fig_trend.update_layout(
+                    margin=dict(l=12, r=12, t=30, b=12),
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="#94a3b8")
+                )
+                st.plotly_chart(fig_trend, use_container_width=True, config={"displayModeBar": False})
+                
+                # Export option for trend data
+                trend_export = trend_agg.copy()
                 if trend_granularity == "Weekly":
-                    trend_df["_period"] = trend_df["_date"].dt.to_period("W").apply(lambda r: r.start_time)
-                else:
-                    trend_df["_period"] = trend_df["_date"].dt.date
+                    trend_export["_period"] = pd.to_datetime(trend_export["_period"]).dt.strftime("%Y-%m-%d")
                 
-                cost_col = live_mapping.get("cost")
-                qty_col = live_mapping.get("qty")
-                trend_df["_revenue"] = pd.to_numeric(trend_df[cost_col], errors="coerce").fillna(0) * pd.to_numeric(trend_df[qty_col], errors="coerce").fillna(0)
-                
-                # Filter by selected categories for consistency
-                if "Category" in trend_df.columns:
-                    trend_df = trend_df[trend_df["Category"].isin(selected_categories)]
-                else:
-                    trend_df["Category"] = trend_df[live_mapping.get("name", "")].apply(get_category)
-                    trend_df = trend_df[trend_df["Category"].isin(selected_categories)]
-                
-                trend_agg = trend_df.groupby("_period").agg({"_revenue": "sum"}).reset_index()
-                
-                if not trend_agg.empty:
-                    x_label = "Week Starting" if trend_granularity == "Weekly" else "Date"
-                    fig_trend = px.bar(
-                        trend_agg, x="_period", y="_revenue",
-                        text_auto=".2s",
-                        labels={"_period": x_label, "_revenue": "Revenue (TK)"}
-                    )
-                    fig_trend.update_layout(
-                        margin=dict(l=12, r=12, t=30, b=12),
-                        plot_bgcolor="rgba(0,0,0,0)",
-                        paper_bgcolor="rgba(0,0,0,0)",
-                        font=dict(color="#94a3b8")
-                    )
-                    st.plotly_chart(fig_trend, use_container_width=True, config={"displayModeBar": False})
-                    
-                    # Export option for trend data
-                    trend_export = trend_agg.copy()
-                    if trend_granularity == "Weekly":
-                        trend_export["_period"] = pd.to_datetime(trend_export["_period"]).dt.strftime("%Y-%m-%d")
-                    
-                    trend_export.rename(columns={"_period": x_label, "_revenue": "Revenue (TK)"}, inplace=True)
-                    st.download_button(
-                        label=f"📥 Download {trend_granularity} Trend Data (CSV)",
-                        data=trend_export.to_csv(index=False).encode("utf-8"),
-                        file_name=f"{trend_granularity.lower()}_revenue_trend_{datetime.now().strftime('%Y%m%d')}.csv",
-                        mime="text/csv"
-                    )
-                else:
-                    st.info("No data available for the trend chart with current filters.")
-        else:
-            st.info("Date column not available for trend analysis.")
+                trend_export.rename(columns={"_period": x_label, "_revenue": "Revenue (TK)"}, inplace=True)
+                st.download_button(
+                    label=f"📥 Download {trend_granularity} Trend Data (CSV)",
+                    data=trend_export.to_csv(index=False).encode("utf-8"),
+                    file_name=f"{trend_granularity.lower()}_revenue_trend_{datetime.now().strftime('%Y%m%d')}.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.info("No data available for the trend chart with current filters.")
+    else:
+        st.info("Date column not available for trend analysis.")
 
-        st.divider()
+    st.divider()
 
     st.subheader("Top Products Spotlight")
     spotlight = filtered_top.head(10).sort_values("Total Amount", ascending=True)
@@ -1677,6 +1682,32 @@ def render_live_tab():
             "order_id": auto_cols.get("order_id"),
             "phone": auto_cols.get("phone"),
         }
+
+        # --- Global Status Filter ---
+        status_col = None
+        for col in df_live.columns:
+            if any(k in col.lower() for k in ['status', 'order status', 'state']):
+                status_col = col
+                break
+
+        if status_col:
+            st.divider()
+            all_statuses = sorted(df_live[status_col].dropna().astype(str).unique().tolist())
+            saved_statuses = st.session_state.get("live_global_statuses", all_statuses)
+            valid_defaults = [s for s in saved_statuses if s in all_statuses] if saved_statuses else all_statuses
+            
+            selected_statuses = st.multiselect(
+                "🎯 Filter Dashboard by Order Status",
+                options=all_statuses,
+                default=valid_defaults if valid_defaults else all_statuses,
+                key="live_global_statuses"
+            )
+            df_live = df_live[df_live[status_col].astype(str).isin(selected_statuses)]
+            
+            if df_live.empty:
+                st.warning("No orders found for the selected status(es).")
+                return
+        # ----------------------------
 
         # Split data into current and previous period
         date_col = live_mapping.get("date")
