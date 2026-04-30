@@ -32,6 +32,8 @@ Order-Process-Automation/
 │   ├── pathao_tab.py               # 📦 Bulk Order Processer
 │   ├── wp_tab.py                   # 💬 WhatsApp Messaging
 │   ├── fuzzy_parser_tab.py         # 🧩 Delivery Data Parser
+│   ├── email_extractor.py          # 📧 Email extraction from Google Sheets
+│   ├── phone_extractor.py          # 📱 Phone number extraction from Google Sheets
 │   ├── ui_components.py            # Shared UI components
 │   ├── ui_config.py                # Navigation and styling configuration
 │   ├── bike_animation.py           # Animated header component
@@ -60,7 +62,9 @@ The application uses a **sidebar radio button navigation** with 7 main modules:
 4. **💬 WhatsApp Messaging** - Customer communication interface
 5. **🧩 Delivery Data Parser** - Parse and normalize delivery data
 6. **👥 Customer Analytics** - Unified customer analysis (merged module)
-7. **� Return Insight** - Return/refund analysis with fuzzy product matching
+7. **🔄 Return Insight** - Return/refund analysis with fuzzy product matching
+8. **📧 Email Extractor** - Extract unique emails from Google Sheets
+9. **📱 Phone Extractor** - Extract unique customer phone numbers with date filtering
 
 ---
 
@@ -202,6 +206,68 @@ The application uses a **sidebar radio button navigation** with 7 main modules:
 - Fuzzy matching for addresses
 - Data normalization
 - Address validation
+
+### 8. 📧 Email Extractor (email_extractor.py) ⭐ NEW
+
+**Purpose**: Extract unique email addresses from Google Sheets
+
+**Features**:
+- Load data from Google Sheet CSV URL
+- **Auto-detect email column** - Finds columns with "email" in the name
+- Extract unique email addresses (removes duplicates)
+- **Case-insensitive deduplication** - Converts to lowercase
+- Display total count and preview
+- **Search/filter functionality** - Filter emails by search term
+- **CSV download** - Export emails with sequential IDs
+- **Save to data folder** - Store extracted emails locally
+- Handle large datasets efficiently
+
+**Key Functions**:
+- `extract_unique_emails_from_url()` - Fetch and extract from URL
+- `save_emails_to_csv()` - Save to data_exports folder
+- `render_email_extractor_tab()` - Main UI entry point
+
+**Output Format**:
+```
+email,id
+example@email.com,1
+another@email.com,2
+```
+
+### 9. 📱 Phone Extractor (phone_extractor.py) ⭐ NEW
+
+**Purpose**: Extract unique customer phone numbers from Google Sheets with date filtering
+
+**Features**:
+- Load data from Google Sheet CSV URL
+- **Auto-detect phone column** - Finds columns with "phone", "mobile", "contact" in the name
+- **Auto-detect customer name column** - Finds customer/buyer/client columns
+- **Date range filtering** - Filter by start and end dates (default: last 2 years)
+- **Country code formatting** - Prepend country code to phone numbers
+  - Supports: +880 (Bangladesh), +91 (India), +1 (USA), +44 (UK), etc.
+- Extract unique phone numbers (removes duplicates)
+- **Standardize phone format**:
+  - Removes non-digit characters
+  - Handles leading zeros
+  - Adds country code prefix
+- Display total count, customer names, and preview
+- **Search/filter functionality** - Filter by phone number or customer name
+- **CSV download** - Export with columns: id, phone, customer_name, last_order_date
+- **Save to data folder** - Store extracted data locally
+- Handle large datasets efficiently
+
+**Key Functions**:
+- `extract_unique_phones_from_url()` - Fetch and extract from URL with date filtering
+- `standardize_phone()` - Format phone numbers with country code
+- `save_phones_to_csv()` - Save to data_exports folder
+- `render_phone_extractor_tab()` - Main UI entry point
+
+**Output Format**:
+```
+id,phone,customer_name,last_order_date
+1,+8801234567890,John Doe,2024-05-15
+2,+8801987654321,Jane Smith,2024-06-20
+```
 
 ---
 
@@ -407,6 +473,8 @@ _DATE_PATTERNS = ["date", "order date", "created", "timestamp"]
 5. **Live Dashboard Upload**: Added file upload option to Live Dashboard (moved from Sales Data Ingestion)
 6. **Memory Management**: Enhanced memory error handling in customer operations
 7. **Return Analytics**: Comprehensive return analysis with fuzzy grouping, reason categorization, and trend analysis
+8. **📧 Email Extractor**: New module `email_extractor.py` to extract unique emails from Google Sheets
+9. **📱 Phone Extractor**: New module `phone_extractor.py` to extract unique customer phone numbers with date filtering and country code formatting
 
 ### Removed/Deprecated
 - Sales Data Ingestion tab (functionality merged into Live Dashboard)

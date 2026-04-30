@@ -50,6 +50,8 @@ def run_app():
     from app_modules.unified_customer import render_unified_customer_tab
     from app_modules.return_insight import render_sheet_insights_tab
     from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab
+    from app_modules.email_extractor import render_email_extractor_tab
+    from app_modules.phone_extractor import render_phone_extractor_tab
 
     init_state()
     inject_base_styles()
@@ -64,6 +66,8 @@ def run_app():
         "👥 Customer Analytics",
         "🛒 WooCommerce Extraction",
         "🔄 Return Insight",
+        "📧 Email Extractor",
+        "📱 Phone Extractor",
     ]
     
     with st.sidebar:
@@ -163,6 +167,10 @@ def run_app():
         render_woocommerce_customer_tab()
     elif selected_module == "🔄 Return Insight":
         render_sheet_insights_tab()
+    elif selected_module == "📧 Email Extractor":
+        render_email_extractor_tab()
+    elif selected_module == "📱 Phone Extractor":
+        render_phone_extractor_tab()
 
     render_footer()
 
