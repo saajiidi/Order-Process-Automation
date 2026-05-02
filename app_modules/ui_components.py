@@ -185,6 +185,57 @@ def inject_base_styles():
                 display: none !important;
             }
         }
+        
+        /* --- DEEN-OPS PREMIUM UI INJECTIONS --- */
+        /* Glassmorphism & Glowing Borders */
+        .glass-metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(128, 128, 128, 0.2);
+            border-radius: 16px;
+            padding: 18px 20px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+        .glass-metric-card::before {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: conic-gradient(transparent, var(--primary), transparent 30%);
+            animation: rotate-glow 4s linear infinite;
+            opacity: 0.15;
+        }
+        .glass-metric-card::after {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            background: var(--surface);
+            border-radius: 14px;
+            z-index: 0;
+        }
+        .glass-content {
+            position: relative;
+            z-index: 1;
+        }
+        @keyframes rotate-glow {
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Terminal Theme Chat */
+        .terminal-chat {
+            background-color: #0f172a;
+            color: #10b981;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border-left: 4px solid #10b981;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -373,3 +424,37 @@ def show_last_updated(path: str):
         "%Y-%m-%d %H:%M:%S"
     )
     st.caption(f"Last updated: {updated}")
+
+
+def premium_metric_card(col, label: str, value: str, icon: str = "", delta: str = None, delta_color: str = "normal"):
+    """
+    DEEN-OPS styled Glassmorphism Metric Card with animated glowing borders.
+    Replaces the standard Streamlit metric with a premium UI component.
+    """
+    delta_html = ""
+    if delta:
+        color = "#94a3b8"  # Default gray
+        if delta_color == "normal":
+            color = "#10b981" if not delta.startswith("-") else "#ef4444"
+        elif delta_color == "inverse":
+            color = "#ef4444" if not delta.startswith("-") else "#10b981"
+            
+        arrow = "▲" if not delta.startswith("-") else "▼"
+        clean_delta = delta.replace("-", "").replace("+", "")
+        delta_html = f'<div style="font-size:0.8rem; color:{color}; margin-top:8px; font-weight:600;">{arrow} {clean_delta}</div>'
+
+    html = f"""
+    <div class="glass-metric-card">
+        <div class="glass-content">
+            <div style="font-size:1.8rem; margin-bottom: 4px;">{icon}</div>
+            <div style="font-size:2rem; font-weight:800; color:var(--step-text); line-height:1.2;">{value}</div>
+            <div style="font-size:0.85rem; color:var(--text-muted); font-weight:500; text-transform: uppercase; letter-spacing: 0.5px; margin-top:4px;">{label}</div>
+            {delta_html}
+        </div>
+    </div>
+    """
+    col.markdown(html, unsafe_allow_html=True)
+
+def terminal_chat_bubble(message: str):
+    """Renders a DEEN-OPS terminal themed chat bubble for AI responses."""
+    st.markdown(f'<div class="terminal-chat">> {message}<span style="animation: blink 1s step-end infinite;">_</span></div>', unsafe_allow_html=True)

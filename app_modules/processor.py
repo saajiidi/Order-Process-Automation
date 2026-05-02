@@ -53,6 +53,14 @@ def identify_columns(df):
         if "address" in col.lower() and "shipping" in col.lower():
             cols["addr_col"] = col
             break
+            
+    # Fallback: any column containing 'address' if shipping wasn't found
+    if cols["addr_col"] == "Address_Fallback":
+        for col in df.columns:
+            if "address" in col.lower():
+                cols["addr_col"] = col
+                break
+                
     if cols["addr_col"] == "Address_Fallback":
         df["Address_Fallback"] = ""
 
@@ -174,12 +182,16 @@ def process_single_order_group(phone, group, data_cols):
     addr_col = data_cols["addr_col"]
     raw_address = str(first_row.get(addr_col, "")).strip()
     if not raw_address or raw_address.lower() == "nan":
+        raw_address = str(first_row.get("Address 1&2 (Billing)", "")).strip()
+        
+    if not raw_address or raw_address.lower() == "nan":
         raw_address = str(first_row.get("State Name (Billing)", "")).strip()
 
     # Normalize City & Address
     raw_city = str(first_row.get("State Name (Billing)", "")).strip()
     recipient_city = normalize_city_name(raw_city)
-    address_val = " ".join(raw_address.split()).title()
+    # Clean extra spaces without aggressively title-casing to preserve flat/house numbers
+    address_val = " ".join(raw_address.split())
 
     # RecipientZone: Empty as requested (no default Sadar)
     extracted_zone = ""

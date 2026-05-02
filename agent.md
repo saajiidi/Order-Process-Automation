@@ -65,6 +65,8 @@ The application uses a **sidebar radio button navigation** with 7 main modules:
 7. **🔄 Return Insight** - Return/refund analysis with fuzzy product matching
 8. **📧 Email Extractor** - Extract unique emails from Google Sheets
 9. **📱 Phone Extractor** - Extract unique customer phone numbers with date filtering
+10. **🔮 ML Forecasting** - Time-Series ML forecasting engine
+11. **🤖 AI Data Pilot** - Conversational AI Agent for Data Analytics & Insights
 
 ---
 

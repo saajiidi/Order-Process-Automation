@@ -16,6 +16,8 @@ from app_modules.ui_components import (
     render_action_bar,
     render_reset_confirm,
 )
+from app_modules.error_handler import safe_render
+from app_modules.unified_reporting import UnifiedReportGenerator, ReportSection, ReportMetadata
 
 
 def render_snapshot_button(marker_id="snapshot-target"):
@@ -829,6 +831,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                     pos_array = "inside"
 
                 fig_pie.update_traces(
+                    hovertemplate="<b>%{label}</b><br>Revenue: TK %{value:,.0f}<br>Share: %{percent}<extra></extra>",
                     textposition=pos_array,
                     textinfo="label+percent",
                     textfont_size=11,
@@ -836,6 +839,7 @@ def _render_welcome_popup_content(summ, basket, last_updated="N/A", focus="all")
                     rotation=270,
                     direction="clockwise",
                 )
+                fig_pie.update_layout(automargin=True)
                 st.plotly_chart(
                     fig_pie,
                     use_container_width=True,
@@ -1234,6 +1238,7 @@ def render_dashboard_output(
             fig_pie.update_layout(
                 margin=dict(l=80, r=160, t=40, b=40),
                 showlegend=True,
+                automargin=True,
                 legend=dict(
                     orientation="v",
                     yanchor="top",
@@ -1248,6 +1253,7 @@ def render_dashboard_output(
             fig_pie.update_traces(
                 textposition=pos_array,
                 textinfo="label+percent",
+                hovertemplate="<b>%{label}</b><br>Revenue: TK %{value:,.0f}<br>Share: %{percent}<extra></extra>",
                 textfont_size=11,
                 pull=0.01,
                 rotation=270,
@@ -1404,16 +1410,23 @@ def render_dashboard_output(
             hide_index=True,
         )
 
-    buf = BytesIO()
-    with pd.ExcelWriter(buf, engine="xlsxwriter") as wr:
-        filtered_summ.to_excel(wr, sheet_name="Summary", index=False)
-        filtered_top.to_excel(wr, sheet_name="Rankings", index=False)
-        filtered_drill.to_excel(wr, sheet_name="Details", index=False)
+    # Use Unified Analytics Export
+    metadata = ReportMetadata(
+        title=f"Sales Dashboard Report - {timeframe if timeframe else 'All Time'}",
+        generated_by="Automation Hub Pro",
+        filters_applied=[f"Categories: {', '.join(selected_categories[:3])}" + ("..." if len(selected_categories) > 3 else "")]
+    )
+    generator = UnifiedReportGenerator(metadata=metadata)
+    generator.add_section(ReportSection("Summary", filtered_summ, "Category Revenue Summary", "pie", "Total Amount"))
+    generator.add_section(ReportSection("Rankings", filtered_top, "Top Products Spotlight", "bar", "Total Amount"))
+    generator.add_section(ReportSection("Details", filtered_drill, "Deep Dive Product Details"))
+    
+    excel_bytes = generator.generate_excel()
 
     base_name = os.path.splitext(os.path.basename(source_name))[0]
     file_suffix = f"_{timeframe}" if timeframe else ""
     final_filename = f"Report_{base_name}{file_suffix}.xlsx"
-    st.download_button("Export Report", data=buf.getvalue(), file_name=final_filename)
+    st.download_button("Export Report (Unified Excel)", data=excel_bytes, file_name=final_filename, type="primary")
 
     # ── Recent Processed Orders ──────────────────────────────────────────
     if recent_orders_df is not None and not recent_orders_df.empty:
@@ -1427,6 +1440,7 @@ def render_dashboard_output(
         st.dataframe(recent_orders_df.reset_index(drop=True), use_container_width=True)
 
 
+@safe_render(fallback_message="Manual Dashboard failed to render. Please check logs.")
 def render_manual_tab():
     def _reset_manual_state():
         st.session_state.manual_generate = False
@@ -1529,6 +1543,7 @@ def render_manual_tab():
         st.error(f"File error: {e}")
 
 
+@safe_render(fallback_message="Live Dashboard failed to render. Please check logs.")
 def render_live_tab():
     def _reset_live_state():
         st.session_state.live_sync_time = None

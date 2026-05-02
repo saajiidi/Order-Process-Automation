@@ -379,17 +379,62 @@ consumer_secret = "cs_xxxxxxxxxxxxxxxxxxxxxxxx"
                     key="wc_store_url_input"
                 )
                 st.session_state["wc_store_url"] = store_url
-                            for customer in customers:
-                                meta_data = {meta.get("key"): meta.get("value") for meta in customer.get("meta_data", [])}
-                                # Update the dataframe with custom meta keys
-                                customer_id = customer.get("id")
-                                if whatsapp_meta in meta_data:
-                                    df.loc[df["id"] == customer_id, "whatsapp_number"] = meta_data[whatsapp_meta]
-                                if whatsapp_enabled_meta in meta_data:
-                                    df.loc[df["id"] == customer_id, "whatsapp_enabled"] = meta_data[whatsapp_enabled_meta]
+                consumer_key = st.text_input("Consumer Key", value=st.session_state.get("wc_consumer_key", ""), type="password", key="wc_consumer_key_input")
+                st.session_state["wc_consumer_key"] = consumer_key
+            with col2:
+                consumer_secret = st.text_input("Consumer Secret", value=st.session_state.get("wc_consumer_secret", ""), type="password", key="wc_consumer_secret_input")
+                st.session_state["wc_consumer_secret"] = consumer_secret
+            
+            st.divider()
+            st.subheader("📅 Filter & Extract")
+            
+            # Date filters for phones/whatsapp
+            c1, c2, c3, c4 = st.columns(4)
+            today = datetime.now()
+            with c1:
+                phone_start = st.date_input("Phone Start Date", today - timedelta(days=30), key="wc_phone_start")
+            with c2:
+                phone_end = st.date_input("Phone End Date", today, key="wc_phone_end")
+            with c3:
+                wa_start = st.date_input("WhatsApp Start Date", today - timedelta(days=30), key="wc_wa_start")
+            with c4:
+                wa_end = st.date_input("WhatsApp End Date", today, key="wc_wa_end")
+                
+            whatsapp_meta = st.text_input("WhatsApp Meta Key", value=whatsapp_meta_key, key="wc_wa_meta")
+            whatsapp_enabled_meta = st.text_input("WhatsApp Enabled Key", value=whatsapp_enabled_key, key="wc_wa_enabled_meta")
+
+            if st.button("🚀 Fetch Customers", type="primary", use_container_width=True):
+                if not store_url or not consumer_key or not consumer_secret:
+                    st.error("Please provide Store URL, Consumer Key, and Consumer Secret.")
+                else:
+                    progress_bar = st.progress(0, text="Connecting to WooCommerce...")
+                    try:
+                        customers = fetch_wc_customers(
+                            store_url=_validate_url(store_url),
+                            consumer_key=consumer_key,
+                            consumer_secret=consumer_secret,
+                            api_version=api_version,
+                            progress_bar=progress_bar
+                        )
                         
-                        # Store raw data
-                        st.session_state["wc_customers_data"] = df
+                        if not customers:
+                            st.warning("No customers found.")
+                            progress_bar.empty()
+                        else:
+                            df = extract_customer_data(customers)
+                            
+                            if whatsapp_meta != "whatsapp_number" or whatsapp_enabled_meta != "whatsapp_enabled":
+                                for customer in customers:
+                                    meta_data = {meta.get("key"): meta.get("value") for meta in customer.get("meta_data", [])}
+                                    # Update the dataframe with custom meta keys
+                                    customer_id = customer.get("id")
+                                    if whatsapp_meta in meta_data:
+                                        df.loc[df["id"] == customer_id, "whatsapp_number"] = meta_data[whatsapp_meta]
+                                    if whatsapp_enabled_meta in meta_data:
+                                        df.loc[df["id"] == customer_id, "whatsapp_enabled"] = meta_data[whatsapp_enabled_meta]
+                            
+                            # Store raw data
+                            st.session_state["wc_customers_data"] = df
                         
                         # Filter for phone numbers
                         phone_df = filter_phone_numbers(
@@ -415,10 +460,10 @@ consumer_secret = "cs_xxxxxxxxxxxxxxxxxxxxxxxx"
                         progress_bar.empty()
                         st.success(f"✅ Successfully fetched and processed {len(df)} customers!")
                         
-                except Exception as e:
-                    progress_bar.empty()
-                    log_error(e, context="WooCommerce Fetch")
-                    st.error(f"Failed to fetch data: {str(e)}")
+                    except Exception as e:
+                        progress_bar.empty()
+                        log_error(e, context="WooCommerce Fetch")
+                        st.error(f"Failed to fetch data: {str(e)}")
     
     # Display Results
     if st.session_state.get("wc_fetch_success"):

@@ -388,9 +388,12 @@ class MemoryErrorHandler:
                 gc.collect()
 
         # Add remaining old customers who weren't updated
-        for idx, row in old_reg_proc.iterrows():
-            if idx not in processed_old_indices:
-                updated_rows.append(row)
+        for idx, row in old_registry.iterrows():
+            # If they were updated, they are in processed_emails/phones sets
+            if (row.get('match_email') and row['match_email'] in processed_emails) or \
+               (row.get('match_phone') and row['match_phone'] in processed_phones):
+                continue
+            updated_rows.append(row)
 
         progress_bar.progress(1.0)
         total_time = (datetime.now() - start_time).total_seconds()

@@ -70,6 +70,8 @@ def run_app():
         "🔄 Return Insight",
         "📧 Email Extractor",
         "📱 Phone Extractor",
+        "🔮 ML Forecasting",
+        "🤖 AI Data Pilot",
     ]
     
     with st.sidebar:
@@ -175,6 +177,12 @@ def run_app():
         render_email_extractor_tab()
     elif selected_module == "📱 Phone Extractor":
         render_phone_extractor_tab()
+    elif selected_module == "🔮 ML Forecasting":
+        from app_modules.ml_forecasting import render_ml_forecasting_tab
+        render_ml_forecasting_tab()
+    elif selected_module == "🤖 AI Data Pilot":
+        from app_modules.ai_data_pilot import render_ai_data_pilot_tab
+        render_ai_data_pilot_tab()
 
     render_footer()
 

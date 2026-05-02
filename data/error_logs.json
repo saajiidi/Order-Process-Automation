@@ -341,5 +341,54 @@
         "error": "unmatched ')' (woocommerce_customer_tab.py, line 363)",
         "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 52, in run_app\n    from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\woocommerce_customer_tab.py\", line 363\n    \"\"\")\n       ^\nSyntaxError: unmatched ')'\n",
         "details": {}
+    },
+    {
+        "timestamp": "2026-05-02 17:27:40",
+        "context": "App Bootstrap",
+        "error": "unexpected indent (woocommerce_customer_tab.py, line 382)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 183, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 52, in run_app\n    from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\woocommerce_customer_tab.py\", line 382\n    for customer in customers:\nIndentationError: unexpected indent\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-05-02 17:39:09",
+        "context": "App Bootstrap",
+        "error": "unexpected indent (sales_dashboard.py, line 843)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 191, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 38, in run_app\n    from app_modules.sales_dashboard import render_live_tab, render_manual_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\sales_dashboard.py\", line 843\n    st.plotly_chart(\nIndentationError: unexpected indent\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-05-02 17:41:54",
+        "context": "App Bootstrap",
+        "error": "unexpected indent (woocommerce_customer_tab.py, line 382)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 191, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 52, in run_app\n    from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\woocommerce_customer_tab.py\", line 382\n    consumer_key = st.text_input(\"Consumer Key\", value=st.session_state.get(\"wc_consumer_key\", \"\"), type=\"password\", key=\"wc_consumer_key_input\")\nIndentationError: unexpected indent\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-05-02 17:43:36",
+        "context": "App Bootstrap",
+        "error": "unexpected indent (woocommerce_customer_tab.py, line 382)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 191, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 52, in run_app\n    from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\woocommerce_customer_tab.py\", line 382\n    consumer_key = st.text_input(\"Consumer Key\", value=st.session_state.get(\"wc_consumer_key\", \"\"), type=\"password\", key=\"wc_consumer_key_input\")\nIndentationError: unexpected indent\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-05-02 17:45:16",
+        "context": "App Bootstrap",
+        "error": "expected 'except' or 'finally' block (woocommerce_customer_tab.py, line 463)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 191, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 52, in run_app\n    from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\woocommerce_customer_tab.py\", line 463\n    except Exception as e:\nSyntaxError: expected 'except' or 'finally' block\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-05-02 17:46:36",
+        "context": "App Bootstrap",
+        "error": "expected 'except' or 'finally' block (woocommerce_customer_tab.py, line 463)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 191, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 52, in run_app\n    from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\woocommerce_customer_tab.py\", line 463\n    except Exception as e:\nSyntaxError: expected 'except' or 'finally' block\n",
+        "details": {}
+    },
+    {
+        "timestamp": "2026-05-02 17:46:43",
+        "context": "App Bootstrap",
+        "error": "expected 'except' or 'finally' block (woocommerce_customer_tab.py, line 463)",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 191, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 52, in run_app\n    from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\woocommerce_customer_tab.py\", line 463\n    except Exception as e:\nSyntaxError: expected 'except' or 'finally' block\n",
+        "details": {}
     }
 ]

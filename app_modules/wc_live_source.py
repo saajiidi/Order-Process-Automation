@@ -196,7 +196,11 @@ def transform_orders_to_dashboard_df(orders: List[Dict]) -> pd.DataFrame:
             }
             rows.append(row)
     
-    df = pd.DataFrame(rows)
+    expected_cols = ["Order ID", "Date", "Product Name", "Price", "Quantity", "Phone", "Total Amount", "Customer Name"]
+    if not rows:
+        df = pd.DataFrame(columns=expected_cols)
+    else:
+        df = pd.DataFrame(rows)
     
     if not df.empty:
         # Parse dates

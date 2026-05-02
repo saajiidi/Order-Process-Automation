@@ -774,7 +774,7 @@ def render_return_product_analysis(insights: Dict):
                 insights["top_returned_products"].reset_index(),
                 use_container_width=True,
                 height=400
-        )
+            )
     
     # Parsed Products from Issue Or Product Details column
     if "parsed_product_summary" in insights and not insights["parsed_product_summary"].empty:
@@ -866,7 +866,7 @@ def render_reason_analysis(insights: Dict):
 def render_return_type_breakdown(insights: Dict):
     """Render Delivery Issue breakdown (the main categorization)."""
     if "delivery_issue_breakdown" in insights:
-        st.markdown("#### � Delivery Issue Breakdown")
+        st.markdown("#### 📦 Delivery Issue Breakdown")
         
         col1, col2 = st.columns([2, 3])
         
@@ -930,7 +930,7 @@ def render_sheet_insights_tab():
         """,
         unsafe_allow_html=True,
     )
-    st.markdown('<div class="ri-header">� Return Insight</div>', unsafe_allow_html=True)
+    st.markdown('<div class="ri-header">📦 Return Insight</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="ri-sub">Smart return/refund analysis with fuzzy product matching for messy data.</div>',
         unsafe_allow_html=True,
@@ -973,7 +973,7 @@ def render_sheet_insights_tab():
     with col1:
         if not has_data:
             # First time - Initial Load
-            if st.button("� Initial Load", type="primary", use_container_width=True):
+            if st.button("📥 Initial Load", type="primary", use_container_width=True):
                 with st.spinner("Loading return data from sheet..."):
                     try:
                         df, new_count, existing_count = load_incremental_data(url_input)

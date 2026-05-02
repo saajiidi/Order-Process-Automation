@@ -5,6 +5,8 @@ import os
 import traceback
 import tempfile
 import logging
+import functools
+import streamlit as st
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -72,3 +74,42 @@ def get_logs():
         except (json.JSONDecodeError, OSError):
             return []
     return []
+
+
+# ==========================
+#  DEEN-OPS SAFE UTILITIES
+# ==========================
+
+def safe_render(fallback_message="Component failed to render."):
+    """Decorator to gracefully handle Streamlit UI component crashes."""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                log_error(str(e), context=f"Render error in {func.__name__}", details={"traceback": traceback.format_exc()})
+                st.error(f"⚠️ {fallback_message}")
+        return wrapper
+    return decorator
+
+def safe_column_access(df: pd.DataFrame, expected_columns: list, default_val=None) -> pd.DataFrame:
+    """Safely access columns in a DataFrame, adding missing ones with a default value."""
+    if df is None or df.empty:
+        return df
+        
+    df_safe = df.copy()
+    for col in expected_columns:
+        if col not in df_safe.columns:
+            df_safe[col] = default_val
+    return df_safe
+
+def safe_filter(df: pd.DataFrame, condition_func):
+    """Safely apply a filter/mask to a DataFrame, returning an empty DF on failure."""
+    if df is None or df.empty:
+        return df
+    try:
+        return condition_func(df)
+    except Exception as e:
+        log_error(str(e), context="Safe Filter Error", details={"traceback": traceback.format_exc()})
+        return df.iloc[0:0]  # Return empty DataFrame with identical columns

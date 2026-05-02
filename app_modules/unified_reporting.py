@@ -21,6 +21,7 @@ from openpyxl.styles import (
 from openpyxl.chart import BarChart, PieChart, Reference
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as OpenpyxlImage
 
 
 # ==========================
@@ -34,6 +35,7 @@ class ReportSection:
     description: str = ""
     chart_type: Optional[str] = None  # 'bar', 'pie', 'line'
     chart_column: Optional[str] = None  # Column for chart data
+    chart_figure: Optional[Any] = None  # Plotly Figure
 
 
 @dataclass
@@ -247,12 +249,30 @@ class UnifiedReportGenerator:
                     cell.alignment = self.styles.LEFT_ALIGN
         
         # Add chart if specified
-        if section.chart_type and section.chart_column:
+        if section.chart_figure:
+            self._add_plotly_chart(ws, section, start_row)
+        elif section.chart_type and section.chart_column:
             self._add_chart(ws, section, start_row, len(section.dataframe) + start_row)
         
         # Auto-adjust column widths
         self._adjust_column_widths(ws)
     
+    def _add_plotly_chart(self, ws, section: ReportSection, start_row: int):
+        """Render a Plotly figure as a static PNG and insert it into the Excel sheet."""
+        try:
+            # Requires 'kaleido' package to be installed
+            img_bytes = section.chart_figure.to_image(format="png", width=800, height=500)
+            img = OpenpyxlImage(io.BytesIO(img_bytes))
+            col_idx = len(section.dataframe.columns) + 2
+            cell_anchor = f"{get_column_letter(col_idx)}3"
+            ws.add_image(img, cell_anchor)
+        except Exception as e:
+            # Fallback or silent ignore if kaleido is missing/fails
+            import logging
+            logging.error(f"Failed to render Plotly image to Excel: {e}")
+            col_idx = len(section.dataframe.columns) + 2
+            ws[f"{get_column_letter(col_idx)}3"] = f"Chart generation failed. (Ensure 'kaleido' is installed via pip): {e}"
+
     def _add_chart(self, ws, section: ReportSection, start_row: int, end_row: int):
         """Add chart to worksheet."""
         if section.chart_type == 'bar':
@@ -424,7 +444,8 @@ def create_report_section(
     df: pd.DataFrame,
     description: str = "",
     chart_type: Optional[str] = None,
-    chart_column: Optional[str] = None
+    chart_column: Optional[str] = None,
+    chart_figure: Optional[Any] = None
 ) -> ReportSection:
     """Helper to create a ReportSection from a DataFrame."""
     return ReportSection(
@@ -432,7 +453,8 @@ def create_report_section(
         dataframe=df.copy(),
         description=description,
         chart_type=chart_type,
-        chart_column=chart_column
+        chart_column=chart_column,
+        chart_figure=chart_figure
     )
 
 
