@@ -61,7 +61,8 @@ def run_app():
     NAV_OPTIONS = [
         "📈 Live Dashboard",
         "📦 Bulk Order Processer", 
-        "📊 Inventory Distribution",
+        "🚚 Pathao Phone Checker",
+        "� Inventory Distribution",
         "💬 WhatsApp Messaging",
         "🧩 Delivery Data Parser",
         "👥 Customer Analytics",
@@ -159,6 +160,9 @@ def run_app():
         render_live_tab()
     elif selected_module == "📦 Bulk Order Processer":
         render_pathao_tab()
+    elif selected_module == "🚚 Pathao Phone Checker":
+        from app_modules.pathao_phone_checker import render_pathao_phone_checker
+        render_pathao_phone_checker()
     elif selected_module == "📊 Inventory Distribution":
         render_distribution_tab(search_q=st.session_state.get("inv_matrix_search", ""))
     elif selected_module == "💬 WhatsApp Messaging":
