@@ -390,5 +390,12 @@
         "error": "expected 'except' or 'finally' block (woocommerce_customer_tab.py, line 463)",
         "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 191, in <module>\n    run_app()\n    ~~~~~~~^^\n  File \"H:\\Repo\\Order-Process-Automation\\app.py\", line 52, in run_app\n    from app_modules.woocommerce_customer_tab import render_woocommerce_customer_tab\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\woocommerce_customer_tab.py\", line 463\n    except Exception as e:\nSyntaxError: expected 'except' or 'finally' block\n",
         "details": {}
+    },
+    {
+        "timestamp": "2026-05-04 13:50:03",
+        "context": "Pathao Processor",
+        "error": "Index(['Order Number'], dtype='object')",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\pathao_tab.py\", line 74, in render_pathao_tab\n    result_df = process_orders_dataframe(preview_df)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 247, in process_orders_dataframe\n    record = process_single_order_group(phone, group, data_cols)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 83, in process_single_order_group\n    unique_orders = group.drop_duplicates(subset=[\"Order Number\"])\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6840, in drop_duplicates\n    result = self[-self.duplicated(subset, keep=keep)]\n                   ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6972, in duplicated\n    raise KeyError(Index(diff))\nKeyError: Index(['Order Number'], dtype='object')\n",
+        "details": {}
     }
 ]

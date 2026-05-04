@@ -34,50 +34,10 @@ def render_pathao_tab():
 
     up_pathao = st.file_uploader("", type=["xlsx", "csv"], key="pathao_up")
 
-    fetch_live_clicked = st.button(
-        "Pull from Live Dash Data & Auto-Process",
-        type="secondary",
-        use_container_width=True,
-        key="pathao_live",
-    )
-
     preview_df = None
     valid_file = False
 
-    if fetch_live_clicked:
-        try:
-            from app_modules.sales_dashboard import (
-                load_live_source,
-                get_setting,
-                DEFAULT_GSHEET_URL,
-                get_gcp_service_account_info,
-            )
-
-            source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
-            default_idx = 0
-            if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
-                default_idx = 1
-            elif get_setting("GSHEET_ID"):
-                default_idx = 1
-            elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
-                default_idx = 2
-
-            with st.spinner(f"Fetching from {source_options[default_idx]}..."):
-                df_live, source_name, _ = load_live_source(source_options[default_idx])
-
-            preview_df = df_live
-            st.session_state.pathao_preview_df = preview_df
-            st.session_state.pathao_uploaded_name = source_name
-            st.session_state.pathao_auto_process = True
-
-            missing = [c for c in REQUIRED_COLUMNS if c not in preview_df.columns]
-            valid_file = len(missing) == 0
-            st.success("Fetched from Live Source perfectly. Processing...")
-
-        except Exception as exc:
-            log_error(exc, context="Pathao Live Pull")
-            st.error(f"Failed to fetch live source: {exc}")
-    elif up_pathao:
+    if up_pathao:
         try:
             preview_df = _read_uploaded(up_pathao)
             st.session_state.pathao_preview_df = preview_df
@@ -98,10 +58,6 @@ def render_pathao_tab():
         secondary_key="pathao_clear_btn",
     )
 
-    if st.session_state.get("pathao_auto_process"):
-        run_clicked = True
-        st.session_state.pathao_auto_process = False
-
     if clear_clicked:
         _reset_pathao_state()
         st.rerun()
@@ -109,7 +65,7 @@ def render_pathao_tab():
     if run_clicked:
         if preview_df is None or not valid_file:
             st.warning(
-                "Upload a valid file or pull from live source before processing."
+                "Upload a valid file before processing."
             )
         else:
             try:
