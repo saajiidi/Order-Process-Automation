@@ -458,3 +458,16 @@ def premium_metric_card(col, label: str, value: str, icon: str = "", delta: str 
 def terminal_chat_bubble(message: str):
     """Renders a DEEN-OPS terminal themed chat bubble for AI responses."""
     st.markdown(f'<div class="terminal-chat">> {message}<span style="animation: blink 1s step-end infinite;">_</span></div>', unsafe_allow_html=True)
+
+def render_empty_state(icon: str, title: str, description: str):
+    """Renders a modern empty state for missing data or unconfigured modules."""
+    st.markdown(
+        f"""
+        <div style="text-align: center; padding: 3rem 1rem; background: var(--surface); border: 1px dashed var(--border); border-radius: 12px; margin: 1rem 0;">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.8;">{icon}</div>
+            <h3 style="color: var(--step-text); margin-bottom: 0.5rem; font-size: 1.25rem;">{title}</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; margin: 0 auto;">{description}</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )

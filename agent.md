@@ -23,17 +23,13 @@ Order-Process-Automation/
 │
 ├── app_modules/                    # Core application modules
 │   ├── unified_customer.py         # 👥 Merged Customer Analytics + Extractor
-│   ├── return_insight.py           # 🔄 Return Insight - Return/refund analysis with fuzzy matching
 │   ├── sales_dashboard.py          # 📈 Live Dashboard with upload option
 │   ├── customer_extractor.py       # 📊 Customer extraction with memory management
-│   ├── customer_analytics.py       # (legacy - merged into unified_customer)
 │   ├── customer_dedup.py           # Union-Find deduplication for large datasets
+│   ├── order_processor.py          # 📦 Processes orders for Pathao and WhatsApp
+│   ├── return_insight.py           # 🔄 Return Insight - Return/refund analysis
 │   ├── distribution_tab.py         # 📊 Inventory Distribution management
-│   ├── pathao_tab.py               # 📦 Bulk Order Processer
-│   ├── wp_tab.py                   # 💬 WhatsApp Messaging
 │   ├── fuzzy_parser_tab.py         # 🧩 Delivery Data Parser
-│   ├── email_extractor.py          # 📧 Email extraction from Google Sheets
-│   ├── phone_extractor.py          # 📱 Phone number extraction from Google Sheets
 │   ├── ui_components.py            # Shared UI components
 │   ├── ui_config.py                # Navigation and styling configuration
 │   ├── bike_animation.py           # Animated header component
@@ -57,16 +53,13 @@ Order-Process-Automation/
 The application uses a **sidebar radio button navigation** with 7 main modules:
 
 1. **📈 Live Dashboard** - Real-time sales analytics with file upload support
-2. **📦 Bulk Order Processer** - Process and manage bulk orders
-3. **📊 Inventory Distribution** - Multi-location inventory tracking
-4. **💬 WhatsApp Messaging** - Customer communication interface
-5. **🧩 Delivery Data Parser** - Parse and normalize delivery data
-6. **👥 Customer Analytics** - Unified customer analysis (merged module)
-7. **🔄 Return Insight** - Return/refund analysis with fuzzy product matching
-8. **📧 Email Extractor** - Extract unique emails from Google Sheets
-9. **📱 Phone Extractor** - Extract unique customer phone numbers with date filtering
-10. **🔮 ML Forecasting** - Time-Series ML forecasting engine
-11. **🤖 AI Data Pilot** - Conversational AI Agent for Data Analytics & Insights
+2. **👥 Customer Extractor** - Unified customer data extraction and deduplication
+3. **📦 Order Processor** - Process orders for Pathao and generate WhatsApp messages
+4. **🔄 Return Insight** - Return/refund analysis with fuzzy product matching
+5. **📊 Inventory Distribution** - Multi-location inventory tracking
+6. **🧩 Delivery Data Parser** - Parse and normalize delivery data
+7. **🔮 ML Forecasting** - Time-Series ML forecasting engine
+8. **🤖 AI Data Pilot** - Conversational AI Agent for Data Analytics & Insights
 
 ---
 
@@ -91,9 +84,9 @@ The application uses a **sidebar radio button navigation** with 7 main modules:
 - `render_live_tab()` - Main dashboard render
 - `load_live_source()` - Route data loading by source
 - `compute_day_metrics()` - Today/Yesterday comparison
-- `render_dashboard_output()` - Common dashboard widgets
+- `render_dashboard_output()` - Common dashboard widgets_
 
-### 2. 👥 Customer Analytics (unified_customer.py) ⭐ NEW
+### 2. 👥 Customer Extractor (customer_extractor.py) ⭐ CONSOLIDATED
 
 **Purpose**: Merged module combining Customer Analytics + Customer Extractor
 
@@ -101,19 +94,18 @@ The application uses a **sidebar radio button navigation** with 7 main modules:
 - Load data from URL (Google Sheets) or File Upload
 - Auto-detect columns (phone, email, date, order_id, product, etc.)
 - Union-Find fast deduplication for large datasets (50K+ rows)
-- Date range filtering with quick selectors (Today, Yesterday, Last 7/30/90 days)
-- **Card-based Core Metrics** with gradient styling
+- Persistent customer registry with memory-safe merging
+- Date range filtering with quick selectors
+- Card-based Core Metrics with gradient styling
 - Customer purchase report with search and spend range filters
-- Per-customer drill-down view
 - CSV export
-- Integration with legacy Customer Extractor via tab
 
 **Key Functions**:
-- `render_unified_customer_tab()` - Main entry point
-- `detect_columns()` - Auto-detect semantic column roles
-- `prepare_dataframe()` - Clean and normalize data
-- `build_customer_report()` - Generate per-customer aggregations
-- `render_card_metrics()` - Modern card-based KPI display
+- `render_customer_extractor_tab()` - Main entry point
+- `extract_customers_from_google_sheet()` - Main pipeline
+- `MemoryErrorHandler` - Safe processing for large files
+- `merge_registries` - Memory-safe registry merging
+- `group_customers` - High-performance deduplication using Union-Find
 
 ### 3. 🔄 Return Insight (return_insight.py) ⭐ NEW
 
@@ -172,15 +164,17 @@ The application uses a **sidebar radio button navigation** with 7 main modules:
 - Uses Python's `difflib.SequenceMatcher`
 - Removes noise words (the, a, an, etc.) before matching
 - Groups similar variants under canonical names
+ 
+### 4. 📦 Order Processor (wp_tab.py & wp_processor.py) ⭐ CONSOLIDATED
 
-### 4. 📦 Bulk Order Processer (pathao_tab.py)
-
-**Purpose**: Process bulk orders from CSV/Excel files
+**Purpose**: Process order files to generate outputs for Pathao courier and WhatsApp verification.
 
 **Features**:
-- File upload and column mapping
-- Order validation and normalization
-- Batch processing capabilities
+- Single file upload for order sheets (CSV/Excel)
+- Fuzzy column matching to automatically find required fields (phone, name, product, etc.)
+- Groups multi-item orders under a single customer.
+- Generates a formatted Excel file for **Pathao bulk upload**.
+- Generates **WhatsApp verification links** with customizable message templates.
 
 ### 5. 📊 Inventory Distribution (distribution_tab.py)
 
@@ -190,86 +184,12 @@ The application uses a **sidebar radio button navigation** with 7 main modules:
 - Location-based inventory tracking
 - Distribution planning
 - Stock level monitoring
-
-### 6. 💬 WhatsApp Messaging (wp_tab.py)
-
-**Purpose**: Customer communication via WhatsApp
-
-**Features**:
-- Message templates
-- Bulk messaging
-- Customer segmentation
-
-### 7. 🧩 Delivery Data Parser (fuzzy_parser_tab.py)
+ 
+### 6. 🧩 Delivery Data Parser (fuzzy_parser_tab.py)
 
 **Purpose**: Parse and normalize delivery/tracking data
 
-**Features**:
-- Fuzzy matching for addresses
-- Data normalization
-- Address validation
-
-### 8. 📧 Email Extractor (email_extractor.py) ⭐ NEW
-
-**Purpose**: Extract unique email addresses from Google Sheets
-
-**Features**:
-- Load data from Google Sheet CSV URL
-- **Auto-detect email column** - Finds columns with "email" in the name
-- Extract unique email addresses (removes duplicates)
-- **Case-insensitive deduplication** - Converts to lowercase
-- Display total count and preview
-- **Search/filter functionality** - Filter emails by search term
-- **CSV download** - Export emails with sequential IDs
-- **Save to data folder** - Store extracted emails locally
-- Handle large datasets efficiently
-
-**Key Functions**:
-- `extract_unique_emails_from_url()` - Fetch and extract from URL
-- `save_emails_to_csv()` - Save to data_exports folder
-- `render_email_extractor_tab()` - Main UI entry point
-
-**Output Format**:
-```
-email,id
-example@email.com,1
-another@email.com,2
-```
-
-### 9. 📱 Phone Extractor (phone_extractor.py) ⭐ NEW
-
-**Purpose**: Extract unique customer phone numbers from Google Sheets with date filtering
-
-**Features**:
-- Load data from Google Sheet CSV URL
-- **Auto-detect phone column** - Finds columns with "phone", "mobile", "contact" in the name
-- **Auto-detect customer name column** - Finds customer/buyer/client columns
-- **Date range filtering** - Filter by start and end dates (default: last 2 years)
-- **Country code formatting** - Prepend country code to phone numbers
-  - Supports: +880 (Bangladesh), +91 (India), +1 (USA), +44 (UK), etc.
-- Extract unique phone numbers (removes duplicates)
-- **Standardize phone format**:
-  - Removes non-digit characters
-  - Handles leading zeros
-  - Adds country code prefix
-- Display total count, customer names, and preview
-- **Search/filter functionality** - Filter by phone number or customer name
-- **CSV download** - Export with columns: id, phone, customer_name, last_order_date
-- **Save to data folder** - Store extracted data locally
-- Handle large datasets efficiently
-
-**Key Functions**:
-- `extract_unique_phones_from_url()` - Fetch and extract from URL with date filtering
-- `standardize_phone()` - Format phone numbers with country code
-- `save_phones_to_csv()` - Save to data_exports folder
-- `render_phone_extractor_tab()` - Main UI entry point
-
-**Output Format**:
-```
-id,phone,customer_name,last_order_date
-1,+8801234567890,John Doe,2024-05-15
-2,+8801987654321,Jane Smith,2024-06-20
-```
+---
 
 ---
 
@@ -468,19 +388,14 @@ _DATE_PATTERNS = ["date", "order date", "created", "timestamp"]
 ## 📝 Recent Changes (v10.0)
 
 ### Major Updates
-1. **Merged Customer Modules**: Combined Customer Analytics + Customer Extractor into `unified_customer.py`
-2. **Added Return Insight**: New module `return_insight.py` for return/refund analysis with **fuzzy product matching**
-3. **Sidebar Navigation**: Converted from tabs to sidebar radio buttons
-4. **Card UI Upgrade**: Modern gradient card components for core metrics
-5. **Live Dashboard Upload**: Added file upload option to Live Dashboard (moved from Sales Data Ingestion)
-6. **Memory Management**: Enhanced memory error handling in customer operations
-7. **Return Analytics**: Comprehensive return analysis with fuzzy grouping, reason categorization, and trend analysis
-8. **📧 Email Extractor**: New module `email_extractor.py` to extract unique emails from Google Sheets
-9. **📱 Phone Extractor**: New module `phone_extractor.py` to extract unique customer phone numbers with date filtering and country code formatting
+1. **Consolidated Customer Tools**: Merged `Phone Extractor`, `Email Extractor`, `Customer Extractor`, `Customer Analytics`, `Dynamic Extractor`, and `WooCommerce Customer Extractor` into a single, powerful **Customer Extractor** module. This new module features superior deduplication, memory management, and a persistent customer registry.
+2. **Unified Order Processing**: Combined `Pathao Processor` and `WhatsApp Messaging` into a single **Order Processor** module. It now uses fuzzy column matching and can generate outputs for both Pathao and WhatsApp from one file.
+3. **Simplified Live Dashboard**: Removed complex and less-used data sources (Google Drive, Local Folder) to focus on core integrations: WooCommerce, Google Sheets, and direct file uploads.
+4. **Removed Redundant Code**: Deleted over 7 separate modules and a standalone script, significantly reducing code duplication and improving maintainability.
 
-### Removed/Deprecated
-- Sales Data Ingestion tab (functionality merged into Live Dashboard)
-- Separate Customer Analytics and Customer Extractor tabs
+### Deprecated Modules
+- All individual customer/contact extractor modules have been removed in favor of the new unified `Customer Extractor`.
+- `Pathao Processor` tab has been removed; its functionality is now part of the `Order Processor`.
 
 ---
 

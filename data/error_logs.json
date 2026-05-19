@@ -397,5 +397,15 @@
         "error": "Index(['Order Number'], dtype='object')",
         "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\pathao_tab.py\", line 74, in render_pathao_tab\n    result_df = process_orders_dataframe(preview_df)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 247, in process_orders_dataframe\n    record = process_single_order_group(phone, group, data_cols)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\processor.py\", line 83, in process_single_order_group\n    unique_orders = group.drop_duplicates(subset=[\"Order Number\"])\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6840, in drop_duplicates\n    result = self[-self.duplicated(subset, keep=keep)]\n                   ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\pandas\\core\\frame.py\", line 6972, in duplicated\n    raise KeyError(Index(diff))\nKeyError: Index(['Order Number'], dtype='object')\n",
         "details": {}
+    },
+    {
+        "timestamp": "2026-05-19 14:06:46",
+        "tenant_id": "system",
+        "context": "Render error in render_ml_forecasting_tab",
+        "error": "Dataframe has less than 2 non-NaN rows.",
+        "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\error_handler.py\", line 90, in wrapper\n    return func(*args, **kwargs)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\ml_forecasting.py\", line 97, in render_ml_forecasting_tab\n    model.fit(prep_df)\n    ~~~~~~~~~^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\prophet\\forecaster.py\", line 1220, in fit\n    model_inputs = self.preprocess(df, **kwargs)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\prophet\\forecaster.py\", line 1135, in preprocess\n    raise ValueError('Dataframe has less than 2 non-NaN rows.')\nValueError: Dataframe has less than 2 non-NaN rows.\n",
+        "details": {
+            "traceback": "Traceback (most recent call last):\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\error_handler.py\", line 90, in wrapper\n    return func(*args, **kwargs)\n  File \"H:\\Repo\\Order-Process-Automation\\app_modules\\ml_forecasting.py\", line 97, in render_ml_forecasting_tab\n    model.fit(prep_df)\n    ~~~~~~~~~^^^^^^^^^\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\prophet\\forecaster.py\", line 1220, in fit\n    model_inputs = self.preprocess(df, **kwargs)\n  File \"C:\\Users\\deenb\\AppData\\Roaming\\Python\\Python314\\site-packages\\prophet\\forecaster.py\", line 1135, in preprocess\n    raise ValueError('Dataframe has less than 2 non-NaN rows.')\nValueError: Dataframe has less than 2 non-NaN rows.\n"
+        }
     }
 ]

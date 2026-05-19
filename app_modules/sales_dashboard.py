@@ -1440,6 +1440,27 @@ def render_dashboard_output(
         st.dataframe(recent_orders_df.reset_index(drop=True), use_container_width=True)
 
 
+@st.dialog("⚙️ WooCommerce Sync Settings")
+def wc_sync_settings_dialog():
+    st.write("Configure date range and statuses for the live sync.")
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+        st.date_input("From Date", value=st.session_state.get("wc_live_start", datetime.now().date() - timedelta(days=30)), key="wc_live_start")
+    with col_d2:
+        st.date_input("To Date", value=st.session_state.get("wc_live_end", datetime.now().date()), key="wc_live_end")
+    
+    st.checkbox("Compare with previous period", value=st.session_state.get("wc_compare_prev", True), key="wc_compare_prev")
+    
+    st.multiselect(
+        "Order Status",
+        options=["completed", "processing", "shipped", "on-hold", "pending", "cancelled", "refunded", "failed"],
+        default=st.session_state.get("wc_live_status", ["completed", "processing", "shipped"]),
+        key="wc_live_status",
+        help="Filter orders by status. Select one or more."
+    )
+    if st.button("Apply Settings", type="primary", use_container_width=True):
+        st.rerun()
+
 @safe_render(fallback_message="Manual Dashboard failed to render. Please check logs.")
 def render_manual_tab():
     def _reset_manual_state():
@@ -1711,12 +1732,14 @@ def render_live_tab():
             saved_statuses = st.session_state.get("live_global_statuses", all_statuses)
             valid_defaults = [s for s in saved_statuses if s in all_statuses] if saved_statuses else all_statuses
             
-            selected_statuses = st.multiselect(
-                "🎯 Filter Dashboard by Order Status",
-                options=all_statuses,
-                default=valid_defaults if valid_defaults else all_statuses,
-                key="live_global_statuses"
-            )
+            with st.popover("🎯 Filter Dashboard by Order Status"):
+                selected_statuses = st.multiselect(
+                    "Select Statuses",
+                    options=all_statuses,
+                    default=valid_defaults if valid_defaults else all_statuses,
+                    key="live_global_statuses",
+                    label_visibility="collapsed"
+                )
             df_live = df_live[df_live[status_col].astype(str).isin(selected_statuses)]
             
             if df_live.empty:
