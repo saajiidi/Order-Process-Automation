@@ -6,12 +6,15 @@ _original_dataframe = st.dataframe
 def _numbered_dataframe(data, *args, **kwargs):
     try:
         import pandas as pd
+        import polars as pl
 
         if isinstance(data, pd.DataFrame) or isinstance(data, pd.Series):
             d = data.copy()
             if len(d) > 0:
                 d.index = range(1, len(d) + 1)
             return _original_dataframe(d, *args, **kwargs)
+        elif isinstance(data, pl.DataFrame):
+            return _original_dataframe(data.to_pandas(), *args, **kwargs)
     except Exception:
         pass
     return _original_dataframe(data, *args, **kwargs)

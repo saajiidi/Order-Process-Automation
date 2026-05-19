@@ -1,0 +1,10 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+.env
+.streamlit/secrets.toml
+data/
+data_exports/
+tests/

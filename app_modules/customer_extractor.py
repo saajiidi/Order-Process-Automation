@@ -1936,7 +1936,7 @@ def render_customer_extractor_tab():
     st.markdown("---")
     st.markdown("#### 💾 Downloads")
     
-    d1, d2, d3 = st.columns(3)
+    d1, d2, d3, d4 = st.columns(4)
     
     with d1:
         csv_bytes = report_view.to_csv(index=False).encode("utf-8-sig")
@@ -1972,5 +1972,23 @@ def render_customer_extractor_tab():
             data=excel_buffer,
             file_name="filtered_customers.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            use_container_width=True,
+        )
+
+    with d4:
+        marketing_df = pd.DataFrame()
+        marketing_df['Email Address'] = report_view['primary_email']
+        name_split = report_view['primary_name'].str.split(n=1, expand=True)
+        marketing_df['First Name'] = name_split[0] if len(name_split.columns) > 0 else ""
+        marketing_df['Last Name'] = name_split[1] if len(name_split.columns) > 1 else ""
+        marketing_df['Phone Number'] = report_view['primary_phone']
+        marketing_df['Tags'] = "AutomationHub, " + report_view.get('source_years', '').fillna('')
+        
+        marketing_csv = marketing_df.to_csv(index=False).encode("utf-8-sig")
+        st.download_button(
+            "📧 Export for Klaviyo/Mailchimp",
+            data=marketing_csv,
+            file_name="marketing_contacts.csv",
+            mime="text/csv",
             use_container_width=True,
         )

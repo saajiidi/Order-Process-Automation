@@ -1,6 +1,6 @@
 """Email Extractor Module - Extract unique emails from Google Sheets."""
 
-import pandas as pd
+import polars as pl
 import requests
 import streamlit as st
 import os
@@ -12,7 +12,7 @@ _SESSION_KEY = "email_extractor_data"
 _SESSION_FILE = "email_extractor_file"
 
 
-def extract_unique_emails_from_url(url: str) -> Tuple[Optional[pd.DataFrame], Optional[str], str]:
+def extract_unique_emails_from_url(url: str) -> Tuple[Optional[pl.DataFrame], Optional[str], str]:
     """
     Extract unique emails from a Google Sheet URL.
     
@@ -23,9 +23,10 @@ def extract_unique_emails_from_url(url: str) -> Tuple[Optional[pd.DataFrame], Op
         resp = requests.get(url, timeout=30)
         resp.raise_for_status()
         
-        df = pd.read_csv(pd.io.common.StringIO(resp.text), dtype=str)
+        # Read as all strings using infer_schema_length=0
+        df = pl.read_csv(resp.content, infer_schema_length=0)
         
-        if df.empty:
+        if df.height == 0:
             return None, None, "No data found in the sheet."
         
         # Find email column
@@ -38,31 +39,36 @@ def extract_unique_emails_from_url(url: str) -> Tuple[Optional[pd.DataFrame], Op
         if not email_col:
             return None, None, f"No email column found. Available columns: {', '.join(df.columns)}"
         
-        # Get unique emails (non-null, non-empty)
-        emails = df[email_col].dropna()
-        emails = emails[emails.str.strip() != '']
-        unique_emails = sorted(emails.str.strip().str.lower().unique())
+        # Filter out nulls/empty strings, lowercase, strip, and get unique emails
+        emails_df = (
+            df.select(pl.col(email_col))
+            .drop_nulls()
+            .filter(pl.col(email_col).str.strip_chars() != "")
+            .with_columns(pl.col(email_col).str.strip_chars().str.to_lowercase().alias("email"))
+            .select("email")
+            .unique()
+            .sort("email")
+        )
         
-        if not unique_emails:
+        if emails_df.height == 0:
             return None, None, "No valid emails found in the column."
         
         # Create DataFrame
-        emails_df = pd.DataFrame({
-            'email': unique_emails,
-            'id': range(1, len(unique_emails) + 1)
-        })
+        emails_df = emails_df.with_columns(
+            pl.arange(1, emails_df.height + 1).alias("id")
+        ).select(["id", "email"])
         
-        return emails_df, email_col, f"Found {len(unique_emails):,} unique emails from {len(df):,} total rows"
+        return emails_df, email_col, f"Found {emails_df.height:,} unique emails from {df.height:,} total rows"
         
     except requests.RequestException as e:
         return None, None, f"Network error: {str(e)}"
-    except pd.errors.EmptyDataError:
+    except pl.exceptions.NoDataError:
         return None, None, "The sheet appears to be empty."
     except Exception as e:
         return None, None, f"Error: {str(e)}"
 
 
-def save_emails_to_csv(emails_df: pd.DataFrame, filename: Optional[str] = None) -> str:
+def save_emails_to_csv(emails_df: pl.DataFrame, filename: Optional[str] = None) -> str:
     """Save emails DataFrame to CSV file."""
     if filename is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -152,7 +158,7 @@ def render_email_extractor_tab():
     st.markdown("#### 📊 Extraction Summary")
     
     m1, m2 = st.columns(2)
-    m1.metric("Total Unique Emails", f"{len(emails_df):,}")
+    m1.metric("Total Unique Emails", f"{emails_df.height:,}")
     m2.metric("Email Column", email_col if 'email_col' in locals() else "Auto-detected")
     
     # Data preview

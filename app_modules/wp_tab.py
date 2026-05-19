@@ -81,26 +81,15 @@ def render_wp_tab():
         try:
             from app_modules.sales_dashboard import (
                 load_live_source,
-                get_setting,
-                DEFAULT_GSHEET_URL,
-                get_gcp_service_account_info,
             )
 
-            source_options = ["Incoming Folder", "Google Sheet", "Google Drive Folder"]
-            default_idx = 0
-            if get_setting("GSHEET_URL", DEFAULT_GSHEET_URL):
-                default_idx = 1
-            elif get_setting("GSHEET_ID"):
-                default_idx = 1
-            elif get_setting("GDRIVE_FOLDER_ID") and get_gcp_service_account_info():
-                default_idx = 2
-
-            with st.spinner(f"Fetching from {source_options[default_idx]}..."):
-                df_live, _, _ = load_live_source(source_options[default_idx])
+            with st.spinner("Fetching from Live Google Sheet..."):
+                df_live, _, _ = load_live_source("Google Sheet")
+                
             preview_df = df_live
             st.session_state.wp_preview_df = preview_df
             st.session_state.wp_upload_name = (
-                f"Live Source ({source_options[default_idx]})"
+                "Live Source (Google Sheet)"
             )
             st.session_state.wp_auto_generate = True
 

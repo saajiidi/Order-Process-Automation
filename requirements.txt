@@ -1,19 +1,20 @@
 # Core App
-streamlit
-pandas
-plotly
-openpyxl
-xlsxwriter
-pillow
+streamlit==1.32.0
+pandas==2.2.1
+polars==0.20.15
+plotly==5.19.0
+openpyxl==3.1.2
+xlsxwriter==3.1.9
+pillow==10.2.0
 fuzzywuzzy==0.18.0
-python-Levenshtein
+python-Levenshtein==0.25.0
 
 # Machine Learning / Fuzzy Matching
-rapidfuzz
+rapidfuzz==3.6.2
 
 # Google Cloud / Drive Integration
-google-api-python-client
-google-auth
-google-auth-oauthlib
-google-auth-httplib2
-requests
+google-api-python-client==2.122.0
+google-auth==2.28.2
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+requests==2.31.0
