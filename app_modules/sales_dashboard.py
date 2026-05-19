@@ -393,58 +393,62 @@ def process_data(df, selected_cols):
         return None, None, None, "", {}
 
 
-def compute_day_metrics(df_raw, live_mapping):
-    """Split raw dataframe into today / yesterday slices and compute KPIs for each.
-    Returns (today_kpi, yesterday_kpi, yesterday_orders_df).
-    Each kpi dict has keys: qty, orders, revenue, avg_basket.
-    """
-    tz_bd = timezone(timedelta(hours=6))
-    today_dt = datetime.now(tz_bd).date()
-    yesterday_dt = today_dt - timedelta(days=1)
-
-    date_col = live_mapping.get("date")
-    order_col = live_mapping.get("order_id")
-    qty_col   = live_mapping.get("qty")
-    cost_col  = live_mapping.get("cost")
-    name_col  = live_mapping.get("name")
-
-    empty_kpi = {"qty": 0, "orders": 0, "revenue": 0, "avg_basket": 0}
-
-    if not date_col or date_col not in df_raw.columns:
-        return empty_kpi, empty_kpi, pd.DataFrame()
-
-    df = df_raw.copy()
-    df["_date_parsed"] = pd.to_datetime(df[date_col], errors="coerce")
-    df["_date_only"]   = df["_date_parsed"].dt.date
-    df["_qty"]  = pd.to_numeric(df.get(qty_col,  pd.Series([0]*len(df))), errors="coerce").fillna(0)
-    df["_cost"] = pd.to_numeric(df.get(cost_col, pd.Series([0]*len(df))), errors="coerce").fillna(0)
-    df["_revenue"] = df["_qty"] * df["_cost"]
-
+def compute_period_metrics(df_curr, df_prev, live_mapping):
+    """Compute KPIs for current and previous periods, and get latest orders."""
     def _kpi(slice_df):
-        if slice_df.empty:
+        if slice_df is None or slice_df.empty:
             return {"qty": 0, "orders": 0, "revenue": 0, "avg_basket": 0}
-        qty     = slice_df["_qty"].sum()
-        revenue = slice_df["_revenue"].sum()
-        if order_col and order_col in slice_df.columns:
-            orders  = slice_df[order_col].nunique()
-            basket  = revenue / orders if orders else 0
+        
+        qty_col = live_mapping.get("qty")
+        cost_col = live_mapping.get("cost")
+        order_col = live_mapping.get("order_id")
+        
+        qty = pd.to_numeric(slice_df[qty_col], errors="coerce").fillna(0).sum() if qty_col in slice_df.columns else 0
+        
+        if "Total Amount" in slice_df.columns:
+            revenue = pd.to_numeric(slice_df["Total Amount"], errors="coerce").fillna(0).sum()
+        elif cost_col in slice_df.columns and qty_col in slice_df.columns:
+            revenue = (pd.to_numeric(slice_df[cost_col], errors="coerce").fillna(0) * 
+                       pd.to_numeric(slice_df[qty_col], errors="coerce").fillna(0)).sum()
         else:
-            orders, basket = len(slice_df), 0
-        return {"qty": qty, "orders": orders, "revenue": revenue, "avg_basket": basket}
-
-    today_kpi     = _kpi(df[df["_date_only"] == today_dt])
-    yesterday_kpi = _kpi(df[df["_date_only"] == yesterday_dt])
-
-    # Build yesterday's order-level table for the report section
-    yest_df = df[df["_date_only"] == yesterday_dt].copy()
-    display_cols = []
-    for c in [order_col, date_col, name_col, qty_col, cost_col]:
-        if c and c in yest_df.columns:
-            display_cols.append(c)
-    display_cols = list(dict.fromkeys(display_cols))  # dedupe preserving order
-    yesterday_orders_df = yest_df[display_cols] if display_cols else yest_df
-
-    return today_kpi, yesterday_kpi, yesterday_orders_df
+            revenue = 0
+            
+        orders = slice_df[order_col].nunique() if order_col and order_col in slice_df.columns else len(slice_df)
+        avg_basket = revenue / orders if orders > 0 else 0
+        
+        return {"qty": qty, "orders": orders, "revenue": revenue, "avg_basket": avg_basket}
+        
+    curr_kpi = _kpi(df_curr)
+    prev_kpi = _kpi(df_prev)
+    
+    recent_orders_df = pd.DataFrame()
+    if df_curr is not None and not df_curr.empty:
+        date_col = live_mapping.get("date")
+        order_col = live_mapping.get("order_id")
+        name_col = live_mapping.get("name")
+        qty_col = live_mapping.get("qty")
+        
+        status_col = next((c for c in df_curr.columns if 'status' in c.lower() or 'state' in c.lower()), None)
+        customer_col = next((c for c in df_curr.columns if any(k in c.lower() for k in ['customer', 'name', 'buyer'])), None)
+        
+        display_cols = []
+        for c in [order_col, date_col, customer_col, name_col, qty_col, status_col, "Total Amount"]:
+            if c and c in df_curr.columns:
+                display_cols.append(c)
+                
+        display_cols = list(dict.fromkeys(display_cols))
+        temp_df = df_curr[display_cols].copy()
+        
+        if date_col and date_col in temp_df.columns:
+            temp_df["_sort_date"] = pd.to_datetime(temp_df[date_col], errors="coerce")
+            temp_df = temp_df.sort_values("_sort_date", ascending=False).drop(columns=["_sort_date"])
+            
+        if order_col and order_col in temp_df.columns:
+            temp_df = temp_df.drop_duplicates(subset=[order_col])
+            
+        recent_orders_df = temp_df
+        
+    return curr_kpi, prev_kpi, recent_orders_df
 
 
 def get_latest_incoming_file(folder_path):
@@ -1363,16 +1367,38 @@ def render_dashboard_output(
     final_filename = f"Report_{base_name}{file_suffix}.xlsx"
     st.download_button("Export Report (Unified Excel)", data=excel_bytes, file_name=final_filename, type="primary")
 
-    # ── Recent Processed Orders ──────────────────────────────────────────
+    # ── Latest Orders Overview ──────────────────────────────────────────
     if recent_orders_df is not None and not recent_orders_df.empty:
         st.divider()
-        st.subheader("📋 Recent Processed Orders")
+        st.subheader("📋 Latest Orders Overview")
+        
+        date_col = live_mapping.get("date")
+        display_orders_df = recent_orders_df.copy()
+        
+        if date_col and date_col in display_orders_df.columns:
+            display_orders_df["_filter_date"] = pd.to_datetime(display_orders_df[date_col], errors="coerce").dt.date
+            min_date = display_orders_df["_filter_date"].dropna().min()
+            max_date = display_orders_df["_filter_date"].dropna().max()
+            
+            if pd.notna(min_date) and pd.notna(max_date):
+                f_col1, f_col2, _ = st.columns([1, 1, 2])
+                with f_col1:
+                    filter_start = st.date_input("Start Date", value=min_date, min_value=min_date, max_value=max_date, key="latest_orders_start")
+                with f_col2:
+                    filter_end = st.date_input("End Date", value=max_date, min_value=min_date, max_value=max_date, key="latest_orders_end")
+                
+                mask = (display_orders_df["_filter_date"] >= filter_start) & (display_orders_df["_filter_date"] <= filter_end)
+                display_orders_df = display_orders_df[mask]
+            
+            display_orders_df = display_orders_df.drop(columns=["_filter_date"])
+            
         st.caption(
-            f"{curr_kpi['orders']:,.0f} orders in current period · "
-            f"{curr_kpi['qty']:,.0f} items · "
-            f"TK {curr_kpi['revenue']:,.0f} revenue"
+            f"Showing {len(display_orders_df):,.0f} orders in table · "
+            f"(Total period: {curr_kpi['orders']:,.0f} orders, "
+            f"{curr_kpi['qty']:,.0f} items, "
+            f"TK {curr_kpi['revenue']:,.0f} revenue)"
         )
-        st.dataframe(recent_orders_df.reset_index(drop=True), use_container_width=True)
+        st.dataframe(display_orders_df.reset_index(drop=True), use_container_width=True)
 
 
 @st.dialog("⚙️ WooCommerce Sync Settings")
