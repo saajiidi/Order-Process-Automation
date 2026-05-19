@@ -7,7 +7,12 @@ import logging
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
-STATE_FILE = os.path.join(DATA_DIR, "session_state.json")
+
+def get_state_file():
+    """Get a tenant-specific state file to prevent data overlap."""
+    # Default to 'system' if no user is logged in yet
+    tenant_id = st.session_state.get("tenant_id", "system")
+    return os.path.join(DATA_DIR, f"session_state_{tenant_id}.json")
 
 class CustomEncoder(json.JSONEncoder):
     """Handle set and other non-serializable objects."""
@@ -51,7 +56,7 @@ def save_state():
         fd, temp_path = tempfile.mkstemp(dir=DATA_DIR)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(state_to_save, f, indent=4, cls=CustomEncoder)
-        os.replace(temp_path, STATE_FILE)
+        os.replace(temp_path, get_state_file())
     except Exception as e:
         default_logger = logging.getLogger(__name__)
         default_logger.error(f"Failed to save state: {e}")
@@ -63,9 +68,10 @@ def save_state():
 
 def load_state():
     """Loads session state from local file."""
-    if os.path.exists(STATE_FILE):
+    state_file = get_state_file()
+    if os.path.exists(state_file):
         try:
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
+            with open(state_file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 for k, v in data.items():
                     if k.endswith("_serial"):

@@ -73,6 +73,7 @@ def run_app():
         "📱 Phone Extractor",
         "🔮 ML Forecasting",
         "🤖 AI Data Pilot",
+        "🌟 2025 Truth Source Data",
     ]
     
     with st.sidebar:
@@ -187,6 +188,9 @@ def run_app():
     elif selected_module == "🤖 AI Data Pilot":
         from app_modules.ai_data_pilot import render_ai_data_pilot_tab
         render_ai_data_pilot_tab()
+    elif selected_module == "🌟 2025 Truth Source Data":
+        from app_modules.truth_source_extractor import render_truth_source_extractor_tab
+        render_truth_source_extractor_tab()
 
     render_footer()
 

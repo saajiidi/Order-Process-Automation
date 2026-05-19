@@ -21,6 +21,7 @@ def log_error(error_msg, context="General", details=None):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_entry = {
             "timestamp": timestamp,
+            "tenant_id": st.session_state.get("tenant_id", "system"),
             "context": context,
             "error": str(error_msg),
             "traceback": traceback.format_exc(),

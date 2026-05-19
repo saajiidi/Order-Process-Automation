@@ -24,7 +24,16 @@ from app_modules.unified_reporting import (
 
 
 def get_setting(key: str, default=None):
-    """Read setting from Streamlit secrets first, then env var, then default."""
+    """
+    Read setting for the current SaaS tenant.
+    Falls back to Streamlit secrets/env for default/system settings.
+    """
+    # 1. Try to get tenant-specific setting from session/database
+    tenant_settings = st.session_state.get("tenant_settings", {})
+    if key in tenant_settings:
+        return tenant_settings[key]
+        
+    # 2. Fallback to global secrets
     try:
         if key in st.secrets:
             return st.secrets[key]
